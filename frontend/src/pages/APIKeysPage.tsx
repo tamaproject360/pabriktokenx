@@ -7,9 +7,6 @@ import {
   updateGeminiKeys,
   updateClaudeKeys,
   updateCodexKeys,
-  deleteGeminiKey,
-  deleteClaudeKey,
-  deleteCodexKey,
 } from '../lib/api';
 import { useState } from 'react';
 
@@ -18,8 +15,6 @@ interface KeySectionProps {
   provider: string;
   color: string;
   keys: string[];
-  onAdd: (key: string) => void;
-  onDelete: (index: number) => void;
   onSave: (keys: string[]) => void;
   isLoading: boolean;
   isSaving: boolean;
@@ -30,8 +25,6 @@ function KeySection({
   provider, 
   color, 
   keys, 
-  onAdd, 
-  onDelete, 
   onSave, 
   isLoading,
   isSaving 
@@ -245,8 +238,6 @@ export default function APIKeysPage() {
           provider="Gemini"
           color="blue"
           keys={geminiData?.keys || []}
-          onAdd={() => {}}
-          onDelete={(index) => deleteGeminiKey(index)}
           onSave={(keys) => geminiMutation.mutate(keys)}
           isLoading={geminiLoading}
           isSaving={geminiMutation.isPending}
@@ -257,8 +248,6 @@ export default function APIKeysPage() {
           provider="Claude"
           color="orange"
           keys={claudeData?.keys || []}
-          onAdd={() => {}}
-          onDelete={(index) => deleteClaudeKey(index)}
           onSave={(keys) => claudeMutation.mutate(keys)}
           isLoading={claudeLoading}
           isSaving={claudeMutation.isPending}
@@ -269,8 +258,6 @@ export default function APIKeysPage() {
           provider="OpenAI"
           color="green"
           keys={codexData?.keys || []}
-          onAdd={() => {}}
-          onDelete={(index) => deleteCodexKey(index)}
           onSave={(keys) => codexMutation.mutate(keys)}
           isLoading={codexLoading}
           isSaving={codexMutation.isPending}

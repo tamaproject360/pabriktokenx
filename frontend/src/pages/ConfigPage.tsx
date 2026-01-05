@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Settings, Save, RefreshCw, Download, Upload, Code, AlertCircle } from 'lucide-react';
+import { Settings, Save, Download, Upload, Code, AlertCircle } from 'lucide-react';
 import { getConfigYAML, updateConfigYAML, getConfig, setDebug, getDebug } from '../lib/api';
 import { useState, useRef, useEffect } from 'react';
 

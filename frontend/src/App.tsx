@@ -11,6 +11,7 @@ import OAuthPage from './pages/OAuthPage';
 import LogsPage from './pages/LogsPage';
 import ConfigPage from './pages/ConfigPage';
 import RoutingPage from './pages/RoutingPage';
+import PlaygroundPage from './pages/PlaygroundPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,7 @@ function AppRoutes() {
         }
       >
         <Route path="/" element={<DashboardPage />} />
+        <Route path="/playground" element={<PlaygroundPage />} />
         <Route path="/usage" element={<UsagePage />} />
         <Route path="/auth-files" element={<AuthFilesPage />} />
         <Route path="/api-keys" element={<APIKeysPage />} />

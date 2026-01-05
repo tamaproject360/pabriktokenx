@@ -1,5 +1,6 @@
-import { forwardRef, InputHTMLAttributes } from 'react';
-import { LucideIcon } from 'lucide-react';
+import { forwardRef } from 'react';
+import type { InputHTMLAttributes } from 'react';
+import type { LucideIcon } from 'lucide-react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;

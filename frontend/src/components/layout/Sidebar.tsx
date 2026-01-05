@@ -12,6 +12,7 @@ import {
   Globe,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -22,6 +23,7 @@ interface SidebarProps {
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/playground', icon: Sparkles, label: 'Playground' },
   { to: '/usage', icon: Activity, label: 'Usage Statistics' },
   { to: '/auth-files', icon: UserCircle, label: 'Auth Files' },
   { to: '/api-keys', icon: Key, label: 'API Keys' },

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { RefreshCw, Save, Shuffle, ArrowRight, Plus, Trash2 } from 'lucide-react';
+import { RefreshCw, Shuffle, ArrowRight, Plus, Trash2 } from 'lucide-react';
 import { 
   getRoutingStrategy, 
   setRoutingStrategy,
