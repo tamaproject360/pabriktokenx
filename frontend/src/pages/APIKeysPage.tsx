@@ -268,7 +268,7 @@ export default function APIKeysPage() {
         <div className="flex items-center justify-between">
           <div className="space-y-2">
             <h1 className="text-4xl font-semibold text-white tracking-tight">
-              API Keys
+              AI Providers
             </h1>
             <p className="text-slate-400 text-sm">
               Manage API keys for different AI providers

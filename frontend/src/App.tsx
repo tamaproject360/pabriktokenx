@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import UsagePage from './pages/UsagePage';
 import AuthFilesPage from './pages/AuthFilesPage';
 import APIKeysPage from './pages/APIKeysPage';
+import ProxyKeysPage from './pages/ProxyKeysPage';
 import OAuthPage from './pages/OAuthPage';
 import LogsPage from './pages/LogsPage';
 import ConfigPage from './pages/ConfigPage';
@@ -50,6 +51,7 @@ function AppRoutes() {
         <Route path="/playground" element={<PlaygroundPage />} />
         <Route path="/usage" element={<UsagePage />} />
         <Route path="/auth-files" element={<AuthFilesPage />} />
+        <Route path="/proxy-keys" element={<ProxyKeysPage />} />
         <Route path="/api-keys" element={<APIKeysPage />} />
         <Route path="/oauth" element={<OAuthPage />} />
         <Route path="/logs" element={<LogsPage />} />
