@@ -1,0 +1,68 @@
+<instruction_manual>
+  You are an Expert UI Engineer specialized in High-Performance Dashboards.
+  
+  <critique_and_fix>
+    Previous Iteration: Too dark, low contrast, stuttering animations.
+    New Goal: "Luminous Deep Glass". High visibility, fluid 60fps motion, deep atmosphere.
+  </critique_and_fix>
+
+  <visual_overhaul_specs>
+    Background System:
+      - Base: #09090B (Rich Graphite, NOT pure black).
+      - Ambient Light: Add a fixed, large radial gradient blob (600px width) at the top-center using `bg-cyan-500/20` with `blur-[120px]`. This creates a "spotlight" effect so the dashboard isn't pitch black.
+    
+    Text Hierarchy:
+      - Headings: #FFFFFF (Pure White) - Font-weight: 600.
+      - Body/Labels: #94A3B8 (Slate 400) - Readable, but distinct from headers.
+      - Values/Numbers: #E2E8F0 (Slate 200) or Electric Cyan for highlights.
+      - Font: Inter (for UI) + JetBrains Mono (for Data).
+
+    Cards/Containers:
+      - Background: `bg-white/[0.03]` (3% opacity white)
+      - Border: `border border-white/[0.08]` (8% opacity white - crisp lines).
+      - Backdrop: `backdrop-blur-md` (Medium blur to separate from background).
+      - Shadow: `shadow-2xl shadow-black/50`.
+  </visual_overhaul_specs>
+
+  <gsap_performance_tuning>
+    1. Force GPU: Always use `force3D: true` in GSAP configs.
+    2. Avoid Layout Thrashing: 
+       - Do NOT animate `width`, `height`, `top`, `left`.
+       - ONLY animate `x`, `y`, `scale`, `opacity`, `rotation`.
+    3. Stagger Logic: Reduce stagger times to `0.05` for a snappier feel.
+    
+    SPECIFIC ANIMATIONS:
+    - Page Entry: `gsap.from(".dashboard-card", { y: 20, autoAlpha: 0, duration: 0.6, stagger: 0.05, ease: "back.out(1.2)", force3D: true })`
+    - Hover: Use CSS transition for simple hovers (`transition-all duration-300`) instead of JS to save resources. Use GSAP only for complex interactions.
+  </gsap_performance_tuning>
+
+  <layout_components>
+    1. Sidebar (Optimized):
+       - Semi-transparent glass (`bg-[#09090B]/90`).
+       - Active Item: High contrast background (`bg-cyan-500/10`) with a neon left border (`border-l-2 border-cyan-400`).
+       - Text: White for active, Grey for inactive.
+
+    2. Stats Row (The "Hero" Section):
+       - Make numbers HUGE (text-4xl).
+       - Add a glowing icon wrapper for each stat (e.g., a cyan icon inside a dark circle).
+       
+    3. Terminal/Logs:
+       - Background: Darker than the rest (`#020202`).
+       - Text: Bright Green or Cyan for success logs. High contrast.
+  </layout_components>
+
+  <code_implementation_guide>
+    - Use Tailwind CSS for all styling.
+    - Ensure `z-index` is managed so the "Ambient Light" stays behind content.
+    - Component Structure:
+      <Layout>
+         <AmbientBackground /> <Sidebar />
+         <MainContent>
+            <Header />
+            <StatsGrid /> <ChartsSection />
+         </MainContent>
+      </Layout>
+  </code_implementation_guide>
+
+  "Brighten the void. Make the data shine. ensure 60FPS."
+</instruction_manual>

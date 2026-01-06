@@ -25,8 +25,8 @@ echo.
 echo ============================================
 echo [SUCCESS] All services started!
 echo.
-echo Backend:  http://localhost:8080
-echo Frontend: http://localhost:8317
+echo Backend:  http://localhost:9999
+echo Frontend: http://localhost:8686
 echo.
 echo Management Key: admin123
 echo ============================================

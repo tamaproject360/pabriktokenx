@@ -74,8 +74,8 @@ PabrikTokenX is a production-ready proxy server that provides OpenAI/Gemini/Clau
    ```
 
 3. **Access the dashboard:**
-   - Backend API: http://localhost:8080
-   - Frontend Dashboard: http://localhost:8317
+   - Backend API: http://localhost:9999
+   - Frontend Dashboard: http://localhost:8686
 
 ### macOS/Linux Users
 
@@ -135,6 +135,10 @@ go build -ldflags="-s -w" -o cliproxy ./cmd/server
 
 ### Initial Setup
 
+> **⚠️ SECURITY WARNING**  
+> Never commit `config.yaml` or any files in `auths/` directory to version control.  
+> These files contain sensitive credentials. Always use `config.example.yaml` as a template.
+
 1. **Copy example configuration:**
    ```bash
    cp config.example.yaml config.yaml
@@ -144,7 +148,7 @@ go build -ldflags="-s -w" -o cliproxy ./cmd/server
    ```yaml
    # Server Settings
    host: ""
-   port: 8080
+   port: 9999
    
    # Management API
    remote-management:
@@ -173,7 +177,7 @@ export CONFIG_PATH=/path/to/config.yaml
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `port` | int | 8080 | Server port |
+| `port` | int | 9999 | Server port |
 | `debug` | bool | false | Enable debug logging |
 | `auth-dir` | string | ~/.cli-proxy-api | Authentication directory |
 | `proxy-url` | string | "" | Upstream proxy URL |
@@ -205,7 +209,7 @@ cliproxy.exe --codex-login
 
 #### Chat Completions (OpenAI-compatible)
 ```bash
-curl http://localhost:8080/v1/chat/completions \
+curl http://localhost:9999/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-api-key" \
   -d '{
@@ -216,7 +220,7 @@ curl http://localhost:8080/v1/chat/completions \
 
 #### Claude Messages API
 ```bash
-curl http://localhost:8080/v1/messages \
+curl http://localhost:9999/v1/messages \
   -H "Content-Type: application/json" \
   -H "x-api-key: your-api-key" \
   -d '{
@@ -227,7 +231,7 @@ curl http://localhost:8080/v1/messages \
 
 #### Gemini API
 ```bash
-curl http://localhost:8080/v1beta/models/gemini-2.0-flash-exp:generateContent \
+curl http://localhost:9999/v1beta/models/gemini-2.0-flash-exp:generateContent \
   -H "Content-Type: application/json" \
   -d '{
     "contents": [{"parts": [{"text": "Hello!"}]}]

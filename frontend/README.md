@@ -18,7 +18,7 @@ A modern React-based management dashboard for CLI Proxy API server.
 
 - Node.js 18+ 
 - npm or yarn
-- CLI Proxy API server running on port 8080
+- CLI Proxy API server running on port 9999
 
 ### Installation
 
@@ -30,7 +30,7 @@ npm install
 npm run dev
 ```
 
-The development server will start at http://localhost:3000 with API proxy configured to forward requests to http://localhost:8080.
+The development server will start at http://localhost:8686 with API proxy configured to forward requests to http://localhost:9999.
 
 ### Build for Production
 
@@ -56,15 +56,15 @@ The built files will be in the dist/ folder.
 ```
 frontend/
 +-- src/
-¦   +-- components/
-¦   ¦   +-- layout/          # Layout components (Sidebar, Header, etc.)
-¦   ¦   +-- ui/              # Reusable UI components
-¦   +-- contexts/            # React contexts (Auth)
-¦   +-- lib/                 # API client and utilities
-¦   +-- pages/               # Page components
-¦   +-- App.tsx              # Main app with routing
-¦   +-- main.tsx             # Entry point
-¦   +-- index.css            # Global styles with Tailwind
+ï¿½   +-- components/
+ï¿½   ï¿½   +-- layout/          # Layout components (Sidebar, Header, etc.)
+ï¿½   ï¿½   +-- ui/              # Reusable UI components
+ï¿½   +-- contexts/            # React contexts (Auth)
+ï¿½   +-- lib/                 # API client and utilities
+ï¿½   +-- pages/               # Page components
+ï¿½   +-- App.tsx              # Main app with routing
+ï¿½   +-- main.tsx             # Entry point
+ï¿½   +-- index.css            # Global styles with Tailwind
 +-- index.html
 +-- vite.config.ts
 +-- package.json

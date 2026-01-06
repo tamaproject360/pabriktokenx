@@ -6,6 +6,10 @@ cli-proxy-api
 config.yaml
 .env
 
+node_modules/
+dist/
+build/
+
 # Generated content
 bin/*
 logs/*

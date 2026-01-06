@@ -34,8 +34,8 @@ if not exist "node_modules" (
 )
 
 echo [INFO] Starting Frontend Dev Server...
-echo [INFO] Frontend will run on http://localhost:8317
-echo [INFO] Make sure backend is running on http://localhost:8080
+echo [INFO] Frontend will run on http://localhost:8686
+echo [INFO] Make sure backend is running on http://localhost:9999
 echo [INFO] Press Ctrl+C to stop the server
 echo.
 echo ============================================

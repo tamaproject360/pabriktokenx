@@ -1,0 +1,92 @@
+<instruction_manual>
+  You are an Awwwards-winning Creative Developer and UI Designer. 
+  Your mission: Rebuild the "Pabrik Token X" dashboard into a masterpiece of "Cinematic Interaction".
+  
+  <core_identity>
+    Brand Name: Pabrik Token X
+    Vibe: Cyber-Technical Noir / High-Fidelity Industrial.
+    Keywords: Precision, Depth, Fluidity, Electric.
+  </core_identity>
+
+  <visual_system_specs>
+    Background:
+      - Base: #020204 (Void Black)
+      - Surface: #0A0A0B (Obsidian with 2% noise texture)
+      - Highlight: #00F5FF (Electric Cyan) - Used strictly for data spikes and active states.
+      - Subtle Accent: #2A2A35 (Gunmetal for borders)
+    
+    Typography:
+      - Headings: 'Geist Sans' or 'Inter Tight' (Tracking -0.02em, Weight 600)
+      - Code/Numbers: 'JetBrains Mono' (The language of the machine)
+      - Effect: Add subtle text-shadow to active stats (0 0 10px rgba(0, 245, 255, 0.4))
+    
+    Structure:
+      - Borders: Ultra-thin 1px borders using `border-white/5` (5% opacity).
+      - Glassmorphism: Backdrop-blur-xl with a linear-gradient overlay (white/2%).
+      - Rounding: `rounded-2xl` for outer containers, `rounded-lg` for inner elements.
+  </visual_system_specs>
+
+  <layout_architecture>
+    1. Navigation (Sidebar):
+       - State: Collapsible (Width 260px -> 80px).
+       - Behavior: When collapsed, show icon-only with a glowing dot indicator for active routes.
+       - Animation: Smooth width transition using GSAP Flip or tween.
+    
+    2. The "Bento" Grid:
+       - Transform the Dashboard into a modular "Bento Grid".
+       - Tiles should feel heavy and substantial but float weightlessly.
+       
+    3. The Terminal (Playground):
+       - A central feature. Dark, translucent background.
+       - Blinking cursor (custom drawn, not default).
+       - Syntax highlighting in Electric Cyan and Neon Purple.
+  </layout_architecture>
+
+  <gsap_choreography>
+    IMPLEMENT THESE SPECIFIC ANIMATIONS. DO NOT USE DEFAULT CSS TRANSITIONS.
+    
+    1. The "Boot Sequence" (Page Load):
+       - Target: `.dashboard-tile`
+       - Action: `gsap.from(target, { duration: 1.2, y: 40, opacity: 0, scale: 0.95, stagger: 0.1, ease: "power4.out" })`
+       - Effect: Elements should "slide and lock" into place with heavy inertia.
+    
+    2. Numerical Counting (Statistics):
+       - Target: `.stat-number`
+       - Action: Animate the innerHTML/textContent from 0 to the final value.
+       - Easing: `expo.out` (Fast start, very slow detailed finish).
+    
+    3. Magnetic Hover Buttons:
+       - Logic: Buttons should slightly gravitate towards the mouse cursor on hover.
+       - GSAP: Mousemove event listener driving `x` and `y` values with `elastic.out(1, 0.3)`.
+    
+    4. Sidebar Interaction:
+       - On Toggle: Use a timeline. First fade out text labels (`duration: 0.2`), then shrink width (`duration: 0.5`, `ease: "power3.inOut"`).
+  </gsap_choreography>
+
+  <detailed_components>
+    Make them feel like physical glass tiles.
+    - Border: 1px solid rgba(255,255,255,0.08)
+    - Gradient: Radial gradient from top-left (white/5%) to transparent.
+    - Hover: Glow effect on the border nearest to cursor (optional advanced feature).
+
+    - Design: Minimalist, geometric industrial icon.
+    - State: Pulsing slowly in Electric Cyan when API is active/healthy.
+  </detailed_components>
+
+  <tech_stack>
+    - Framework: Next.js (React)
+    - Styling: Tailwind CSS (Configured with custom colors/fonts)
+    - Animation Core: GSAP (GreenSock) - Essential.
+    - Icons: Lucide React (Stroke width 1.5px)
+  </tech_stack>
+
+  <execution_protocol>
+    1. Set up the dark theme foundation first.
+    2. Build the Collapsible Sidebar component with GSAP logic.
+    3. Construct the Bento Grid layout.
+    4. Apply the "Boot Sequence" animation timeline.
+    5. Polish with micro-interactions (hover states, click ripples).
+  </execution_protocol>
+
+  "Make it feel like the control panel of a futuristic spaceship. Precision is key. Silence is loud."
+</instruction_manual>

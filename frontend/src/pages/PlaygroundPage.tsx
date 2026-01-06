@@ -1,26 +1,37 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Send,
-  Square,
-  Trash2,
-  Settings,
-  ChevronDown,
+  PencilSimple,
+  Trash,
   Copy,
   Check,
-  RefreshCw,
-  Sparkles,
-  Bot,
+  CircleNotch,
+  MagnifyingGlass,
   User,
-  MessageSquare,
-  Zap,
+  Robot,
   X,
-  Plus,
-  AlertCircle,
-  Loader2,
-} from 'lucide-react';
-import { Button } from '../components/ui';
+  ChatDots,
+  GearSix,
+  PaperPlaneTilt,
+  Stop,
+} from 'phosphor-react';
 import { listAuthFiles, getAuthKey, getAPIKeys } from '../lib/api';
+import { animateFadeIn, durations } from '../lib/animations';
+
+// Ambient Background
+function AmbientBackground() {
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+      <div 
+        className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[600px] h-[400px]"
+        style={{
+          background: 'radial-gradient(ellipse, rgba(34, 211, 238, 0.12), transparent 70%)',
+          filter: 'blur(80px)',
+        }}
+      />
+    </div>
+  );
+}
 
 interface Message {
   id: string;
@@ -59,17 +70,17 @@ interface AvailableProvider {
 }
 
 const PROVIDER_COLORS: Record<string, string> = {
-  gemini: 'from-blue-500 to-cyan-500',
-  'gemini-cli': 'from-blue-500 to-cyan-500',
-  claude: 'from-orange-500 to-amber-500',
-  'claude-code': 'from-orange-500 to-amber-500',
-  anthropic: 'from-orange-500 to-amber-500',
-  openai: 'from-green-500 to-emerald-500',
-  codex: 'from-green-500 to-emerald-500',
-  qwen: 'from-purple-500 to-pink-500',
-  iflow: 'from-cyan-500 to-teal-500',
-  antigravity: 'from-indigo-500 to-purple-500',
-  vertex: 'from-red-500 to-orange-500',
+  gemini: '#22D3EE',
+  'gemini-cli': '#22D3EE',
+  claude: '#F97316',
+  'claude-code': '#F97316',
+  anthropic: '#F97316',
+  openai: '#10B981',
+  codex: '#10B981',
+  qwen: '#8B5CF6',
+  iflow: '#06B6D4',
+  antigravity: '#A78BFA',
+  vertex: '#F59E0B',
 };
 
 const getProviderColor = (type: string): string => {
@@ -77,12 +88,11 @@ const getProviderColor = (type: string): string => {
   for (const [key, value] of Object.entries(PROVIDER_COLORS)) {
     if (lowerType.includes(key)) return value;
   }
-  return 'from-gray-500 to-gray-600';
+  return '#64748B';
 };
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
-// Helper to fetch models for an auth file
 const fetchModelsForAuthFile = async (fileName: string): Promise<ModelInfo[]> => {
   const authKey = getAuthKey();
   try {
@@ -113,16 +123,16 @@ export default function PlaygroundPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationHistory[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(true);
   const [providers, setProviders] = useState<AvailableProvider[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [apiKey, setApiKey] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch API keys for chat completions
   useEffect(() => {
     const fetchApiKey = async () => {
       try {
@@ -138,8 +148,7 @@ export default function PlaygroundPage() {
     fetchApiKey();
   }, []);
 
-  // Fetch auth files
-  const { data: authFilesData, isLoading: authFilesLoading, error: authFilesError } = useQuery({
+  const { data: authFilesData, isLoading: authFilesLoading } = useQuery({
     queryKey: ['authFiles'],
     queryFn: async () => {
       const response = await listAuthFiles();
@@ -147,7 +156,6 @@ export default function PlaygroundPage() {
     },
   });
 
-  // Fetch models for each auth file
   useEffect(() => {
     const fetchModels = async () => {
       if (!authFilesData?.files || authFilesData.files.length === 0) {
@@ -177,7 +185,6 @@ export default function PlaygroundPage() {
       setProviders(providersList);
       setModelsLoading(false);
 
-      // Set default selection
       if (providersList.length > 0 && providersList[0].models.length > 0) {
         setSelectedAuthFile(providersList[0].authFile);
         setSelectedModel(providersList[0].models[0].id);
@@ -187,6 +194,16 @@ export default function PlaygroundPage() {
     fetchModels();
   }, [authFilesData]);
 
+  // Animations
+  useEffect(() => {
+    if (chatContainerRef.current && messages.length > 0) {
+      const lastMessage = chatContainerRef.current.querySelector('.chat-message:last-child');
+      if (lastMessage) {
+        animateFadeIn(lastMessage, { duration: durations.normal, scale: 0.98 });
+      }
+    }
+  }, [messages.length]);
+
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
@@ -195,7 +212,6 @@ export default function PlaygroundPage() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -203,7 +219,6 @@ export default function PlaygroundPage() {
     }
   }, [input]);
 
-  // Load conversations from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('playground_conversations');
     if (saved) {
@@ -220,7 +235,6 @@ export default function PlaygroundPage() {
     }
   }, []);
 
-  // Save conversations to localStorage
   useEffect(() => {
     if (conversations.length > 0) {
       localStorage.setItem('playground_conversations', JSON.stringify(conversations));
@@ -324,7 +338,6 @@ export default function PlaygroundPage() {
         }
       }
 
-      // Update conversation history
       const title = userMessage.content.slice(0, 50) + (userMessage.content.length > 50 ? '...' : '');
       if (currentConversationId) {
         setConversations(prev =>
@@ -381,15 +394,6 @@ export default function PlaygroundPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const regenerateLastResponse = () => {
-    if (messages.length < 2) return;
-    const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
-    if (lastUserMessage) {
-      setMessages(prev => prev.slice(0, -1));
-      setInput(lastUserMessage.content);
-    }
-  };
-
   const loadConversation = (conv: ConversationHistory) => {
     setMessages(conv.messages);
     setSelectedModel(conv.model);
@@ -412,134 +416,158 @@ export default function PlaygroundPage() {
 
   const currentProvider = getCurrentProvider();
   const currentModel = getCurrentModel();
+  const providerColor = currentProvider ? getProviderColor(currentProvider.type) : '#64748B';
 
-  // Loading state
+  const filteredProviders = providers.map(provider => ({
+    ...provider,
+    models: provider.models.filter(model =>
+      model.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      model.display_name?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  })).filter(provider => provider.models.length > 0);
+
+  // Loading State
   if (authFilesLoading || modelsLoading) {
     return (
-      <div className="flex h-[calc(100vh-4rem)] items-center justify-center bg-gray-950">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-4" />
-          <p className="text-gray-400">Loading available models...</p>
+      <div className="relative min-h-screen flex items-center justify-center" style={{ background: '#09090B' }}>
+        <AmbientBackground />
+        <div className="relative z-10 text-center">
+          <CircleNotch className="h-10 w-10 animate-spin text-cyan-400 mx-auto mb-4" weight="bold" />
+          <p className="text-slate-400 font-mono text-sm">Loading models...</p>
         </div>
       </div>
     );
   }
 
-  // Error or no auth files
-  if (authFilesError || providers.length === 0) {
+  // No Providers State
+  if (providers.length === 0) {
     return (
-      <div className="flex h-[calc(100vh-4rem)] items-center justify-center bg-gray-950">
-        <div className="text-center max-w-md px-4">
-          <div className="h-16 w-16 mx-auto mb-6 rounded-2xl bg-gray-800 flex items-center justify-center">
-            <AlertCircle className="h-8 w-8 text-yellow-500" />
+      <div className="relative min-h-screen flex items-center justify-center" style={{ background: '#09090B' }}>
+        <AmbientBackground />
+        <div className="relative z-10 text-center max-w-md px-4">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl glass-panel flex items-center justify-center">
+            <ChatDots className="h-8 w-8 text-amber-400" weight="fill" />
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">No Models Available</h2>
-          <p className="text-gray-400 mb-6">
-            {authFilesError 
-              ? 'Failed to load auth files. Please check your connection.'
-              : 'No OAuth accounts found. Please login via OAuth first to use the Playground.'}
+          <h2 className="text-2xl font-semibold text-white mb-3">No Models Available</h2>
+          <p className="text-slate-400 text-sm mb-6">
+            Please authenticate with a provider first to start chatting.
           </p>
-          <Button 
-            variant="primary" 
+          <button 
             onClick={() => window.location.href = '/oauth'}
+            className="px-6 py-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all duration-300 font-medium"
           >
-            Go to OAuth Login
-          </Button>
+            Go to OAuth
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-gray-950">
-      {/* Conversation History Sidebar */}
-      {showHistory && (
-        <div className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
-          <div className="p-4 border-b border-gray-800">
-            <Button
-              variant="primary"
-              className="w-full justify-center"
-              icon={Plus}
-              onClick={clearChat}
-            >
-              New Chat
-            </Button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-2">
-            {conversations.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No conversations yet</p>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {conversations.map(conv => (
-                  <div
-                    key={conv.id}
-                    className={`group flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
-                      currentConversationId === conv.id
-                        ? 'bg-gray-800 text-white'
-                        : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
-                    }`}
-                    onClick={() => loadConversation(conv)}
-                  >
-                    <MessageSquare className="h-4 w-4 flex-shrink-0" />
-                    <span className="text-sm truncate flex-1">{conv.title}</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteConversation(conv.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-700 rounded transition-opacity"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+    <div className="relative flex h-screen overflow-hidden" style={{ background: '#09090B' }}>
+      <AmbientBackground />
+      
+      {/* Sidebar - Chat History */}
+      <div className="relative z-10 w-64 border-r border-white/[0.06] flex flex-col bg-[#09090B]/90">
+        <div className="p-4 border-b border-white/[0.06]">
+          <button
+            onClick={clearChat}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl glass-panel hover:bg-white/[0.05] transition-all duration-300"
+          >
+            <PencilSimple className="h-4 w-4 text-cyan-400" weight="bold" />
+            <span className="text-white text-sm font-medium">New Chat</span>
+          </button>
         </div>
-      )}
+        
+        <div className="flex-1 overflow-y-auto p-2">
+          {conversations.length === 0 ? (
+            <div className="text-center py-12">
+              <ChatDots className="h-8 w-8 mx-auto mb-3 text-slate-600" />
+              <p className="text-xs text-slate-500">No conversations yet</p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {conversations.map(conv => (
+                <div
+                  key={conv.id}
+                  className={`group flex items-center gap-2 p-3 rounded-xl cursor-pointer transition-all duration-200 ${
+                    currentConversationId === conv.id
+                      ? 'bg-cyan-500/10 border-l-2 border-cyan-400'
+                      : 'hover:bg-white/[0.03]'
+                  }`}
+                  onClick={() => loadConversation(conv)}
+                >
+                  <ChatDots className="h-4 w-4 flex-shrink-0 text-slate-500" />
+                  <span className={`text-sm truncate flex-1 ${currentConversationId === conv.id ? 'text-white' : 'text-slate-400'}`}>
+                    {conv.title}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteConversation(conv.id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-500/20 rounded-lg transition-all duration-200"
+                  >
+                    <Trash className="h-3.5 w-3.5 text-slate-500 hover:text-rose-400" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="relative z-10 flex-1 flex flex-col">
         {/* Header */}
-        <div className="h-14 border-b border-gray-800 flex items-center justify-between px-4">
-          <div className="flex items-center gap-4">
+        <div className="h-16 border-b border-white/[0.06] flex items-center justify-between px-6 bg-[#09090B]/80 backdrop-blur-sm">
+          <div className="relative">
             <button
-              onClick={() => setShowHistory(!showHistory)}
-              className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+              onClick={() => setShowModelSelector(!showModelSelector)}
+              className="flex items-center gap-3 px-4 py-2 rounded-xl glass-panel hover:bg-white/[0.05] transition-all duration-300"
             >
-              <MessageSquare className="h-5 w-5" />
+              <div 
+                className="w-2.5 h-2.5 rounded-full" 
+                style={{ background: providerColor, boxShadow: `0 0 8px ${providerColor}` }}
+              />
+              <span className="text-sm font-medium text-white">
+                {currentModel?.display_name || currentModel?.id || 'Select Model'}
+              </span>
+              <svg className={`w-4 h-4 text-slate-400 transition-transform ${showModelSelector ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
 
-            {/* Model Selector */}
-            <div className="relative">
-              <button
-                onClick={() => setShowModelSelector(!showModelSelector)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
-              >
-                <div className={`h-2 w-2 rounded-full bg-gradient-to-r ${currentProvider ? getProviderColor(currentProvider.type) : 'from-gray-500 to-gray-600'}`} />
-                <span className="text-sm font-medium text-white">
-                  {currentModel?.display_name || currentModel?.id || 'Select Model'}
-                </span>
-                <ChevronDown className="h-4 w-4 text-gray-400" />
-              </button>
-
-              {showModelSelector && (
-                <div className="absolute top-full left-0 mt-2 w-96 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
-                  <div className="p-2 border-b border-gray-700">
-                    <div className="text-xs text-gray-500 uppercase tracking-wider px-2 py-1">Select Model</div>
+            {/* Model Selector Dropdown */}
+            {showModelSelector && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowModelSelector(false)} />
+                <div className="absolute top-full left-0 mt-2 w-96 glass-panel rounded-2xl shadow-2xl z-50 overflow-hidden">
+                  <div className="p-4 border-b border-white/[0.06]">
+                    <div className="relative">
+                      <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search models..."
+                        className="w-full pl-10 pr-4 py-2.5 bg-white/[0.03] border border-white/[0.06] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 text-sm"
+                      />
+                    </div>
                   </div>
-                  <div className="max-h-96 overflow-y-auto p-2">
-                    {providers.map(provider => (
+                  <div className="max-h-80 overflow-y-auto p-2">
+                    {filteredProviders.map(provider => (
                       <div key={provider.authFile} className="mb-3">
-                        <div className="text-xs text-gray-500 uppercase tracking-wider px-2 py-1 flex items-center gap-2">
-                          <div className={`h-2 w-2 rounded-full bg-gradient-to-r ${getProviderColor(provider.type)}`} />
-                          <span>{provider.type}</span>
+                        <div className="flex items-center gap-2 px-3 py-2">
+                          <div 
+                            className="w-2 h-2 rounded-full" 
+                            style={{ background: getProviderColor(provider.type) }}
+                          />
+                          <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">
+                            {provider.type}
+                          </span>
                           {provider.email && (
-                            <span className="text-gray-600 normal-case">({provider.email})</span>
+                            <span className="text-xs text-slate-600">({provider.email})</span>
                           )}
                         </div>
                         {provider.models.map(model => (
@@ -549,248 +577,224 @@ export default function PlaygroundPage() {
                               setSelectedAuthFile(provider.authFile);
                               setSelectedModel(model.id);
                               setShowModelSelector(false);
+                              setSearchQuery('');
                             }}
-                            className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                            className={`w-full text-left px-3 py-2.5 rounded-xl transition-all duration-200 ${
                               selectedModel === model.id && selectedAuthFile === provider.authFile
-                                ? 'bg-blue-600/20 text-blue-400'
-                                : 'text-gray-300 hover:bg-gray-700'
+                                ? 'bg-cyan-500/10 border border-cyan-500/20'
+                                : 'hover:bg-white/[0.03]'
                             }`}
                           >
-                            <div className="font-medium text-sm">{model.display_name || model.id}</div>
-                            {model.type && (
-                              <div className="text-xs text-gray-500">{model.type}</div>
-                            )}
+                            <span className={`text-sm ${selectedModel === model.id ? 'text-white' : 'text-slate-300'}`}>
+                              {model.display_name || model.id}
+                            </span>
                           </button>
                         ))}
                       </div>
                     ))}
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" icon={RefreshCw} onClick={regenerateLastResponse} disabled={messages.length < 2}>
-              Regenerate
-            </Button>
-            <Button variant="ghost" size="sm" icon={Trash2} onClick={clearChat} disabled={messages.length === 0}>
-              Clear
-            </Button>
-            <Button variant="ghost" size="sm" icon={Settings} onClick={() => setShowSettings(!showSettings)}>
-              Settings
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex-1 flex overflow-hidden">
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto">
-            {messages.length === 0 ? (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center max-w-md px-4">
-                  <div className="h-16 w-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                    <Sparkles className="h-8 w-8 text-white" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">AI Playground</h2>
-                  <p className="text-gray-400 mb-6">
-                    Test your authenticated models with a chat interface. 
-                    Select a model and start chatting!
-                  </p>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {['Write code', 'Explain concept', 'Debug issue', 'Generate ideas'].map(suggestion => (
-                      <button
-                        key={suggestion}
-                        onClick={() => setInput(`${suggestion}: `)}
-                        className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-full text-sm text-gray-300 transition-colors"
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="p-4 space-y-4">
-                {messages.map(message => (
-                  <div
-                    key={message.id}
-                    className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {message.role === 'assistant' && (
-                      <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${currentProvider ? getProviderColor(currentProvider.type) : 'from-gray-500 to-gray-600'} flex items-center justify-center flex-shrink-0`}>
-                        <Bot className="h-4 w-4 text-white" />
-                      </div>
-                    )}
-                    
-                    <div className={`max-w-3xl ${message.role === 'user' ? 'order-first' : ''}`}>
-                      <div
-                        className={`px-4 py-3 rounded-2xl ${
-                          message.role === 'user'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-800 text-gray-100'
-                        }`}
-                      >
-                        <div className="whitespace-pre-wrap break-words">{message.content}</div>
-                        {message.role === 'assistant' && isLoading && messages[messages.length - 1]?.id === message.id && (
-                          <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse ml-1" />
-                        )}
-                      </div>
-                      
-                      {message.role === 'assistant' && message.content && (
-                        <div className="flex items-center gap-2 mt-1 px-2">
-                          <button
-                            onClick={() => copyToClipboard(message.content, message.id)}
-                            className="p-1 text-gray-500 hover:text-gray-300 transition-colors"
-                          >
-                            {copiedId === message.id ? (
-                              <Check className="h-3.5 w-3.5 text-green-500" />
-                            ) : (
-                              <Copy className="h-3.5 w-3.5" />
-                            )}
-                          </button>
-                          {message.model && (
-                            <span className="text-xs text-gray-600">{message.model}</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {message.role === 'user' && (
-                      <div className="h-8 w-8 rounded-lg bg-gray-700 flex items-center justify-center flex-shrink-0">
-                        <User className="h-4 w-4 text-gray-300" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
+              </>
             )}
           </div>
 
-          {/* Settings Panel */}
-          {showSettings && (
-            <div className="w-80 border-l border-gray-800 bg-gray-900 overflow-y-auto">
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-white">Settings</h3>
-                  <button onClick={() => setShowSettings(false)} className="p-1 hover:bg-gray-800 rounded">
-                    <X className="h-4 w-4 text-gray-400" />
-                  </button>
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className={`p-2.5 rounded-xl transition-all duration-300 ${showSettings ? 'bg-cyan-500/20 text-cyan-400' : 'hover:bg-white/[0.05] text-slate-400'}`}
+          >
+            <GearSix className="h-5 w-5" weight="bold" />
+          </button>
+        </div>
+
+        {/* Messages Area */}
+        <div ref={chatContainerRef} className="flex-1 overflow-y-auto">
+          {messages.length === 0 ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center max-w-lg px-4">
+                <div 
+                  className="w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center"
+                  style={{ 
+                    background: `${providerColor}15`,
+                    boxShadow: `0 0 40px ${providerColor}20`,
+                  }}
+                >
+                  <Robot className="h-10 w-10" style={{ color: providerColor }} weight="fill" />
                 </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">System Prompt</label>
-                    <textarea
-                      value={systemPrompt}
-                      onChange={(e) => setSystemPrompt(e.target.value)}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      rows={4}
-                      placeholder="Enter system prompt..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      Temperature: {temperature}
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="2"
-                      step="0.1"
-                      value={temperature}
-                      onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                      className="w-full accent-blue-500"
-                    />
-                    <div className="flex justify-between text-xs text-gray-600 mt-1">
-                      <span>Precise</span>
-                      <span>Creative</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      Max Tokens: {maxTokens}
-                    </label>
-                    <input
-                      type="range"
-                      min="256"
-                      max="32768"
-                      step="256"
-                      value={maxTokens}
-                      onChange={(e) => setMaxTokens(parseInt(e.target.value))}
-                      className="w-full accent-blue-500"
-                    />
-                    <div className="flex justify-between text-xs text-gray-600 mt-1">
-                      <span>256</span>
-                      <span>32768</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-gray-800">
-                    <h4 className="text-sm font-medium text-gray-400 mb-2 flex items-center gap-2">
-                      <Zap className="h-4 w-4" />
-                      Quick Tips
-                    </h4>
-                    <ul className="text-xs text-gray-500 space-y-1">
-                      <li>• Press Enter to send, Shift+Enter for new line</li>
-                      <li>• Lower temperature = more focused responses</li>
-                      <li>• Higher max tokens = longer responses</li>
-                    </ul>
-                  </div>
-                </div>
+                <h2 className="text-3xl font-semibold text-white mb-3">
+                  Start a conversation
+                </h2>
+                <p className="text-slate-400 text-sm">
+                  Test your authenticated models with real-time streaming responses.
+                </p>
               </div>
+            </div>
+          ) : (
+            <div className="max-w-4xl mx-auto py-8 px-6">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`chat-message mb-6 flex gap-4 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+                >
+                  {/* Avatar */}
+                  <div 
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      message.role === 'user' 
+                        ? 'bg-slate-700' 
+                        : ''
+                    }`}
+                    style={message.role === 'assistant' ? { 
+                      background: `${providerColor}20`,
+                    } : undefined}
+                  >
+                    {message.role === 'user' ? (
+                      <User className="h-4 w-4 text-slate-300" weight="bold" />
+                    ) : (
+                      <Robot className="h-4 w-4" style={{ color: providerColor }} weight="fill" />
+                    )}
+                  </div>
+
+                  {/* Message Content */}
+                  <div className={`max-w-[80%] ${message.role === 'user' ? 'text-right' : ''}`}>
+                    <div
+                      className={`px-4 py-3 rounded-2xl ${
+                        message.role === 'user'
+                          ? 'bg-cyan-500/15 border border-cyan-500/20 text-white'
+                          : 'glass-panel text-slate-200'
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content || '...'}</p>
+                    </div>
+                    
+                    {/* Copy Button */}
+                    {message.role === 'assistant' && message.content && (
+                      <button
+                        onClick={() => copyToClipboard(message.content, message.id)}
+                        className="mt-2 p-1.5 rounded-lg hover:bg-white/[0.05] transition-colors inline-flex items-center gap-1.5"
+                      >
+                        {copiedId === message.id ? (
+                          <>
+                            <Check className="h-3.5 w-3.5 text-emerald-400" weight="bold" />
+                            <span className="text-xs text-emerald-400">Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3.5 w-3.5 text-slate-500" />
+                            <span className="text-xs text-slate-500">Copy</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-gray-800 p-4">
+        <div className="border-t border-white/[0.06] p-4 bg-[#09090B]/80 backdrop-blur-sm">
           <div className="max-w-4xl mx-auto">
-            <div className="relative bg-gray-800 rounded-2xl border border-gray-700 focus-within:border-blue-500 transition-colors">
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Send a message..."
-                className="w-full px-4 py-3 pr-24 bg-transparent text-white placeholder-gray-500 resize-none focus:outline-none max-h-48"
-                rows={1}
-                disabled={isLoading || !selectedModel}
-              />
-              <div className="absolute right-2 bottom-2 flex items-center gap-2">
-                {isLoading ? (
-                  <Button variant="danger" size="sm" icon={Square} onClick={stopGeneration}>
-                    Stop
-                  </Button>
-                ) : (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    icon={Send}
-                    onClick={sendMessage}
-                    disabled={!input.trim() || !selectedModel}
-                  >
-                    Send
-                  </Button>
-                )}
+            <div className="flex gap-3">
+              <div className="flex-1 relative">
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Type your message..."
+                  className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 resize-none text-sm"
+                  rows={1}
+                  disabled={isLoading}
+                />
               </div>
+              
+              {isLoading ? (
+                <button
+                  onClick={stopGeneration}
+                  className="px-4 py-3 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-400 hover:bg-rose-500/30 transition-all duration-300 flex items-center gap-2"
+                >
+                  <Stop className="h-5 w-5" weight="fill" />
+                </button>
+              ) : (
+                <button
+                  onClick={sendMessage}
+                  disabled={!input.trim() || !selectedModel}
+                  className="px-4 py-3 rounded-xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2"
+                >
+                  <PaperPlaneTilt className="h-5 w-5" weight="fill" />
+                </button>
+              )}
             </div>
-            <p className="text-xs text-gray-600 text-center mt-2">
-              Using {currentModel?.display_name || currentModel?.id || 'No model selected'} • Responses may vary
-            </p>
           </div>
         </div>
       </div>
 
-      {/* Click outside to close dropdowns */}
-      {showModelSelector && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowModelSelector(false)}
-        />
+      {/* Settings Panel */}
+      {showSettings && (
+        <div className="relative z-10 w-80 border-l border-white/[0.06] bg-[#09090B]/90 flex flex-col">
+          <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
+            <h3 className="text-white font-semibold">Settings</h3>
+            <button
+              onClick={() => setShowSettings(false)}
+              className="p-1.5 rounded-lg hover:bg-white/[0.05] transition-colors"
+            >
+              <X className="h-4 w-4 text-slate-400" />
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            {/* System Prompt */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">System Prompt</label>
+              <textarea
+                value={systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+                className="w-full px-3 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 resize-none text-sm"
+                rows={4}
+                placeholder="Enter system instructions..."
+              />
+            </div>
+
+            {/* Temperature */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-slate-300">Temperature</label>
+                <span className="text-sm text-cyan-400 font-mono">{temperature.toFixed(1)}</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="2"
+                step="0.1"
+                value={temperature}
+                onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                className="w-full h-2 bg-white/[0.05] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-cyan-400"
+              />
+              <div className="flex justify-between text-xs text-slate-500 mt-1">
+                <span>Precise</span>
+                <span>Creative</span>
+              </div>
+            </div>
+
+            {/* Max Tokens */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-slate-300">Max Tokens</label>
+                <span className="text-sm text-cyan-400 font-mono">{maxTokens.toLocaleString()}</span>
+              </div>
+              <input
+                type="range"
+                min="256"
+                max="32768"
+                step="256"
+                value={maxTokens}
+                onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+                className="w-full h-2 bg-white/[0.05] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-cyan-400"
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

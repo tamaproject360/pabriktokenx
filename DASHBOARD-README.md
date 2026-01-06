@@ -9,8 +9,8 @@ Frontend Dashboard untuk CLI Proxy API Management menggunakan Vite + React + Tai
 start-all.bat
 ```
 Akan membuka 2 terminal:
-- **Backend**: http://localhost:8080
-- **Frontend**: http://localhost:8317
+- **Backend**: http://localhost:9999
+- **Frontend**: http://localhost:8686
 
 ### Menjalankan Service Terpisah
 
@@ -38,12 +38,12 @@ stop-backend.bat
 
 **Key:** `admin123`
 
-Masukkan key ini di halaman login dashboard (http://localhost:8317)
+Masukkan key ini di halaman login dashboard (http://localhost:8686)
 
 ## 📦 Port Configuration
 
-- **Backend API**: Port 8080
-- **Frontend Dashboard**: Port 8317 *(diubah dari 3000 untuk menghindari konflik)*
+- **Backend API**: Port 9999
+- **Frontend Dashboard**: Port 8686
 
 ## 🛠️ Stack
 
@@ -82,7 +82,7 @@ frontend/
 
 ### Backend Port (config.yaml)
 ```yaml
-port: 8080
+port: 9999
 remote-management:
   allow-remote: true
   secret-key: "$2a$10$..." # bcrypt hash dari "admin123"
@@ -91,10 +91,10 @@ remote-management:
 ### Frontend Port (vite.config.ts)
 ```typescript
 server: {
-  port: 8317,
+  port: 8686,
   proxy: {
     '/v0': {
-      target: 'http://localhost:8080',
+      target: 'http://localhost:9999',
       changeOrigin: true,
     },
   },
@@ -111,9 +111,9 @@ server: {
 ## ✅ Verifikasi
 
 Buka browser:
-1. Frontend: http://localhost:8317
+1. Frontend: http://localhost:8686
 2. Login dengan key: `admin123`
 3. Dashboard akan menampilkan statistik server
 
 Backend API:
-- http://localhost:8080/v0/management/config (butuh X-Secret-Key header)
+- http://localhost:9999/v0/management/config (butuh X-Secret-Key header)

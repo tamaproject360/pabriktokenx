@@ -3,7 +3,7 @@
 host: ""
 
 # Server port
-port: 8317
+port: 9999
 
 # TLS settings for HTTPS. When enabled, the server listens with the provided certificate and key.
 tls:
@@ -32,10 +32,8 @@ remote-management:
 auth-dir: "~/.cli-proxy-api"
 
 # API keys for authentication
-api-keys:
-  - "your-api-key-1"
-  - "your-api-key-2"
-  - "your-api-key-3"
+# api-keys:
+#   - "your-api-key-here"
 
 # Enable debug logging
 debug: false

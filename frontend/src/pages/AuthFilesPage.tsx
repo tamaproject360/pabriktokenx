@@ -1,12 +1,29 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Upload, Trash2, FileText, RefreshCw, Download, AlertCircle } from 'lucide-react';
+import { Upload, Trash2, FileText, RefreshCw, Download, AlertCircle, Cpu } from 'lucide-react';
 import { listAuthFiles, uploadAuthFile, deleteAuthFile } from '../lib/api';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import gsap from 'gsap';
+
+// Ambient Background
+function AmbientBackground() {
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+      <div 
+        className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[600px] h-[400px]"
+        style={{
+          background: 'radial-gradient(ellipse, rgba(34, 211, 238, 0.15), transparent 70%)',
+          filter: 'blur(80px)',
+        }}
+      />
+    </div>
+  );
+}
 
 export default function AuthFilesPage() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['authFiles'],
@@ -37,6 +54,41 @@ export default function AuthFilesPage() {
     },
   });
 
+  // Smooth card animation with proper GPU acceleration
+  const animateCards = useCallback(() => {
+    if (!gridRef.current) return;
+    
+    const cards = gridRef.current.querySelectorAll('.file-card');
+    if (cards.length === 0) return;
+    
+    // Set initial state
+    gsap.set(cards, { 
+      opacity: 0, 
+      y: 12,
+      willChange: 'transform, opacity'
+    });
+    
+    // Animate with proper timing (200ms per card, 50ms stagger)
+    gsap.to(cards, {
+      opacity: 1,
+      y: 0,
+      duration: 0.2,
+      stagger: 0.05,
+      ease: 'power2.out',
+      force3D: true,
+      clearProps: 'willChange',
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading && data) {
+      // Small delay to ensure DOM is ready
+      requestAnimationFrame(() => {
+        animateCards();
+      });
+    }
+  }, [isLoading, data, animateCards]);
+
   const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -60,141 +112,188 @@ export default function AuthFilesPage() {
 
   const getProviderColor = (provider: string) => {
     const colors: Record<string, string> = {
-      anthropic: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-      claude: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-      gemini: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-      google: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-      codex: 'bg-green-500/10 text-green-400 border-green-500/20',
-      openai: 'bg-green-500/10 text-green-400 border-green-500/20',
-      vertex: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-      qwen: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-      iflow: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
+      anthropic: '#F97316',
+      claude: '#F97316',
+      gemini: '#22D3EE',
+      google: '#22D3EE',
+      codex: '#10B981',
+      openai: '#10B981',
+      vertex: '#8B5CF6',
+      qwen: '#EC4899',
+      iflow: '#06B6D4',
     };
-    return colors[provider.toLowerCase()] || 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+    return colors[provider.toLowerCase()] || '#64748B';
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <div className="relative min-h-screen">
+        <AmbientBackground />
+        <div className="relative z-10 flex items-center justify-center h-[calc(100vh-200px)]">
+          <div className="text-center space-y-4">
+            <div className="relative inline-flex">
+              <div className="absolute inset-0 bg-cyan-400 blur-2xl opacity-30 animate-pulse" />
+              <Cpu className="relative h-14 w-14 text-cyan-400 animate-spin" strokeWidth={1.5} style={{ animationDuration: '2s' }} />
+            </div>
+            <p className="text-slate-400 font-mono text-sm">Loading auth files...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Auth Files</h2>
-          <p className="text-gray-400 mt-1">Manage OAuth credential files for different providers</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => refetch()}
-            disabled={isRefetching}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-          <label className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors cursor-pointer">
-            <Upload className="h-4 w-4" />
-            Upload File
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleUpload}
-              className="hidden"
-            />
-          </label>
-        </div>
-      </div>
-
-      {/* Upload status */}
-      {uploadMutation.isPending && (
-        <div className="flex items-center gap-2 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400">
-          <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          Uploading file...
-        </div>
-      )}
-      {uploadMutation.isError && (
-        <div className="flex items-center gap-2 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400">
-          <AlertCircle className="h-4 w-4" />
-          Failed to upload file
-        </div>
-      )}
-
-      {/* Files Grid */}
-      {files.length === 0 ? (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-12 text-center">
-          <FileText className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-2">No auth files</h3>
-          <p className="text-gray-400 mb-4">Upload credential files to enable OAuth authentication</p>
-          <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors cursor-pointer">
-            <Upload className="h-4 w-4" />
-            Upload File
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleUpload}
-              className="hidden"
-            />
-          </label>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {files.map((file) => (
-            <div
-              key={file.name}
-              className="bg-gray-900 rounded-xl border border-gray-800 p-4 hover:border-gray-700 transition-colors"
+    <div className="relative min-h-screen">
+      <AmbientBackground />
+      
+      <div className="relative z-10 space-y-8">
+        {/* Page Header */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-semibold text-white tracking-tight">
+              Auth Files
+            </h1>
+            <p className="text-slate-400 text-sm">
+              Manage OAuth credential files for API providers
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => refetch()}
+              disabled={isRefetching}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl glass-panel hover:bg-white/[0.05] transition-all duration-300 disabled:opacity-50"
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gray-800 rounded-lg">
-                    <FileText className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-white text-sm truncate max-w-[180px]">
-                      {file.name}
-                    </h4>
-                    <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
-                  </div>
-                </div>
-                <span className={`px-2 py-1 text-xs rounded-full border ${getProviderColor(file.provider)}`}>
-                  {file.provider}
-                </span>
-              </div>
-              <div className="flex items-center justify-between pt-3 border-t border-gray-800">
-                <span className="text-xs text-gray-500">
-                  {new Date(file.modified).toLocaleDateString()}
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
-                    title="Download"
-                  >
-                    <Download className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(file.name)}
-                    disabled={deleteMutation.isPending}
-                    className={`p-1.5 rounded-lg transition-colors ${
-                      deleteConfirm === file.name
-                        ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                        : 'hover:bg-gray-800 text-gray-400 hover:text-red-400'
-                    }`}
-                    title={deleteConfirm === file.name ? 'Click again to confirm' : 'Delete'}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+              <RefreshCw className={`h-4 w-4 text-cyan-400 ${isRefetching ? 'animate-spin' : ''}`} strokeWidth={2} />
+              <span className="text-white text-sm font-medium">Refresh</span>
+            </button>
+            <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all duration-300 cursor-pointer">
+              <Upload className="h-4 w-4" strokeWidth={2} />
+              <span className="text-sm font-medium">Upload File</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleUpload}
+                className="hidden"
+              />
+            </label>
+          </div>
         </div>
-      )}
+
+        {/* Upload/Error Status */}
+        {uploadMutation.isPending && (
+          <div className="flex items-center gap-3 p-4 glass-panel rounded-xl border-cyan-500/20">
+            <div className="h-4 w-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+            <span className="text-cyan-400 text-sm">Uploading file...</span>
+          </div>
+        )}
+        {uploadMutation.isError && (
+          <div className="flex items-center gap-3 p-4 glass-panel rounded-xl border-rose-500/20">
+            <AlertCircle className="h-5 w-5 text-rose-400" strokeWidth={2} />
+            <span className="text-rose-400 text-sm">Upload failed</span>
+          </div>
+        )}
+
+        {/* Files Grid */}
+        {files.length === 0 ? (
+          <div className="glass-panel rounded-2xl p-16 text-center">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl glass-panel flex items-center justify-center">
+              <FileText className="h-10 w-10 text-slate-500" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-3">
+              No Auth Files
+            </h3>
+            <p className="text-slate-400 text-sm mb-6">
+              Upload credential files to authenticate with API providers
+            </p>
+            <label className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all duration-300 cursor-pointer text-sm font-medium">
+              <Upload className="h-4 w-4" strokeWidth={2} />
+              Upload File
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleUpload}
+                className="hidden"
+              />
+            </label>
+          </div>
+        ) : (
+          <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {files.map((file) => {
+              const providerColor = getProviderColor(file.provider);
+              return (
+                <div
+                  key={file.name}
+                  className="file-card glass-panel rounded-2xl p-6 card-hover relative overflow-hidden"
+                >
+                  {/* Subtle gradient */}
+                  <div 
+                    className="absolute inset-0 opacity-[0.03]"
+                    style={{ background: `linear-gradient(135deg, ${providerColor}, transparent 60%)` }}
+                  />
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-11 h-11 rounded-xl flex items-center justify-center"
+                          style={{ background: `${providerColor}15`, boxShadow: `0 0 20px ${providerColor}20` }}
+                        >
+                          <FileText className="h-5 w-5" style={{ color: providerColor }} strokeWidth={1.5} />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-white text-sm truncate max-w-[140px]">
+                            {file.name}
+                          </h4>
+                          <p className="text-xs text-slate-500 mt-0.5 font-mono">
+                            {(file.size / 1024).toFixed(1)} KB
+                          </p>
+                        </div>
+                      </div>
+                      <span 
+                        className="px-2.5 py-1 text-xs rounded-lg border font-medium"
+                        style={{ 
+                          background: `${providerColor}15`,
+                          color: providerColor,
+                          borderColor: `${providerColor}30`
+                        }}
+                      >
+                        {file.provider.toUpperCase()}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-4 border-t border-white/[0.06]">
+                      <span className="text-xs text-slate-500">
+                        {new Date(file.modified).toLocaleDateString()}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-cyan-400 transition-all duration-200"
+                          title="Download"
+                        >
+                          <Download className="h-4 w-4" strokeWidth={2} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(file.name)}
+                          disabled={deleteMutation.isPending}
+                          className={`p-2 rounded-lg transition-all duration-200 ${
+                            deleteConfirm === file.name
+                              ? 'bg-rose-500/20 border border-rose-500/40 text-rose-400'
+                              : 'hover:bg-white/[0.05] text-slate-400 hover:text-rose-400'
+                          }`}
+                          title={deleteConfirm === file.name ? 'Click to confirm' : 'Delete'}
+                        >
+                          <Trash2 className="h-4 w-4" strokeWidth={2} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

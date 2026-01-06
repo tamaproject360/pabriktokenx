@@ -1,12 +1,29 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FileText, RefreshCw, Trash2, Download, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, RefreshCw, Trash2, Download, AlertCircle, ChevronDown, ChevronUp, Terminal, Cpu } from 'lucide-react';
 import { getLogs, deleteLogs, getRequestErrorLogs } from '../lib/api';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { animatePageEnter } from '../lib/animations';
+
+// Ambient Background - darker for terminal feel
+function AmbientBackground() {
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+      <div 
+        className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[600px] h-[400px]"
+        style={{
+          background: 'radial-gradient(ellipse, rgba(34, 211, 238, 0.1), transparent 70%)',
+          filter: 'blur(80px)',
+        }}
+      />
+    </div>
+  );
+}
 
 export default function LogsPage() {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const { data: logsData, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['logs'],
@@ -35,6 +52,13 @@ export default function LogsPage() {
     },
   });
 
+  useEffect(() => {
+    if (containerRef.current && !isLoading) {
+      const sections = containerRef.current.querySelectorAll('.log-section');
+      animatePageEnter(sections, { stagger: 0.1 });
+    }
+  }, [isLoading]);
+
   const handleDelete = () => {
     if (deleteConfirm) {
       deleteMutation.mutate();
@@ -49,115 +73,159 @@ export default function LogsPage() {
   const logLines = logs.split('\n').filter(Boolean);
 
   const getLogLevelColor = (line: string) => {
-    if (line.includes('level=error') || line.includes('[ERROR]')) return 'text-red-400';
-    if (line.includes('level=warn') || line.includes('[WARN]')) return 'text-yellow-400';
-    if (line.includes('level=info') || line.includes('[INFO]')) return 'text-blue-400';
-    if (line.includes('level=debug') || line.includes('[DEBUG]')) return 'text-gray-500';
-    return 'text-gray-300';
+    if (line.includes('level=error') || line.includes('[ERROR]')) return 'text-rose-400';
+    if (line.includes('level=warn') || line.includes('[WARN]')) return 'text-amber-400';
+    if (line.includes('level=info') || line.includes('[INFO]')) return 'text-cyan-400';
+    if (line.includes('level=debug') || line.includes('[DEBUG]')) return 'text-slate-500';
+    return 'text-emerald-400';
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <div className="relative min-h-screen">
+        <AmbientBackground />
+        <div className="relative z-10 flex items-center justify-center h-[calc(100vh-200px)]">
+          <div className="text-center space-y-4">
+            <div className="relative inline-flex">
+              <div className="absolute inset-0 bg-cyan-400 blur-2xl opacity-30 animate-pulse" />
+              <Cpu className="relative h-14 w-14 text-cyan-400 animate-spin" strokeWidth={1.5} style={{ animationDuration: '2s' }} />
+            </div>
+            <p className="text-slate-400 font-mono text-sm">Loading logs...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Logs</h2>
-          <p className="text-gray-400 mt-1">View server logs and error reports</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => refetch()}
-            disabled={isRefetching}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-          <button
-            onClick={handleDelete}
-            disabled={deleteMutation.isPending}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-              deleteConfirm
-                ? 'bg-red-600 text-white hover:bg-red-700'
-                : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'
-            }`}
-          >
-            <Trash2 className="h-4 w-4" />
-            {deleteConfirm ? 'Confirm Delete' : 'Clear Logs'}
-          </button>
-        </div>
-      </div>
-
-      {/* Error Log Files */}
-      {errorFiles.length > 0 && (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-800 bg-red-500/5">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-red-400" />
-              <h3 className="text-lg font-semibold text-white">Error Log Files</h3>
-              <span className="text-sm text-gray-400">({errorFiles.length} files)</span>
-            </div>
+    <div className="relative min-h-screen">
+      <AmbientBackground />
+      
+      <div ref={containerRef} className="relative z-10 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-semibold text-white tracking-tight">
+              Logs
+            </h1>
+            <p className="text-slate-400 text-sm">
+              View server logs and error reports
+            </p>
           </div>
-          <div className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {errorFiles.map((file) => (
-                <div
-                  key={file}
-                  className="flex items-center justify-between px-4 py-3 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-4 w-4 text-red-400" />
-                    <span className="text-sm text-gray-300 truncate">{file}</span>
-                  </div>
-                  <button className="p-1.5 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors">
-                    <Download className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Log Viewer */}
-      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-        <div 
-          className="px-6 py-4 border-b border-gray-800 flex items-center justify-between cursor-pointer hover:bg-gray-800/50 transition-colors"
-          onClick={() => setExpanded(!expanded)}
-        >
           <div className="flex items-center gap-3">
-            <FileText className="h-5 w-5 text-blue-400" />
-            <h3 className="text-lg font-semibold text-white">Server Logs</h3>
-            <span className="text-sm text-gray-400">({logLines.length} lines)</span>
+            <button
+              onClick={() => refetch()}
+              disabled={isRefetching}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl glass-panel hover:bg-white/[0.05] transition-all duration-200 disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 text-cyan-400 ${isRefetching ? 'animate-spin' : ''}`} strokeWidth={2} />
+              <span className="text-white text-sm font-medium">Refresh</span>
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                deleteConfirm
+                  ? 'bg-rose-500/20 border border-rose-500/30 text-rose-400'
+                  : 'glass-panel hover:bg-white/[0.05] text-slate-300 hover:text-white'
+              }`}
+            >
+              <Trash2 className="h-4 w-4" />
+              {deleteConfirm ? 'Confirm Delete' : 'Clear Logs'}
+            </button>
           </div>
-          {expanded ? <ChevronUp className="h-5 w-5 text-gray-400" /> : <ChevronDown className="h-5 w-5 text-gray-400" />}
         </div>
-        
-        {expanded && (
-          <div className="p-4 max-h-[600px] overflow-auto">
-            {logLines.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                No logs available
+
+        {/* Error Log Files */}
+        {errorFiles.length > 0 && (
+          <div className="log-section glass-panel rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-white/[0.06]" style={{ background: 'rgba(244, 63, 94, 0.05)' }}>
+              <div className="flex items-center gap-3">
+                <div 
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: 'rgba(244, 63, 94, 0.15)', boxShadow: '0 0 20px rgba(244, 63, 94, 0.2)' }}
+                >
+                  <AlertCircle className="h-5 w-5 text-rose-400" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Error Log Files</h3>
+                  <span className="text-sm text-slate-500">{errorFiles.length} files</span>
+                </div>
               </div>
-            ) : (
-              <pre className="font-mono text-sm space-y-1">
-                {logLines.map((line, index) => (
-                  <div key={index} className={`${getLogLevelColor(line)} hover:bg-gray-800/50 px-2 py-0.5 rounded`}>
-                    {line}
+            </div>
+            <div className="p-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {errorFiles.map((file) => (
+                  <div
+                    key={file}
+                    className="flex items-center justify-between px-4 py-3 bg-white/[0.02] border border-white/[0.04] rounded-xl hover:bg-white/[0.03] transition-all duration-200 group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-4 w-4 text-rose-400" />
+                      <span className="text-sm text-slate-300 truncate font-mono">{file}</span>
+                    </div>
+                    <button className="p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-white/[0.05] text-slate-400 hover:text-white transition-all duration-200">
+                      <Download className="h-4 w-4" />
+                    </button>
                   </div>
                 ))}
-              </pre>
-            )}
+              </div>
+            </div>
           </div>
         )}
+
+        {/* Main Log Viewer */}
+        <div className="log-section glass-panel rounded-2xl overflow-hidden">
+          <div 
+            className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between cursor-pointer hover:bg-white/[0.02] transition-colors"
+            onClick={() => setExpanded(!expanded)}
+          >
+            <div className="flex items-center gap-3">
+              <div 
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ background: 'rgba(34, 211, 238, 0.15)', boxShadow: '0 0 20px rgba(34, 211, 238, 0.2)' }}
+              >
+                <Terminal className="h-5 w-5 text-cyan-400" strokeWidth={1.5} />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Server Logs</h3>
+                <span className="text-sm text-slate-500">{logLines.length} lines</span>
+              </div>
+            </div>
+            <div className="p-2 rounded-lg hover:bg-white/[0.05] transition-colors">
+              {expanded ? (
+                <ChevronUp className="h-5 w-5 text-slate-400" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-slate-400" />
+              )}
+            </div>
+          </div>
+          
+          {expanded && (
+            <div 
+              className="p-5 max-h-[600px] overflow-auto"
+              style={{ background: '#020202' }}
+            >
+              {logLines.length === 0 ? (
+                <div className="text-center py-12 text-slate-500 font-mono">
+                  // No logs available
+                </div>
+              ) : (
+                <div className="font-mono text-sm space-y-0.5">
+                  {logLines.map((line, index) => (
+                    <div 
+                      key={index} 
+                      className={`${getLogLevelColor(line)} hover:bg-white/[0.03] px-3 py-1 rounded transition-colors`}
+                    >
+                      <span className="text-slate-600 select-none mr-4">{String(index + 1).padStart(4, '0')}</span>
+                      {line}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -32,7 +32,7 @@ if not exist "config.yaml" (
 )
 
 echo [INFO] Starting CLI Proxy API Server...
-echo [INFO] Server will run on http://localhost:8080
+echo [INFO] Server will run on http://localhost:9999
 echo [INFO] Management Key: admin123
 echo [INFO] Press Ctrl+C to stop the server
 echo.
