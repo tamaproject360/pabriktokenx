@@ -18,13 +18,48 @@ type SDKConfig struct {
 	RequestLog bool `yaml:"request-log" json:"request-log"`
 
 	// APIKeys is a list of keys for authenticating clients to this proxy server.
-	APIKeys []string `yaml:"api-keys" json:"api-keys"`
+	APIKeys []APIKeyEntry `yaml:"api-keys" json:"api-keys"`
 
 	// Access holds request authentication provider configuration.
 	Access AccessConfig `yaml:"auth,omitempty" json:"auth,omitempty"`
 
 	// Streaming configures server-side streaming behavior (keep-alives and safe bootstrap retries).
 	Streaming StreamingConfig `yaml:"streaming" json:"streaming"`
+}
+
+// APIKeyEntry represents a single API key with optional project name.
+type APIKeyEntry struct {
+	// Key is the actual API key string.
+	Key string `yaml:"key,omitempty" json:"key,omitempty"`
+	// ProjectName is an optional label/identifier for the project using this key.
+	ProjectName string `yaml:"project-name,omitempty" json:"project-name,omitempty"`
+}
+
+// UnmarshalYAML implements custom unmarshaling to support both old format ([]string) and new format ([]APIKeyEntry).
+func (e *APIKeyEntry) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var s string
+	if err := unmarshal(&s); err == nil {
+		e.Key = s
+		return nil
+	}
+	type rawEntry APIKeyEntry
+	var raw rawEntry
+	if err := unmarshal(&raw); err != nil {
+		return err
+	}
+	*e = APIKeyEntry(raw)
+	return nil
+}
+
+// MarshalYAML implements custom marshaling.
+func (e APIKeyEntry) MarshalYAML() (interface{}, error) {
+	if e.ProjectName == "" {
+		return e.Key, nil
+	}
+	return map[string]interface{}{
+		"key":          e.Key,
+		"project-name": e.ProjectName,
+	}, nil
 }
 
 // StreamingConfig holds server streaming behavior configuration.
@@ -89,14 +124,19 @@ func (c *SDKConfig) ConfigAPIKeyProvider() *AccessProvider {
 
 // MakeInlineAPIKeyProvider constructs an inline API key provider configuration.
 // It returns nil when no keys are supplied.
-func MakeInlineAPIKeyProvider(keys []string) *AccessProvider {
+func MakeInlineAPIKeyProvider(keys []APIKeyEntry) *AccessProvider {
 	if len(keys) == 0 {
 		return nil
+	}
+	// Extract just the key strings for the provider
+	keyStrings := make([]string, 0, len(keys))
+	for _, entry := range keys {
+		keyStrings = append(keyStrings, entry.Key)
 	}
 	provider := &AccessProvider{
 		Name:    DefaultAccessProviderName,
 		Type:    AccessProviderTypeConfigAPIKey,
-		APIKeys: append([]string(nil), keys...),
+		APIKeys: keyStrings,
 	}
 	return provider
 }

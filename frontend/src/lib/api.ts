@@ -137,8 +137,13 @@ export const deleteAuthFile = (filename: string) =>
   api.delete('/auth-files', { params: { filename } });
 
 // API Keys
+interface APIKeyEntry {
+  key: string;
+  'project-name'?: string;
+}
+
 export const getAPIKeys = () => api.get('/api-keys');
-export const updateAPIKeys = (keys: string[]) => api.put('/api-keys', { keys });
+export const updateAPIKeys = (keys: APIKeyEntry[]) => api.put('/api-keys', keys);
 
 export const getGeminiKeys = () => api.get('/gemini-api-key');
 export const updateGeminiKeys = (keys: string[]) => api.put('/gemini-api-key', { keys });

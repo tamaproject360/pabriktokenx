@@ -38,7 +38,7 @@ const (
 	DefaultPanelGitHubRepository   = internalconfig.DefaultPanelGitHubRepository
 )
 
-func MakeInlineAPIKeyProvider(keys []string) *AccessProvider {
+func MakeInlineAPIKeyProvider(keys []internalconfig.APIKeyEntry) *AccessProvider {
 	return internalconfig.MakeInlineAPIKeyProvider(keys)
 }
 

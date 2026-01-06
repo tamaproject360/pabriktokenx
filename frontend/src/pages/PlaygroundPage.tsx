@@ -138,7 +138,9 @@ export default function PlaygroundPage() {
       try {
         const response = await getAPIKeys();
         const keys = response.data?.['api-keys'] || [];
-        if (keys.length > 0) {
+        if (keys.length > 0 && typeof keys[0] === 'object' && 'key' in keys[0]) {
+          setApiKey(keys[0].key);
+        } else if (keys.length > 0 && typeof keys[0] === 'string') {
           setApiKey(keys[0]);
         }
       } catch (err) {
@@ -608,6 +610,29 @@ export default function PlaygroundPage() {
 
         {/* Messages Area */}
         <div ref={chatContainerRef} className="flex-1 overflow-y-auto">
+          {/* API Key Warning */}
+          {!apiKey && (
+            <div className="max-w-4xl mx-auto mt-4 px-6">
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <Shield className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-amber-200/90">
+                    <div className="font-semibold mb-1">⚠️ No API Key Found</div>
+                    <p className="text-amber-300/80 mb-2">
+                      You need to create a <strong>Proxy Key</strong> first to use the Playground.
+                    </p>
+                    <button
+                      onClick={() => window.location.href = '/proxy-keys'}
+                      className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-medium transition-colors"
+                    >
+                      Go to Proxy Keys →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {messages.length === 0 ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center max-w-lg px-4">

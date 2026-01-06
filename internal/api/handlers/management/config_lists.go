@@ -107,16 +107,64 @@ func (h *Handler) deleteFromStringList(c *gin.Context, target *[]string, after f
 // api-keys
 func (h *Handler) GetAPIKeys(c *gin.Context) { c.JSON(200, gin.H{"api-keys": h.cfg.APIKeys}) }
 func (h *Handler) PutAPIKeys(c *gin.Context) {
-	h.putStringList(c, func(v []string) {
-		h.cfg.APIKeys = append([]string(nil), v...)
-		h.cfg.Access.Providers = nil
-	}, nil)
+	data, err := c.GetRawData()
+	if err != nil {
+		c.JSON(400, gin.H{"error": "failed to read body"})
+		return
+	}
+	var entries []config.APIKeyEntry
+	if err = json.Unmarshal(data, &entries); err != nil {
+		// Try old format []string for backward compatibility
+		var strArr []string
+		if err2 := json.Unmarshal(data, &strArr); err2 == nil {
+			entries = make([]config.APIKeyEntry, 0, len(strArr))
+			for _, key := range strArr {
+				entries = append(entries, config.APIKeyEntry{Key: key})
+			}
+		} else {
+			c.JSON(400, gin.H{"error": "invalid body"})
+			return
+		}
+	}
+	h.cfg.APIKeys = append([]config.APIKeyEntry(nil), entries...)
+	h.cfg.Access.Providers = nil
+	h.persist(c)
 }
 func (h *Handler) PatchAPIKeys(c *gin.Context) {
-	h.patchStringList(c, &h.cfg.APIKeys, func() { h.cfg.Access.Providers = nil })
+	var body struct {
+		Index       *int    `json:"index"`
+		Key         *string `json:"key"`
+		ProjectName *string `json:"project-name"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(400, gin.H{"error": "invalid body"})
+		return
+	}
+	if body.Index != nil && *body.Index >= 0 && *body.Index < len(h.cfg.APIKeys) {
+		if body.Key != nil {
+			h.cfg.APIKeys[*body.Index].Key = *body.Key
+		}
+		if body.ProjectName != nil {
+			h.cfg.APIKeys[*body.Index].ProjectName = *body.ProjectName
+		}
+		h.cfg.Access.Providers = nil
+		h.persist(c)
+		return
+	}
+	c.JSON(400, gin.H{"error": "invalid index or missing fields"})
 }
 func (h *Handler) DeleteAPIKeys(c *gin.Context) {
-	h.deleteFromStringList(c, &h.cfg.APIKeys, func() { h.cfg.Access.Providers = nil })
+	if idxStr := c.Query("index"); idxStr != "" {
+		var idx int
+		_, err := fmt.Sscanf(idxStr, "%d", &idx)
+		if err == nil && idx >= 0 && idx < len(h.cfg.APIKeys) {
+			h.cfg.APIKeys = append(h.cfg.APIKeys[:idx], h.cfg.APIKeys[idx+1:]...)
+			h.cfg.Access.Providers = nil
+			h.persist(c)
+			return
+		}
+	}
+	c.JSON(400, gin.H{"error": "invalid index"})
 }
 
 // gemini-api-key: []GeminiKey

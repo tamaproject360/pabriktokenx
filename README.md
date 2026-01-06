@@ -20,8 +20,12 @@ PabrikTokenX is a production-ready proxy server that provides OpenAI/Gemini/Clau
 - **🎯 Provider Routing** - Smart routing with automatic failover
 - **🔄 Multi-Modal Support** - Text, images, and function calling
 - **📊 Usage Tracking** - Built-in statistics and monitoring
-- **🎨 Management Dashboard** - Web-based UI for configuration
+- **🎨 Management Dashboard** - Modern React-based UI with real-time updates
 - **🔌 Extensible SDK** - Reusable Go SDK for custom integrations
+- **🐳 Docker Support** - Configured to work with Docker containers (0.0.0.0 binding)
+- **🎮 Interactive Playground** - Test models directly from the dashboard
+- **🔑 Proxy Key Management** - Secure API key generation and management
+- **📱 Responsive Design** - Works seamlessly on desktop and mobile devices
 
 ---
 
@@ -74,8 +78,16 @@ PabrikTokenX is a production-ready proxy server that provides OpenAI/Gemini/Clau
    ```
 
 3. **Access the dashboard:**
-   - Backend API: http://localhost:9999
-   - Frontend Dashboard: http://localhost:8686
+   - **Backend API**: http://localhost:9999
+   - **Frontend Dashboard**: http://localhost:8686
+   - **Management API**: http://localhost:9999/v0/management
+
+4. **First-time setup:**
+   - Open dashboard at http://localhost:8686
+   - Login with your management secret key (from `config.yaml`)
+   - Go to **OAuth** page to authenticate with AI providers
+   - Create **Proxy Keys** for API access
+   - Test models in **Playground**
 
 ### macOS/Linux Users
 
@@ -147,13 +159,13 @@ go build -ldflags="-s -w" -o cliproxy ./cmd/server
 2. **Edit configuration:**
    ```yaml
    # Server Settings
-   host: ""
+   host: "0.0.0.0"  # Use 0.0.0.0 for Docker support, "127.0.0.1" for localhost-only
    port: 9999
    
    # Management API
    remote-management:
-     allow-remote: true
-     secret-key: "your-secure-key-here"
+     allow-remote: true  # Set to true for remote/Docker access
+     secret-key: "your-secure-key-here"  # Will be auto-hashed on first run
    
    # Authentication
    auth-dir: "~/.cli-proxy-api"
@@ -161,7 +173,21 @@ go build -ldflags="-s -w" -o cliproxy ./cmd/server
    # Logging
    debug: false
    logging-to-file: true
+   logs-max-total-size-mb: 100
+   
+   # Performance
+   usage-statistics-enabled: true
+   request-retry: 3
+   max-retry-interval: 30
    ```
+
+### Docker Configuration
+
+For Docker deployments, ensure:
+- `host: "0.0.0.0"` - Binds to all interfaces
+- `allow-remote: true` - Allows external connections
+- Use `host.docker.internal:9999` from containers (Windows/Mac)
+- Or use host machine IP address
 
 ### Environment Variables
 
@@ -213,10 +239,13 @@ curl http://localhost:9999/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-api-key" \
   -d '{
-    "model": "gemini-2.0-flash-exp",
+    "model": "gemini-2.5-flash",
     "messages": [{"role": "user", "content": "Hello!"}]
   }'
 ```
+
+> **Note**: Use `gemini-2.5-flash` (stable) or `gemini-2.5-pro` for production.
+> Model `gemini-2.0-flash-exp` is deprecated.
 
 #### Claude Messages API
 ```bash
@@ -231,12 +260,93 @@ curl http://localhost:9999/v1/messages \
 
 #### Gemini API
 ```bash
-curl http://localhost:9999/v1beta/models/gemini-2.0-flash-exp:generateContent \
+curl http://localhost:9999/v1beta/models/gemini-2.5-flash:generateContent \
   -H "Content-Type: application/json" \
   -d '{
     "contents": [{"parts": [{"text": "Hello!"}]}]
   }'
 ```
+
+### Available Models
+
+#### Gemini Models (2025)
+- **gemini-2.5-flash** - Stable, best price-performance (Recommended)
+- **gemini-2.5-pro** - Advanced reasoning for complex tasks
+- **gemini-2.5-flash-lite** - Ultra-fast, cost-efficient
+- **gemini-2.0-flash** - Previous generation, 1M context window
+
+#### Claude Models
+- **claude-sonnet-4** - Latest Sonnet model
+- **claude-opus-4** - Most capable model
+
+> Check the Playground in the dashboard to see all available models from your authenticated providers.
+
+---
+
+## 🎨 Dashboard Features
+
+The web dashboard provides a comprehensive management interface:
+
+### 📊 Dashboard Overview
+- Real-time usage statistics
+- Request counters and token usage
+- Model distribution charts
+- Failed request monitoring
+
+### 🔐 OAuth Management
+- One-click authentication for:
+  - Gemini CLI (Google)
+  - Claude Code (Anthropic)
+  - OpenAI Codex
+  - Qwen Code
+  - iFlow
+  - Antigravity
+- Visual provider status indicators
+- Email/account information display
+
+### 🔑 Proxy Keys
+- Generate secure API keys (format: `cl...`)
+- Assign project names to keys
+- Copy keys to clipboard
+- Masked key display for security
+- Comprehensive usage examples in:
+  - cURL
+  - JavaScript/Fetch
+  - Python
+  - Node.js OpenAI SDK
+
+### 🎮 Interactive Playground
+- Test models in real-time
+- Streaming responses
+- Multi-turn conversations
+- Model selector with search
+- Adjustable parameters:
+  - Temperature (0-2)
+  - Max tokens
+  - System prompts
+- Conversation history
+- Copy responses
+
+### 📁 Auth Files
+- View all authenticated accounts
+- Provider type indicators
+- Delete/manage credentials
+- Model availability per account
+
+### ⚙️ Settings
+- Debug mode toggle
+- Logging configuration
+- Proxy URL setup
+- Request retry settings
+- Routing strategy (Round-robin/Fill-first)
+- YAML configuration editor
+
+### 📈 Usage Analytics
+- Total requests tracking
+- Input/output token counting
+- Per-model statistics
+- Failed request logs
+- Export/import data
 
 ---
 
@@ -407,6 +517,81 @@ func main() {
     service.Run(context.Background())
 }
 ```
+
+---
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+#### "Invalid API Key" Error (401)
+**Problem**: Playground or API requests return 401 Unauthorized
+
+**Solution**:
+1. Go to **Proxy Keys** page in dashboard
+2. Click **"+ Add New Key"**
+3. Copy the generated key
+4. Use this key in your API requests:
+   ```
+   Authorization: Bearer cl...
+   ```
+
+#### Can't Access from Docker Container
+**Problem**: Connection refused when accessing from Docker
+
+**Solution**: Edit `config.yaml`:
+```yaml
+host: "0.0.0.0"  # Changed from "" or "127.0.0.1"
+remote-management:
+  allow-remote: true  # Changed from false
+```
+Then restart backend:
+```bash
+restart-backend.bat
+```
+
+#### Dashboard Won't Load
+**Problem**: Frontend shows blank page or errors
+
+**Solution**:
+1. Check if backend is running on port 9999
+2. Clear browser cache
+3. Check browser console for errors
+4. Restart frontend:
+   ```bash
+   restart-frontend.bat
+   ```
+
+#### "No Models Available" in Playground
+**Problem**: Playground shows no models
+
+**Solution**:
+1. Go to **OAuth** page
+2. Authenticate with at least one provider (Gemini CLI, Claude, etc.)
+3. Wait for authentication to complete
+4. Refresh Playground page
+
+#### Port Already in Use
+**Problem**: `bind: address already in use`
+
+**Solution**:
+```bash
+# Windows - Kill process on port 9999
+netstat -ano | findstr :9999
+taskkill /PID <PID> /F
+
+# Or change port in config.yaml
+port: 9998  # Use different port
+```
+
+#### Management Key Not Working
+**Problem**: Can't login to dashboard
+
+**Solution**:
+1. Check `config.yaml` for `secret-key` under `remote-management`
+2. Key will be auto-hashed on first startup
+3. Use the original plaintext key to login
+4. If forgotten, edit `config.yaml` and restart backend
 
 ---
 

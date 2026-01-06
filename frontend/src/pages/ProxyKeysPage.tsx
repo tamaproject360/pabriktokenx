@@ -4,6 +4,12 @@ import { getAPIKeys, updateAPIKeys } from '../lib/api';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { animatePageEnter } from '../lib/animations';
 
+// API Key Entry type
+interface APIKeyEntry {
+  key: string;
+  'project-name'?: string;
+}
+
 // Ambient Background
 function AmbientBackground() {
   return (
@@ -40,12 +46,13 @@ function maskApiKey(key: string): string {
 interface AddKeyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (key: string) => void;
+  onAdd: (entry: APIKeyEntry) => void;
   isSaving: boolean;
 }
 
 function AddKeyModal({ isOpen, onClose, onAdd, isSaving }: AddKeyModalProps) {
   const [newKey, setNewKey] = useState(() => isOpen ? generateApiKey() : '');
+  const [projectName, setProjectName] = useState('');
   const [showKey, setShowKey] = useState(isOpen);
   const inputRef = useRef<HTMLInputElement>(null);
   const prevIsOpen = useRef(isOpen);
@@ -70,7 +77,11 @@ function AddKeyModal({ isOpen, onClose, onAdd, isSaving }: AddKeyModalProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newKey.trim()) {
-      onAdd(newKey.trim());
+      const entry: APIKeyEntry = {
+        key: newKey.trim(),
+        ...(projectName.trim() && { 'project-name': projectName.trim() })
+      };
+      onAdd(entry);
     }
   };
 
@@ -108,6 +119,17 @@ function AddKeyModal({ isOpen, onClose, onAdd, isSaving }: AddKeyModalProps) {
 
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm text-slate-400">Project Name (Optional)</label>
+            <input
+              type="text"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="e.g., My Web App, Mobile App, etc."
+              className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all duration-200"
+            />
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm text-slate-400">API Key</label>
             <div className="relative">
@@ -186,13 +208,14 @@ function AddKeyModal({ isOpen, onClose, onAdd, isSaving }: AddKeyModalProps) {
 interface EditKeyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (newKey: string) => void;
-  currentKey: string;
+  onSave: (entry: APIKeyEntry) => void;
+  currentEntry: APIKeyEntry;
   isSaving: boolean;
 }
 
-function EditKeyModal({ isOpen, onClose, onSave, currentKey, isSaving }: EditKeyModalProps) {
-  const [editedKey, setEditedKey] = useState(currentKey);
+function EditKeyModal({ isOpen, onClose, onSave, currentEntry, isSaving }: EditKeyModalProps) {
+  const [editedKey, setEditedKey] = useState(currentEntry.key);
+  const [projectName, setProjectName] = useState(currentEntry['project-name'] || '');
   const [showKey, setShowKey] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const prevIsOpen = useRef(isOpen);
@@ -200,17 +223,22 @@ function EditKeyModal({ isOpen, onClose, onSave, currentKey, isSaving }: EditKey
   useEffect(() => {
     if (isOpen && !prevIsOpen.current) {
       requestAnimationFrame(() => {
-        setEditedKey(currentKey);
+        setEditedKey(currentEntry.key);
+        setProjectName(currentEntry['project-name'] || '');
         inputRef.current?.focus();
       });
     }
     prevIsOpen.current = isOpen;
-  }, [isOpen, currentKey]);
+  }, [isOpen, currentEntry]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editedKey.trim()) {
-      onSave(editedKey.trim());
+      const entry: APIKeyEntry = {
+        key: editedKey.trim(),
+        ...(projectName.trim() && { 'project-name': projectName.trim() })
+      };
+      onSave(entry);
     }
   };
 
@@ -244,6 +272,17 @@ function EditKeyModal({ isOpen, onClose, onSave, currentKey, isSaving }: EditKey
 
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm text-slate-400">Project Name (Optional)</label>
+            <input
+              type="text"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="e.g., My Web App, Mobile App, etc."
+              className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-200"
+            />
+          </div>
+          
           <div className="space-y-2">
             <label className="text-sm text-slate-400">API Key</label>
             <div className="relative">
@@ -295,19 +334,19 @@ function EditKeyModal({ isOpen, onClose, onSave, currentKey, isSaving }: EditKey
 }
 
 interface ApiKeyItemProps {
-  keyValue: string;
+  entry: APIKeyEntry;
   index: number;
   onEdit: () => void;
   onDelete: () => void;
   isDeleting: boolean;
 }
 
-function ApiKeyItem({ keyValue, index, onEdit, onDelete, isDeleting }: ApiKeyItemProps) {
+function ApiKeyItem({ entry, index, onEdit, onDelete, isDeleting }: ApiKeyItemProps) {
   const [showKey, setShowKey] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(keyValue);
+    navigator.clipboard.writeText(entry.key);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -323,9 +362,17 @@ function ApiKeyItem({ keyValue, index, onEdit, onDelete, isDeleting }: ApiKeyIte
           
           {/* Key Info */}
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium text-white mb-1">API Key</div>
+            {entry['project-name'] && (
+              <div className="flex items-center gap-2 mb-1">
+                <div className="text-sm font-semibold text-white">{entry['project-name']}</div>
+                <div className="px-2 py-0.5 rounded-md bg-orange-500/10 border border-orange-500/20">
+                  <span className="text-xs text-orange-400">Project</span>
+                </div>
+              </div>
+            )}
+            <div className="text-xs text-slate-500 mb-1">{entry['project-name'] ? 'API Key' : 'API Key'}</div>
             <code className="text-sm text-slate-400 font-mono">
-              {showKey ? keyValue : maskApiKey(keyValue)}
+              {showKey ? entry.key : maskApiKey(entry.key)}
             </code>
           </div>
         </div>
@@ -378,7 +425,8 @@ export default function ProxyKeysPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
-  const [localKeys, setLocalKeys] = useState<string[]>([]);
+  const [localKeys, setLocalKeys] = useState<APIKeyEntry[]>([]);
+  const [activeTab, setActiveTab] = useState<'curl' | 'javascript' | 'python' | 'nodejs'>('curl');
 
   // Fetch API keys
   const { data: apiKeysData, isLoading } = useQuery({
@@ -393,14 +441,22 @@ export default function ProxyKeysPage() {
   useEffect(() => {
     if (apiKeysData) {
       // Handle different response formats
-      const keys = apiKeysData['api-keys'] || apiKeysData.keys || apiKeysData || [];
-      setLocalKeys(Array.isArray(keys) ? keys : []);
+      const rawKeys = apiKeysData['api-keys'] || apiKeysData.keys || apiKeysData || [];
+      const keys = Array.isArray(rawKeys) ? rawKeys : [];
+      // Normalize to APIKeyEntry format
+      const normalized = keys.map((k: any) => {
+        if (typeof k === 'string') {
+          return { key: k } as APIKeyEntry;
+        }
+        return k as APIKeyEntry;
+      });
+      setLocalKeys(normalized);
     }
   }, [apiKeysData]);
 
   // Save mutation
   const saveMutation = useMutation({
-    mutationFn: async (keys: string[]) => {
+    mutationFn: async (keys: APIKeyEntry[]) => {
       const response = await updateAPIKeys(keys);
       return response.data;
     },
@@ -410,8 +466,8 @@ export default function ProxyKeysPage() {
   });
 
   // Handle add key
-  const handleAddKey = useCallback(async (newKey: string) => {
-    const updatedKeys = [...localKeys, newKey];
+  const handleAddKey = useCallback(async (entry: APIKeyEntry) => {
+    const updatedKeys = [...localKeys, entry];
     setLocalKeys(updatedKeys);
     try {
       await saveMutation.mutateAsync(updatedKeys);
@@ -423,10 +479,10 @@ export default function ProxyKeysPage() {
   }, [localKeys, saveMutation]);
 
   // Handle edit key
-  const handleEditKey = useCallback(async (newKey: string) => {
+  const handleEditKey = useCallback(async (entry: APIKeyEntry) => {
     if (editingIndex === null) return;
     const updatedKeys = [...localKeys];
-    updatedKeys[editingIndex] = newKey;
+    updatedKeys[editingIndex] = entry;
     setLocalKeys(updatedKeys);
     try {
       await saveMutation.mutateAsync(updatedKeys);
@@ -564,10 +620,10 @@ export default function ProxyKeysPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {localKeys.map((key, index) => (
+                {localKeys.map((entry, index) => (
                   <ApiKeyItem
-                    key={`${key}-${index}`}
-                    keyValue={key}
+                    key={`${entry.key}-${index}`}
+                    entry={entry}
                     index={index}
                     onEdit={() => openEditModal(index)}
                     onDelete={() => handleDeleteKey(index)}
@@ -580,20 +636,167 @@ export default function ProxyKeysPage() {
         </div>
 
         {/* Info Section */}
-        <div className="glass-panel rounded-2xl p-6">
+        <div className="glass-panel rounded-2xl p-6 space-y-6">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center flex-shrink-0">
               <Shield className="h-5 w-5 text-cyan-400" strokeWidth={1.5} />
             </div>
-            <div>
+            <div className="flex-1">
               <h4 className="text-white font-medium mb-2">How to use API Keys</h4>
-              <p className="text-slate-400 text-sm leading-relaxed mb-3">
-                Use these API keys to authenticate your requests to the proxy service. Include the key in the <code className="px-1.5 py-0.5 bg-white/[0.05] rounded text-cyan-400">Authorization</code> header:
+              <p className="text-slate-400 text-sm leading-relaxed mb-4">
+                Use these API keys to authenticate your requests to the proxy service. Include the key in the <code className="px-1.5 py-0.5 bg-white/5 rounded text-cyan-400">Authorization</code> header as a Bearer token.
               </p>
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 font-mono text-sm">
-                <span className="text-slate-500">Authorization:</span>{' '}
-                <span className="text-cyan-400">Bearer</span>{' '}
-                <span className="text-orange-400">{'<your-api-key>'}</span>
+
+              {/* Tab Navigation */}
+              <div className="flex gap-2 mb-4 border-b border-white/6">
+                <button
+                  onClick={() => setActiveTab('curl')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                    activeTab === 'curl'
+                      ? 'text-orange-400'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  cURL
+                  {activeTab === 'curl' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-400" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab('javascript')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                    activeTab === 'javascript'
+                      ? 'text-orange-400'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  JavaScript
+                  {activeTab === 'javascript' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-400" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab('python')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                    activeTab === 'python'
+                      ? 'text-orange-400'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Python
+                  {activeTab === 'python' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-400" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab('nodejs')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                    activeTab === 'nodejs'
+                      ? 'text-orange-400'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Node.js SDK
+                  {activeTab === 'nodejs' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-400" />
+                  )}
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              <div className="bg-black/30 border border-white/6 rounded-xl p-4 font-mono text-xs overflow-x-auto min-h-[280px]">
+                {activeTab === 'curl' && (
+                  <div>
+                    <div className="text-slate-500 mb-2"># Example request to chat completion endpoint</div>
+                    <div className="text-white">
+                      <span className="text-cyan-400">curl</span> -X POST http://localhost:9999/v1/chat/completions \
+                    </div>
+                    <div className="text-white ml-4">
+                      -H <span className="text-green-400">"Content-Type: application/json"</span> \
+                    </div>
+                    <div className="text-white ml-4">
+                      -H <span className="text-green-400">"Authorization: Bearer YOUR_API_KEY"</span> \
+                    </div>
+                    <div className="text-white ml-4">
+                      -d <span className="text-green-400">'&#123;"model": "gemini-2.5-flash", "messages": [&#123;"role": "user", "content": "Hello!"&#125;]&#125;'</span>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'javascript' && (
+                  <div>
+                    <div className="text-white">
+                      <span className="text-purple-400">const</span> response = <span className="text-purple-400">await</span> <span className="text-cyan-400">fetch</span>(<span className="text-green-400">'http://localhost:9999/v1/chat/completions'</span>, &#123;
+                    </div>
+                    <div className="text-white ml-4">method: <span className="text-green-400">'POST'</span>,</div>
+                    <div className="text-white ml-4">headers: &#123;</div>
+                    <div className="text-white ml-8"><span className="text-green-400">'Content-Type'</span>: <span className="text-green-400">'application/json'</span>,</div>
+                    <div className="text-white ml-8"><span className="text-green-400">'Authorization'</span>: <span className="text-green-400">`Bearer $&#123;YOUR_API_KEY&#125;`</span></div>
+                    <div className="text-white ml-4">&#125;,</div>
+                    <div className="text-white ml-4">body: <span className="text-cyan-400">JSON</span>.<span className="text-yellow-400">stringify</span>(&#123;</div>
+                    <div className="text-white ml-8">model: <span className="text-green-400">'gemini-2.5-flash'</span>,</div>
+                    <div className="text-white ml-8">messages: [&#123; role: <span className="text-green-400">'user'</span>, content: <span className="text-green-400">'Hello!'</span> &#125;]</div>
+                    <div className="text-white ml-4">&#125;)</div>
+                    <div className="text-white">&#125;);</div>
+                    <div className="text-white mt-2">
+                      <span className="text-purple-400">const</span> data = <span className="text-purple-400">await</span> response.<span className="text-yellow-400">json</span>();
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'python' && (
+                  <div>
+                    <div className="text-white">
+                      <span className="text-purple-400">import</span> requests
+                    </div>
+                    <div className="text-white mt-2">url = <span className="text-green-400">"http://localhost:9999/v1/chat/completions"</span></div>
+                    <div className="text-white">headers = &#123;</div>
+                    <div className="text-white ml-4"><span className="text-green-400">"Content-Type"</span>: <span className="text-green-400">"application/json"</span>,</div>
+                    <div className="text-white ml-4"><span className="text-green-400">"Authorization"</span>: <span className="text-green-400">f"Bearer &#123;YOUR_API_KEY&#125;"</span></div>
+                    <div className="text-white">&#125;</div>
+                    <div className="text-white mt-1">data = &#123;</div>
+                    <div className="text-white ml-4"><span className="text-green-400">"model"</span>: <span className="text-green-400">"gemini-2.5-flash"</span>,</div>
+                    <div className="text-white ml-4"><span className="text-green-400">"messages"</span>: [&#123;<span className="text-green-400">"role"</span>: <span className="text-green-400">"user"</span>, <span className="text-green-400">"content"</span>: <span className="text-green-400">"Hello!"</span>&#125;]</div>
+                    <div className="text-white">&#125;</div>
+                    <div className="text-white mt-1">response = requests.<span className="text-yellow-400">post</span>(url, headers=headers, json=data)</div>
+                    <div className="text-white mt-1">result = response.<span className="text-yellow-400">json</span>()</div>
+                  </div>
+                )}
+
+                {activeTab === 'nodejs' && (
+                  <div>
+                    <div className="text-white">
+                      <span className="text-purple-400">import</span> OpenAI <span className="text-purple-400">from</span> <span className="text-green-400">'openai'</span>;
+                    </div>
+                    <div className="text-white mt-2"><span className="text-purple-400">const</span> client = <span className="text-purple-400">new</span> <span className="text-cyan-400">OpenAI</span>(&#123;</div>
+                    <div className="text-white ml-4">apiKey: <span className="text-green-400">'YOUR_API_KEY'</span>,</div>
+                    <div className="text-white ml-4">baseURL: <span className="text-green-400">'http://localhost:9999/v1'</span></div>
+                    <div className="text-white">&#125;);</div>
+                    <div className="text-white mt-2"><span className="text-purple-400">const</span> response = <span className="text-purple-400">await</span> client.chat.completions.<span className="text-yellow-400">create</span>(&#123;</div>
+                    <div className="text-white ml-4">model: <span className="text-green-400">'gemini-2.5-flash'</span>,</div>
+                    <div className="text-white ml-4">messages: [&#123; role: <span className="text-green-400">'user'</span>, content: <span className="text-green-400">'Hello!'</span> &#125;]</div>
+                    <div className="text-white">&#125;);</div>
+                    <div className="text-white mt-2">
+                      <span className="text-cyan-400">console</span>.<span className="text-yellow-400">log</span>(response.choices[<span className="text-orange-400">0</span>].message.content);
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Important Notes */}
+              <div className="mt-4 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <Shield className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-amber-200/90 space-y-1">
+                    <div><strong>Important:</strong></div>
+                    <ul className="list-disc list-inside space-y-1 text-amber-300/80">
+                      <li>Replace <code className="px-1 py-0.5 bg-amber-500/20 rounded text-amber-300">YOUR_API_KEY</code> with your actual API key</li>
+                      <li>Default base URL is <code className="px-1 py-0.5 bg-amber-500/20 rounded text-amber-300">http://localhost:9999</code></li>
+                      <li>Keep your API keys secure and never expose them in client-side code</li>
+                      <li>Use environment variables to store API keys in production</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -616,7 +819,7 @@ export default function ProxyKeysPage() {
           setEditingIndex(null);
         }}
         onSave={handleEditKey}
-        currentKey={editingIndex !== null ? localKeys[editingIndex] : ''}
+        currentEntry={editingIndex !== null ? localKeys[editingIndex] : { key: '' }}
         isSaving={saveMutation.isPending}
       />
     </div>
