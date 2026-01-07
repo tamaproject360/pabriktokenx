@@ -121,6 +121,8 @@ export default function AuthFilesPage() {
       vertex: '#8B5CF6',
       qwen: '#EC4899',
       iflow: '#06B6D4',
+      'github-copilot': '#6366F1',
+      copilot: '#6366F1',
     };
     return colors[provider.toLowerCase()] || '#64748B';
   };

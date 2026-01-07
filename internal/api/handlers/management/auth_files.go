@@ -1983,6 +1983,7 @@ func (h *Handler) RequestGitHubCopilotToken(c *gin.Context) {
 			"type":         "github-copilot",
 			"username":     authBundle.Username,
 			"access_token": authBundle.TokenData.AccessToken,
+			"github_token": authBundle.TokenData.AccessToken, // For model fetching
 			"token_type":   authBundle.TokenData.TokenType,
 			"scope":        authBundle.TokenData.Scope,
 			"timestamp":    time.Now().UnixMilli(),

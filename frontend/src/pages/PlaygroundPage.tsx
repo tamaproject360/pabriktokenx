@@ -40,6 +40,7 @@ interface Message {
   content: string;
   timestamp: Date;
   model?: string;
+  images?: string[]; // Array of base64 image data URLs
 }
 
 interface ConversationHistory {
@@ -82,6 +83,8 @@ const PROVIDER_COLORS: Record<string, string> = {
   iflow: '#06B6D4',
   antigravity: '#A78BFA',
   vertex: '#F59E0B',
+  'github-copilot': '#6366F1',
+  copilot: '#6366F1',
 };
 
 const getProviderColor = (type: string): string => {
@@ -309,6 +312,7 @@ export default function PlaygroundPage() {
       if (!reader) throw new Error('No reader available');
 
       let fullContent = '';
+      const generatedImages: string[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -327,10 +331,24 @@ export default function PlaygroundPage() {
               const content = parsed.choices?.[0]?.delta?.content || '';
               fullContent += content;
 
+              // Check for image generation (data:image/... in content or separate field)
+              if (parsed.choices?.[0]?.message?.images) {
+                generatedImages.push(...parsed.choices[0].message.images);
+              } else if (parsed.data && Array.isArray(parsed.data)) {
+                // OpenAI DALL-E format
+                parsed.data.forEach((item: { url?: string; b64_json?: string }) => {
+                  if (item.url) {
+                    generatedImages.push(item.url);
+                  } else if (item.b64_json) {
+                    generatedImages.push(`data:image/png;base64,${item.b64_json}`);
+                  }
+                });
+              }
+
               setMessages(prev =>
                 prev.map(m =>
                   m.id === assistantMessage.id
-                    ? { ...m, content: fullContent }
+                    ? { ...m, content: fullContent, images: generatedImages.length > 0 ? generatedImages : undefined }
                     : m
                 )
               );
@@ -342,11 +360,13 @@ export default function PlaygroundPage() {
       }
 
       const title = userMessage.content.slice(0, 50) + (userMessage.content.length > 50 ? '...' : '');
+      const finalMessage = { ...assistantMessage, content: fullContent, images: generatedImages.length > 0 ? generatedImages : undefined };
+      
       if (currentConversationId) {
         setConversations(prev =>
           prev.map(c =>
             c.id === currentConversationId
-              ? { ...c, messages: [...messages, userMessage, { ...assistantMessage, content: fullContent }] }
+              ? { ...c, messages: [...messages, userMessage, finalMessage] }
               : c
           )
         );
@@ -354,7 +374,7 @@ export default function PlaygroundPage() {
         const newConv: ConversationHistory = {
           id: generateId(),
           title,
-          messages: [userMessage, { ...assistantMessage, content: fullContent }],
+          messages: [userMessage, finalMessage],
           model: selectedModel,
           createdAt: new Date(),
         };
@@ -691,27 +711,60 @@ export default function PlaygroundPage() {
                       {message.role === 'user' ? (
                         <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content || '...'}</p>
                       ) : (
-                        <div className="text-sm leading-relaxed prose prose-invert prose-sm max-w-none">
-                          <ReactMarkdown
-                            components={{
-                              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                              strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
-                              em: ({ children }) => <em className="italic text-slate-300">{children}</em>,
-                              code: ({ children }) => <code className="px-1.5 py-0.5 rounded bg-white/[0.08] text-cyan-400 font-mono text-xs">{children}</code>,
-                              pre: ({ children }) => <pre className="bg-black/30 p-3 rounded-lg overflow-x-auto my-2">{children}</pre>,
-                              ul: ({ children }) => <ul className="list-disc list-inside my-2 space-y-1">{children}</ul>,
-                              ol: ({ children }) => <ol className="list-decimal list-inside my-2 space-y-1">{children}</ol>,
-                              li: ({ children }) => <li className="text-slate-300">{children}</li>,
-                              h1: ({ children }) => <h1 className="text-xl font-bold text-white mt-3 mb-2">{children}</h1>,
-                              h2: ({ children }) => <h2 className="text-lg font-semibold text-white mt-3 mb-2">{children}</h2>,
-                              h3: ({ children }) => <h3 className="text-base font-semibold text-white mt-2 mb-1">{children}</h3>,
-                              blockquote: ({ children }) => <blockquote className="border-l-2 border-cyan-400 pl-3 my-2 text-slate-400">{children}</blockquote>,
-                              a: ({ children, href }) => <a href={href} className="text-cyan-400 hover:text-cyan-300 underline" target="_blank" rel="noopener noreferrer">{children}</a>,
-                            }}
-                          >
-                            {message.content || '...'}
-                          </ReactMarkdown>
-                        </div>
+                        <>
+                          <div className="text-sm leading-relaxed prose prose-invert prose-sm max-w-none">
+                            <ReactMarkdown
+                              components={{
+                                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+                                em: ({ children }) => <em className="italic text-slate-300">{children}</em>,
+                                code: ({ children }) => <code className="px-1.5 py-0.5 rounded bg-white/[0.08] text-cyan-400 font-mono text-xs">{children}</code>,
+                                pre: ({ children }) => <pre className="bg-black/30 p-3 rounded-lg overflow-x-auto my-2">{children}</pre>,
+                                ul: ({ children }) => <ul className="list-disc list-inside my-2 space-y-1">{children}</ul>,
+                                ol: ({ children }) => <ol className="list-decimal list-inside my-2 space-y-1">{children}</ol>,
+                                li: ({ children }) => <li className="text-slate-300">{children}</li>,
+                                h1: ({ children }) => <h1 className="text-xl font-bold text-white mt-3 mb-2">{children}</h1>,
+                                h2: ({ children }) => <h2 className="text-lg font-semibold text-white mt-3 mb-2">{children}</h2>,
+                                h3: ({ children }) => <h3 className="text-base font-semibold text-white mt-2 mb-1">{children}</h3>,
+                                blockquote: ({ children }) => <blockquote className="border-l-2 border-cyan-400 pl-3 my-2 text-slate-400">{children}</blockquote>,
+                                a: ({ children, href }) => <a href={href} className="text-cyan-400 hover:text-cyan-300 underline" target="_blank" rel="noopener noreferrer">{children}</a>,
+                              }}
+                            >
+                              {message.content || '...'}
+                            </ReactMarkdown>
+                          </div>
+                          
+                          {/* Display generated images */}
+                          {message.images && message.images.length > 0 && (
+                            <div className="mt-4 space-y-3">
+                              {message.images.map((imageUrl, idx) => (
+                                <div key={idx} className="relative group">
+                                  <img 
+                                    src={imageUrl} 
+                                    alt={`Generated image ${idx + 1}`}
+                                    className="rounded-xl border border-white/10 max-w-full h-auto"
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const link = document.createElement('a');
+                                      link.href = imageUrl;
+                                      link.download = `generated-image-${Date.now()}-${idx}.png`;
+                                      document.body.appendChild(link);
+                                      link.click();
+                                      document.body.removeChild(link);
+                                    }}
+                                    className="absolute top-2 right-2 p-2 rounded-lg bg-black/60 hover:bg-black/80 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 backdrop-blur-sm"
+                                    title="Download image"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                     

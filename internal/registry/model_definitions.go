@@ -759,6 +759,72 @@ func GetIFlowModels() []*ModelInfo {
 	return models
 }
 
+// GetGitHubCopilotModels returns the GitHub Copilot model definitions
+func GetGitHubCopilotModels() []*ModelInfo {
+	return []*ModelInfo{
+		{
+			ID:                  "gpt-4o",
+			Object:              "model",
+			Created:             1715367600,
+			OwnedBy:             "openai",
+			Type:                "github-copilot",
+			DisplayName:         "GPT-4o (Copilot)",
+			ContextLength:       128000,
+			MaxCompletionTokens: 16384,
+		},
+		{
+			ID:                  "gpt-4o-mini",
+			Object:              "model",
+			Created:             1721260800,
+			OwnedBy:             "openai",
+			Type:                "github-copilot",
+			DisplayName:         "GPT-4o Mini (Copilot)",
+			ContextLength:       128000,
+			MaxCompletionTokens: 16384,
+		},
+		{
+			ID:                  "o1-preview",
+			Object:              "model",
+			Created:             1725580800,
+			OwnedBy:             "openai",
+			Type:                "github-copilot",
+			DisplayName:         "O1 Preview (Copilot)",
+			ContextLength:       128000,
+			MaxCompletionTokens: 32768,
+		},
+		{
+			ID:                  "o1-mini",
+			Object:              "model",
+			Created:             1725580800,
+			OwnedBy:             "openai",
+			Type:                "github-copilot",
+			DisplayName:         "O1 Mini (Copilot)",
+			ContextLength:       128000,
+			MaxCompletionTokens: 65536,
+		},
+		{
+			ID:                  "claude-3.5-sonnet",
+			Object:              "model",
+			Created:             1729728000,
+			OwnedBy:             "anthropic",
+			Type:                "github-copilot",
+			DisplayName:         "Claude 3.5 Sonnet (Copilot)",
+			ContextLength:       200000,
+			MaxCompletionTokens: 8192,
+		},
+		{
+			ID:                  "gemini-2.0-flash-thinking-exp",
+			Object:              "model",
+			Created:             1733875200,
+			OwnedBy:             "google",
+			Type:                "github-copilot",
+			DisplayName:         "Gemini 2.0 Flash Thinking (Copilot)",
+			ContextLength:       1048576,
+			MaxCompletionTokens: 8192,
+		},
+	}
+}
+
 // AntigravityModelConfig captures static antigravity model overrides, including
 // Thinking budget limits and provider max completion tokens.
 type AntigravityModelConfig struct {
@@ -797,6 +863,7 @@ func LookupStaticModelInfo(modelID string) *ModelInfo {
 		GetOpenAIModels(),
 		GetQwenModels(),
 		GetIFlowModels(),
+		GetGitHubCopilotModels(),
 	}
 	for _, models := range allModels {
 		for _, m := range models {

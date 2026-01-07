@@ -20,6 +20,8 @@ const (
 	copilotAPITokenURL = "https://api.github.com/copilot_internal/v2/token"
 	// copilotAPIEndpoint is the base URL for making API requests.
 	copilotAPIEndpoint = "https://api.githubcopilot.com"
+	// copilotModelsURL is the endpoint for fetching available models.
+	copilotModelsURL = "https://api.githubcopilot.com/models"
 
 	// Common HTTP header values for Copilot API requests.
 	copilotUserAgent       = "GithubCopilot/1.0"
@@ -172,4 +174,49 @@ func (c *CopilotAuth) CreateTokenStorage(bundle *CopilotAuthBundle) *CopilotToke
 // GetAPIEndpoint returns the Copilot API endpoint URL.
 func GetAPIEndpoint() string {
 	return copilotAPIEndpoint
+}
+
+// FetchAvailableModels fetches the list of available models from the Copilot API.
+func (c *CopilotAuth) FetchAvailableModels(ctx context.Context, githubAccessToken string) ([]map[string]interface{}, error) {
+	if githubAccessToken == "" {
+		return nil, fmt.Errorf("github access token is required")
+	}
+
+	// First get the Copilot API token
+	apiToken, err := c.GetCopilotAPIToken(ctx, githubAccessToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get copilot API token: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, copilotModelsURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+apiToken.Token)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", copilotUserAgent)
+	req.Header.Set("Editor-Version", copilotEditorVersion)
+	req.Header.Set("Editor-Plugin-Version", copilotPluginVersion)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch models: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to fetch models: status %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	var result struct {
+		Data []map[string]interface{} `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode models response: %w", err)
+	}
+
+	return result.Data, nil
 }
