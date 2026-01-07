@@ -5,7 +5,10 @@ package usage
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -16,10 +19,114 @@ import (
 )
 
 var statisticsEnabled atomic.Bool
+var persistencePath atomic.Value // stores string path for statistics persistence
+var autoSaveInterval = 30 * time.Second
+var saveTimer *time.Timer
+var saveMu sync.Mutex
 
 func init() {
 	statisticsEnabled.Store(true)
 	coreusage.RegisterPlugin(NewLoggerPlugin())
+}
+
+// SetPersistencePath sets the directory where statistics will be persisted.
+// Call this during server initialization with the auth directory.
+func SetPersistencePath(dir string) {
+	if dir == "" {
+		return
+	}
+	persistencePath.Store(filepath.Join(dir, "usage_statistics.json"))
+	// Try to load existing data
+	LoadStatistics()
+	// Start auto-save goroutine
+	startAutoSave()
+}
+
+// GetPersistencePath returns the current persistence path.
+func GetPersistencePath() string {
+	if v := persistencePath.Load(); v != nil {
+		return v.(string)
+	}
+	return ""
+}
+
+func startAutoSave() {
+	saveMu.Lock()
+	defer saveMu.Unlock()
+	if saveTimer != nil {
+		return // Already running
+	}
+	var doSave func()
+	doSave = func() {
+		SaveStatistics()
+		saveMu.Lock()
+		if saveTimer != nil {
+			saveTimer = time.AfterFunc(autoSaveInterval, doSave)
+		}
+		saveMu.Unlock()
+	}
+	saveTimer = time.AfterFunc(autoSaveInterval, doSave)
+}
+
+// SaveStatistics persists the current statistics to disk.
+func SaveStatistics() error {
+	path := GetPersistencePath()
+	if path == "" {
+		return nil // No path configured, skip silently
+	}
+
+	snapshot := defaultRequestStatistics.Snapshot()
+	data, err := json.MarshalIndent(snapshot, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal statistics: %w", err)
+	}
+
+	// Write to temp file first, then rename for atomicity
+	tmpPath := path + ".tmp"
+	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write statistics: %w", err)
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		os.Remove(tmpPath)
+		return fmt.Errorf("failed to rename statistics file: %w", err)
+	}
+	return nil
+}
+
+// LoadStatistics loads persisted statistics from disk.
+func LoadStatistics() error {
+	path := GetPersistencePath()
+	if path == "" {
+		return nil // No path configured
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil // No file yet, that's OK
+		}
+		return fmt.Errorf("failed to read statistics: %w", err)
+	}
+
+	var snapshot StatisticsSnapshot
+	if err := json.Unmarshal(data, &snapshot); err != nil {
+		return fmt.Errorf("failed to unmarshal statistics: %w", err)
+	}
+
+	// Merge loaded data into current store
+	defaultRequestStatistics.MergeSnapshot(snapshot)
+	return nil
+}
+
+// Shutdown should be called during server shutdown to save final statistics.
+func Shutdown() {
+	saveMu.Lock()
+	if saveTimer != nil {
+		saveTimer.Stop()
+		saveTimer = nil
+	}
+	saveMu.Unlock()
+	SaveStatistics()
 }
 
 // LoggerPlugin collects in-memory request statistics for usage analysis.

@@ -12,6 +12,7 @@ import (
 
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/api"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/config"
+	"github.com/router-for-me/CLIProxyAPI/v6/internal/usage"
 	"github.com/router-for-me/CLIProxyAPI/v6/sdk/cliproxy"
 	log "github.com/sirupsen/logrus"
 )
@@ -53,6 +54,10 @@ func StartService(cfg *config.Config, configPath string, localPassword string) {
 	if err != nil && !errors.Is(err, context.Canceled) {
 		log.Errorf("proxy service exited with error: %v", err)
 	}
+
+	// Save usage statistics before shutdown
+	usage.Shutdown()
+	log.Info("Usage statistics saved")
 }
 
 // WaitForCloudDeploy waits indefinitely for shutdown signals in cloud deploy mode
