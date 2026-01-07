@@ -368,6 +368,21 @@ func GetGeminiCLIModels() []*ModelInfo {
 			SupportedGenerationMethods: []string{"generateContent", "countTokens", "createCachedContent", "batchGenerateContent"},
 			Thinking:                   &ThinkingSupport{Min: 128, Max: 32768, ZeroAllowed: false, DynamicAllowed: true, Levels: []string{"minimal", "low", "medium", "high"}},
 		},
+		{
+			ID:                         "gemini-3-pro-image-preview",
+			Object:                     "model",
+			Created:                    1737158400,
+			OwnedBy:                    "google",
+			Type:                       "gemini",
+			Name:                       "models/gemini-3-pro-image-preview",
+			Version:                    "3.0",
+			DisplayName:                "Gemini 3 Pro Image Preview",
+			Description:                "Gemini 3 Pro Image Preview - Advanced image generation model",
+			InputTokenLimit:            1048576,
+			OutputTokenLimit:           65536,
+			SupportedGenerationMethods: []string{"generateContent", "countTokens", "createCachedContent", "batchGenerateContent"},
+			Thinking:                   &ThinkingSupport{Min: 128, Max: 32768, ZeroAllowed: false, DynamicAllowed: true, Levels: []string{"low", "high"}},
+		},
 	}
 }
 
@@ -519,6 +534,21 @@ func GetAIStudioModels() []*ModelInfo {
 			Version:                    "2.5",
 			DisplayName:                "Gemini 2.5 Flash Image",
 			Description:                "State-of-the-art image generation and editing model.",
+			InputTokenLimit:            1048576,
+			OutputTokenLimit:           8192,
+			SupportedGenerationMethods: []string{"generateContent", "countTokens", "createCachedContent", "batchGenerateContent"},
+			// image models don't support thinkingConfig; leave Thinking nil
+		},
+		{
+			ID:                         "gemini-3-pro-image-preview",
+			Object:                     "model",
+			Created:                    1737158400,
+			OwnedBy:                    "google",
+			Type:                       "gemini",
+			Name:                       "models/gemini-3-pro-image-preview",
+			Version:                    "3.0",
+			DisplayName:                "Gemini 3 Pro Image Preview",
+			Description:                "Advanced image generation model with Gemini 3 capabilities.",
 			InputTokenLimit:            1048576,
 			OutputTokenLimit:           8192,
 			SupportedGenerationMethods: []string{"generateContent", "countTokens", "createCachedContent", "batchGenerateContent"},

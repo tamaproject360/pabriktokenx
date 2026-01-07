@@ -8,6 +8,7 @@ package gemini
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/translator/gemini/common"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/util"
@@ -15,6 +16,31 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
+
+// isImageGenerationModel checks if the model supports image generation
+func isImageGenerationModel(modelName string) bool {
+	lower := strings.ToLower(modelName)
+	// Gemini image generation models
+	if strings.Contains(lower, "image") {
+		return true
+	}
+	// Specific image models
+	imageModels := []string{
+		"gemini-3-pro-image-preview",
+		"gemini-2.5-flash-image-preview",
+		"gemini-2.5-flash-image",
+		"gemini-2.0-flash-exp-image-generation",
+		"gemini-2.0-flash-preview-image-generation",
+		"imagen-3.0-generate-002",
+		"imagen-3.0-generate-001",
+	}
+	for _, m := range imageModels {
+		if strings.Contains(lower, m) {
+			return true
+		}
+	}
+	return false
+}
 
 // ConvertGeminiRequestToAntigravity parses and transforms a Gemini CLI API request into Gemini API format.
 // It extracts the model name, system instruction, message contents, and tool declarations
@@ -128,6 +154,16 @@ func ConvertGeminiRequestToAntigravity(_ string, inputRawJSON []byte, _ bool) []
 		}
 		return true
 	})
+
+	// Handle image generation models - add responseModalities for image output
+	modelName := gjson.GetBytes(rawJSON, "model").String()
+	if isImageGenerationModel(modelName) {
+		// Check if modalities already set
+		if !gjson.GetBytes(rawJSON, "request.generationConfig.responseModalities").Exists() {
+			rawJSON, _ = sjson.SetBytes(rawJSON, "request.generationConfig.responseModalities", []string{"IMAGE", "TEXT"})
+			log.Debugf("antigravity gemini: auto-enabled image generation for model %s", modelName)
+		}
+	}
 
 	return common.AttachDefaultSafetySettings(rawJSON, "request.safetySettings")
 }

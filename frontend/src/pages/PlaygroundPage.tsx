@@ -15,9 +15,51 @@ import {
   GearSix,
   PaperPlaneTilt,
   Stop,
+  Image as ImageIcon,
+  CheckCircle,
+  XCircle,
+  Info,
 } from 'phosphor-react';
 import { listAuthFiles, getAuthKey, getAPIKeys } from '../lib/api';
 import { animateFadeIn, durations } from '../lib/animations';
+
+// Toast notification types
+interface Toast {
+  id: string;
+  type: 'info' | 'success' | 'error' | 'loading';
+  message: string;
+  duration?: number;
+}
+
+// Toast Notifications Component
+function ToastContainer({ toasts, onRemove }: { toasts: Toast[], onRemove: (id: string) => void }) {
+  return (
+    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+      {toasts.map((toast) => (
+        <div
+          key={toast.id}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg backdrop-blur-md border transition-all duration-300 animate-slide-in ${
+            toast.type === 'success' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' :
+            toast.type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-300' :
+            toast.type === 'loading' ? 'bg-cyan-500/20 border-cyan-500/30 text-cyan-300' :
+            'bg-slate-700/80 border-slate-600/30 text-slate-200'
+          }`}
+        >
+          {toast.type === 'success' && <CheckCircle className="h-5 w-5" weight="fill" />}
+          {toast.type === 'error' && <XCircle className="h-5 w-5" weight="fill" />}
+          {toast.type === 'loading' && <CircleNotch className="h-5 w-5 animate-spin" />}
+          {toast.type === 'info' && <Info className="h-5 w-5" weight="fill" />}
+          <span className="text-sm font-medium">{toast.message}</span>
+          {toast.type !== 'loading' && (
+            <button onClick={() => onRemove(toast.id)} className="ml-2 hover:opacity-70">
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // Ambient Background
 function AmbientBackground() {
@@ -131,11 +173,40 @@ export default function PlaygroundPage() {
   const [modelsLoading, setModelsLoading] = useState(false);
   const [apiKey, setApiKey] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Toast helper functions
+  const addToast = useCallback((type: Toast['type'], message: string, duration?: number) => {
+    const id = generateId();
+    setToasts(prev => [...prev, { id, type, message, duration }]);
+    if (type !== 'loading' && duration !== 0) {
+      setTimeout(() => removeToast(id), duration || 4000);
+    }
+    return id;
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const updateToast = useCallback((id: string, type: Toast['type'], message: string) => {
+    setToasts(prev => prev.map(t => t.id === id ? { ...t, type, message } : t));
+    if (type !== 'loading') {
+      setTimeout(() => removeToast(id), 4000);
+    }
+  }, [removeToast]);
+
+  // Check if model is image generation model
+  const isImageModel = useCallback((modelName: string) => {
+    const lower = modelName.toLowerCase();
+    return lower.includes('image') || lower.includes('dall-e') || lower.includes('imagen');
+  }, []);
 
   useEffect(() => {
     const fetchApiKey = async () => {
@@ -267,6 +338,15 @@ export default function PlaygroundPage() {
     setInput('');
     setIsLoading(true);
 
+    // Check if this is an image generation request
+    const isImageRequest = isImageModel(selectedModel);
+    let toastId: string | undefined;
+    
+    if (isImageRequest) {
+      setIsGeneratingImage(true);
+      toastId = addToast('loading', '🎨 Generating image... This may take 10-30 seconds');
+    }
+
     const assistantMessage: Message = {
       id: generateId(),
       role: 'assistant',
@@ -279,9 +359,14 @@ export default function PlaygroundPage() {
     try {
       abortControllerRef.current = new AbortController();
 
+      // Filter out assistant messages with empty content (incomplete responses)
+      const filteredMessages = messages.filter(m => 
+        m.role === 'user' || (m.role === 'assistant' && m.content && m.content.trim() !== '')
+      );
+
       const apiMessages = [
         ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
-        ...messages.map(m => ({ role: m.role, content: m.content })),
+        ...filteredMessages.map(m => ({ role: m.role, content: m.content })),
         { role: 'user', content: userMessage.content },
       ];
 
@@ -313,6 +398,7 @@ export default function PlaygroundPage() {
 
       let fullContent = '';
       const generatedImages: string[] = [];
+      let imageFound = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -331,16 +417,40 @@ export default function PlaygroundPage() {
               const content = parsed.choices?.[0]?.delta?.content || '';
               fullContent += content;
 
-              // Check for image generation (data:image/... in content or separate field)
+              // Check for image generation in streaming response (delta.images)
+              if (parsed.choices?.[0]?.delta?.images) {
+                const deltaImages = parsed.choices[0].delta.images;
+                deltaImages.forEach((img: { image_url?: { url?: string }; url?: string }) => {
+                  const imageUrl = img.image_url?.url || img.url;
+                  if (imageUrl && !generatedImages.includes(imageUrl)) {
+                    generatedImages.push(imageUrl);
+                    imageFound = true;
+                  }
+                });
+              }
+              // Check for image generation in non-streaming response (message.images)
               if (parsed.choices?.[0]?.message?.images) {
-                generatedImages.push(...parsed.choices[0].message.images);
-              } else if (parsed.data && Array.isArray(parsed.data)) {
-                // OpenAI DALL-E format
+                const msgImages = parsed.choices[0].message.images;
+                msgImages.forEach((img: { image_url?: { url?: string }; url?: string }) => {
+                  const imageUrl = img.image_url?.url || img.url;
+                  if (imageUrl && !generatedImages.includes(imageUrl)) {
+                    generatedImages.push(imageUrl);
+                    imageFound = true;
+                  }
+                });
+              }
+              // OpenAI DALL-E format
+              if (parsed.data && Array.isArray(parsed.data)) {
                 parsed.data.forEach((item: { url?: string; b64_json?: string }) => {
-                  if (item.url) {
+                  if (item.url && !generatedImages.includes(item.url)) {
                     generatedImages.push(item.url);
+                    imageFound = true;
                   } else if (item.b64_json) {
-                    generatedImages.push(`data:image/png;base64,${item.b64_json}`);
+                    const imgUrl = `data:image/png;base64,${item.b64_json}`;
+                    if (!generatedImages.includes(imgUrl)) {
+                      generatedImages.push(imgUrl);
+                      imageFound = true;
+                    }
                   }
                 });
               }
@@ -348,7 +458,7 @@ export default function PlaygroundPage() {
               setMessages(prev =>
                 prev.map(m =>
                   m.id === assistantMessage.id
-                    ? { ...m, content: fullContent, images: generatedImages.length > 0 ? generatedImages : undefined }
+                    ? { ...m, content: fullContent, images: generatedImages.length > 0 ? [...generatedImages] : undefined }
                     : m
                 )
               );
@@ -359,8 +469,19 @@ export default function PlaygroundPage() {
         }
       }
 
+      // Show success toast for image generation
+      if (isImageRequest && toastId) {
+        if (imageFound && generatedImages.length > 0) {
+          updateToast(toastId, 'success', `✨ Image generated successfully! (${generatedImages.length} image${generatedImages.length > 1 ? 's' : ''})`);
+        } else if (!fullContent && !imageFound) {
+          updateToast(toastId, 'error', '❌ Failed to generate image. Please try again.');
+        } else {
+          removeToast(toastId);
+        }
+      }
+
       const title = userMessage.content.slice(0, 50) + (userMessage.content.length > 50 ? '...' : '');
-      const finalMessage = { ...assistantMessage, content: fullContent, images: generatedImages.length > 0 ? generatedImages : undefined };
+      const finalMessage = { ...assistantMessage, content: fullContent, images: generatedImages.length > 0 ? [...generatedImages] : undefined };
       
       if (currentConversationId) {
         setConversations(prev =>
@@ -385,18 +506,28 @@ export default function PlaygroundPage() {
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
         // Request was cancelled
+        if (toastId) {
+          updateToast(toastId, 'info', 'Generation cancelled');
+        }
       } else {
         console.error('Chat error:', error);
+        const errorMessage = (error as Error).message;
         setMessages(prev =>
           prev.map(m =>
             m.id === assistantMessage.id
-              ? { ...m, content: `Error: ${(error as Error).message}` }
+              ? { ...m, content: `Error: ${errorMessage}` }
               : m
           )
         );
+        if (isImageRequest && toastId) {
+          updateToast(toastId, 'error', `❌ Failed: ${errorMessage.slice(0, 50)}${errorMessage.length > 50 ? '...' : ''}`);
+        } else {
+          addToast('error', `Request failed: ${errorMessage.slice(0, 50)}${errorMessage.length > 50 ? '...' : ''}`);
+        }
       }
     } finally {
       setIsLoading(false);
+      setIsGeneratingImage(false);
       abortControllerRef.current = null;
     }
   };
@@ -489,6 +620,9 @@ export default function PlaygroundPage() {
   return (
     <div className="relative flex h-screen overflow-hidden" style={{ background: '#09090B' }}>
       <AmbientBackground />
+      
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       
       {/* Sidebar - Chat History */}
       <div className="relative z-10 w-64 border-r border-white/[0.06] flex flex-col bg-[#09090B]/90">
@@ -733,6 +867,18 @@ export default function PlaygroundPage() {
                               {message.content || '...'}
                             </ReactMarkdown>
                           </div>
+                          
+                          {/* Image Generation Loading Indicator - shown when no content yet */}
+                          {isGeneratingImage && isLoading && !message.content && message.role === 'assistant' && (
+                            <div className="mt-3 flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/20">
+                              <ImageIcon className="h-6 w-6 text-cyan-400 animate-pulse" weight="duotone" />
+                              <div className="flex-1">
+                                <p className="text-sm text-cyan-300 font-medium">🎨 Generating your image...</p>
+                                <p className="text-xs text-slate-400 mt-0.5">This may take 10-30 seconds</p>
+                              </div>
+                              <CircleNotch className="h-6 w-6 text-cyan-400 animate-spin" />
+                            </div>
+                          )}
                           
                           {/* Display generated images */}
                           {message.images && message.images.length > 0 && (

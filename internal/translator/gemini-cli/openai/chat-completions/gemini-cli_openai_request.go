@@ -17,6 +17,28 @@ import (
 
 const geminiCLIFunctionThoughtSignature = "skip_thought_signature_validator"
 
+// isImageGenerationModel checks if the model supports image generation
+func isImageGenerationModel(modelName string) bool {
+	lower := strings.ToLower(modelName)
+	// Gemini image generation models
+	if strings.Contains(lower, "image") {
+		return true
+	}
+	// Specific image models
+	imageModels := []string{
+		"gemini-3-pro-image-preview",
+		"gemini-2.5-flash-image-preview",
+		"gemini-2.5-flash-image",
+		"gemini-2.0-flash-exp-image-generation",
+	}
+	for _, m := range imageModels {
+		if strings.Contains(lower, m) {
+			return true
+		}
+	}
+	return false
+}
+
 // ConvertOpenAIRequestToGeminiCLI converts an OpenAI Chat Completions request (raw JSON)
 // into a complete Gemini CLI request JSON. All JSON construction uses sjson and lookups use gjson.
 //
@@ -96,6 +118,9 @@ func ConvertOpenAIRequestToGeminiCLI(modelName string, inputRawJSON []byte, _ bo
 		if len(responseMods) > 0 {
 			out, _ = sjson.SetBytes(out, "request.generationConfig.responseModalities", responseMods)
 		}
+	} else if isImageGenerationModel(modelName) {
+		// Auto-enable image generation for image models when modalities not explicitly set
+		out, _ = sjson.SetBytes(out, "request.generationConfig.responseModalities", []string{"IMAGE", "TEXT"})
 	}
 
 	// OpenRouter-style image_config support
