@@ -24,4 +24,7 @@ const (
 
 	// Antigravity represents the Antigravity response format identifier.
 	Antigravity = "antigravity"
+
+	// GitHubCopilot represents the GitHub Copilot provider identifier.
+	GitHubCopilot = "github-copilot"
 )

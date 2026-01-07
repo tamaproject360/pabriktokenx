@@ -21,6 +21,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/auth/claude"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/auth/codex"
+	"github.com/router-for-me/CLIProxyAPI/v6/internal/auth/copilot"
 	geminiAuth "github.com/router-for-me/CLIProxyAPI/v6/internal/auth/gemini"
 	iflowauth "github.com/router-for-me/CLIProxyAPI/v6/internal/auth/iflow"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/auth/qwen"
@@ -1923,6 +1924,108 @@ func (h *Handler) RequestIFlowCookieToken(c *gin.Context) {
 		"email":      email,
 		"expired":    tokenStorage.Expire,
 		"type":       tokenStorage.Type,
+	})
+}
+
+// RequestGitHubCopilotToken initiates the GitHub Copilot device flow OAuth authentication.
+// This uses GitHub's device flow since Copilot doesn't support standard OAuth redirect flow.
+func (h *Handler) RequestGitHubCopilotToken(c *gin.Context) {
+	ctx := context.Background()
+
+	fmt.Println("Initializing GitHub Copilot authentication...")
+
+	state, errState := misc.GenerateRandomState()
+	if errState != nil {
+		log.Errorf("Failed to generate state parameter: %v", errState)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate state parameter"})
+		return
+	}
+
+	RegisterOAuthSession(state, "github-copilot")
+
+	// GitHub Copilot uses device flow, so we need to get a device code first
+	copilotAuth := copilot.NewCopilotAuth(h.cfg)
+	deviceCode, errDevice := copilotAuth.StartDeviceFlow(ctx)
+	if errDevice != nil {
+		log.Errorf("Failed to start device flow: %v", errDevice)
+		SetOAuthSessionError(state, "Failed to start device flow")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start device flow"})
+		return
+	}
+
+	// Start background polling for authorization
+	go func() {
+		fmt.Printf("\nGitHub Copilot Device Flow\n")
+		fmt.Printf("User Code: %s\n", deviceCode.UserCode)
+		fmt.Printf("Visit: %s\n\n", deviceCode.VerificationURI)
+
+		authBundle, errAuth := copilotAuth.WaitForAuthorization(ctx, deviceCode)
+		if errAuth != nil {
+			SetOAuthSessionError(state, copilot.GetUserFriendlyMessage(errAuth))
+			log.Errorf("GitHub Copilot authentication failed: %v", errAuth)
+			return
+		}
+
+		// Verify the token can get a Copilot API token
+		fmt.Println("Verifying Copilot access...")
+		apiToken, errAPI := copilotAuth.GetCopilotAPIToken(ctx, authBundle.TokenData.AccessToken)
+		if errAPI != nil {
+			SetOAuthSessionError(state, "Failed to verify Copilot access - you may not have an active Copilot subscription")
+			log.Errorf("GitHub Copilot API token verification failed: %v", errAPI)
+			return
+		}
+
+		// Create the token storage
+		tokenStorage := copilotAuth.CreateTokenStorage(authBundle)
+
+		// Build metadata with token information for the executor
+		metadata := map[string]any{
+			"type":         "github-copilot",
+			"username":     authBundle.Username,
+			"access_token": authBundle.TokenData.AccessToken,
+			"token_type":   authBundle.TokenData.TokenType,
+			"scope":        authBundle.TokenData.Scope,
+			"timestamp":    time.Now().UnixMilli(),
+		}
+
+		if apiToken.ExpiresAt > 0 {
+			metadata["api_token_expires_at"] = apiToken.ExpiresAt
+		}
+
+		fileName := fmt.Sprintf("github-copilot-%s.json", authBundle.Username)
+
+		record := &coreauth.Auth{
+			ID:       fileName,
+			Provider: "github-copilot",
+			FileName: fileName,
+			Label:    authBundle.Username,
+			Storage:  tokenStorage,
+			Metadata: metadata,
+		}
+
+		savedPath, errSave := h.saveTokenRecord(ctx, record)
+		if errSave != nil {
+			SetOAuthSessionError(state, "Failed to save authentication tokens")
+			log.Errorf("Failed to save GitHub Copilot tokens: %v", errSave)
+			return
+		}
+
+		fmt.Printf("\nGitHub Copilot authentication successful for user: %s\n", authBundle.Username)
+		fmt.Printf("Token saved to %s\n", savedPath)
+		CompleteOAuthSession(state)
+		CompleteOAuthSessionsByProvider("github-copilot")
+	}()
+
+	// Return the device flow information for the user to complete in browser
+	c.JSON(http.StatusOK, gin.H{
+		"status":           "ok",
+		"url":              deviceCode.VerificationURI,
+		"user_code":        deviceCode.UserCode,
+		"state":            state,
+		"expires_in":       deviceCode.ExpiresIn,
+		"interval":         deviceCode.Interval,
+		"device_flow":      true,
+		"verification_uri": deviceCode.VerificationURI,
 	})
 }
 

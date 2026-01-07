@@ -12,6 +12,7 @@ import {
   requestAntigravityAuth,
   requestQwenAuth,
   requestIFlowAuth,
+  requestGitHubCopilotAuth,
 } from '../lib/api';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import gsap from 'gsap';
@@ -43,22 +44,31 @@ interface OAuthProviderCardProps {
   description: string;
   color: string;
   icon: string;
-  onLogin: () => Promise<{ url?: string; error?: string }>;
+  onLogin: () => Promise<{ url?: string; error?: string; user_code?: string; device_flow?: boolean; verification_uri?: string }>;
+  isDeviceFlow?: boolean;
 }
 
-function OAuthProviderCard({ title, description, color, icon, onLogin }: OAuthProviderCardProps) {
+function OAuthProviderCard({ title, description, color, icon, onLogin, isDeviceFlow = false }: OAuthProviderCardProps) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [authUrl, setAuthUrl] = useState<string | null>(null);
+  const [userCode, setUserCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async () => {
     setStatus('loading');
     setError(null);
+    setUserCode(null);
     try {
       const result = await onLogin();
       if (result.url) {
         setAuthUrl(result.url);
         setStatus('success');
+        
+        // For device flow, show the user code
+        if (result.device_flow && result.user_code) {
+          setUserCode(result.user_code);
+        }
+        
         window.open(result.url, '_blank', 'width=600,height=700');
       } else if (result.error) {
         setError(result.error);
@@ -108,6 +118,12 @@ function OAuthProviderCard({ title, description, color, icon, onLogin }: OAuthPr
         {status === 'success' && authUrl && (
           <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
             <p className="text-sm text-emerald-400 mb-2">Auth URL generated!</p>
+            {userCode && (
+              <div className="mb-2 p-2 bg-slate-800/50 rounded-lg">
+                <p className="text-xs text-slate-400 mb-1">Enter this code at GitHub:</p>
+                <p className="text-lg font-mono font-bold text-white tracking-wider">{userCode}</p>
+              </div>
+            )}
             <a 
               href={authUrl} 
               target="_blank" 
@@ -283,6 +299,18 @@ export default function OAuthPage() {
             icon="🌊"
             onLogin={async () => {
               const response = await requestIFlowAuth();
+              return response.data;
+            }}
+          />
+
+          <OAuthProviderCard
+            title="GitHub Copilot"
+            description="Login with GitHub Copilot subscription to access Copilot models"
+            color="#6366F1"
+            icon="🐙"
+            isDeviceFlow={true}
+            onLogin={async () => {
+              const response = await requestGitHubCopilotAuth();
               return response.data;
             }}
           />

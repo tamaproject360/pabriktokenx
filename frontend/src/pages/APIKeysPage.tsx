@@ -118,7 +118,7 @@ function KeySection({
         {/* Add new key */}
         <div className="flex gap-3">
           <input
-            type={showKeys ? 'text' : 'password'}
+            type="text"
             value={newKey}
             onChange={(e) => setNewKey(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAddKey()}

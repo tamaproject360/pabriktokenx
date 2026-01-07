@@ -121,6 +121,7 @@ export interface OAuthSession {
 
 // Usage
 export const getUsage = () => api.get<UsageStatistics>('/usage');
+export const getRateLimits = () => api.get('/rate-limits');
 export const exportUsage = () => api.get('/usage/export');
 export const importUsage = (data: unknown) => api.post('/usage/import', data);
 
@@ -203,6 +204,7 @@ export const requestGeminiCLIAuth = () => api.get<OAuthSession>('/gemini-cli-aut
 export const requestAntigravityAuth = () => api.get<OAuthSession>('/antigravity-auth-url?is_webui=true');
 export const requestQwenAuth = () => api.get<OAuthSession>('/qwen-auth-url?is_webui=true');
 export const requestIFlowAuth = () => api.get<OAuthSession>('/iflow-auth-url?is_webui=true');
+export const requestGitHubCopilotAuth = () => api.get<OAuthSession & { user_code?: string; device_flow?: boolean; verification_uri?: string }>('/github-copilot-auth-url?is_webui=true');
 export const getAuthStatus = () => api.get('/get-auth-status');
 
 // Amp Code
