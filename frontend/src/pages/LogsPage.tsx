@@ -25,12 +25,13 @@ export default function LogsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { data: logsData, isLoading, refetch, isRefetching } = useQuery({
+  const { data: logsData, isLoading, refetch, isRefetching, error } = useQuery({
     queryKey: ['logs'],
     queryFn: async () => {
       const response = await getLogs();
       return response.data;
     },
+    retry: 1,
   });
 
   const { data: errorLogsData } = useQuery({
@@ -68,9 +69,50 @@ export default function LogsPage() {
     }
   };
 
-  const logs = logsData?.logs || '';
+  const logLines = logsData?.lines || [];
   const errorFiles = errorLogsData?.files || [];
-  const logLines = logs.split('\n').filter(Boolean);
+  const lineCount = logsData?.['line-count'] || 0;
+
+  // Check for error
+  if (error) {
+    return (
+      <div className="relative min-h-screen">
+        <AmbientBackground />
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-8">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-semibold text-white tracking-tight">Logs</h1>
+              <p className="text-slate-400 text-sm">View server logs and error reports</p>
+            </div>
+            <button
+              onClick={() => refetch()}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl glass-panel hover:bg-white/[0.05] transition-all duration-200"
+            >
+              <RefreshCw className="h-4 w-4 text-cyan-400" strokeWidth={2} />
+              <span className="text-white text-sm font-medium">Retry</span>
+            </button>
+          </div>
+          <div className="glass-panel rounded-2xl p-12 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-rose-500/15 mb-6">
+              <AlertCircle className="h-8 w-8 text-rose-400" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Logging Not Available</h3>
+            <p className="text-slate-400 mb-4">File logging is currently disabled in the configuration.</p>
+            <div className="max-w-md mx-auto text-left">
+              <div className="glass-panel rounded-xl p-4 mb-4">
+                <p className="text-sm text-slate-300 mb-2">To enable logging, update your config:</p>
+                <pre className="text-xs font-mono text-cyan-400 bg-slate-900/50 p-3 rounded-lg overflow-x-auto">
+logging-to-file: true
+logs-max-total-size-mb: 100
+                </pre>
+              </div>
+              <p className="text-xs text-slate-500">After updating, restart the backend server.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const getLogLevelColor = (line: string) => {
     if (line.includes('level=error') || line.includes('[ERROR]')) return 'text-rose-400';

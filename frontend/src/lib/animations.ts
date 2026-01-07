@@ -231,12 +231,24 @@ export function animateCounter(
     prefix?: string;
     suffix?: string;
     decimals?: number;
+    startValue?: number; // Allow custom start value
   } = {}
 ) {
   if (!element) return;
 
-  const { duration = 1.5, prefix = '', suffix = '', decimals = 0 } = options;
-  const obj = { value: 0 };
+  const { duration = 1.5, prefix = '', suffix = '', decimals = 0, startValue } = options;
+  
+  // Get current value from element if startValue not provided
+  let currentValue = startValue ?? 0;
+  if (startValue === undefined) {
+    const currentText = element.textContent || '0';
+    const numMatch = currentText.match(/[\d.,]+/);
+    if (numMatch) {
+      currentValue = parseFloat(numMatch[0].replace(/,/g, ''));
+    }
+  }
+  
+  const obj = { value: currentValue };
 
   return gsap.to(obj, {
     value: endValue,
@@ -244,6 +256,11 @@ export function animateCounter(
     ease: easings.decelerate,
     onUpdate: () => {
       element.textContent = `${prefix}${obj.value.toFixed(decimals)}${suffix}`;
+    },
+    onComplete: () => {
+      // Ensure final value is set and clear any GSAP-added inline styles
+      element.textContent = `${prefix}${endValue.toFixed(decimals)}${suffix}`;
+      gsap.set(element, { clearProps: 'all' });
     },
   });
 }

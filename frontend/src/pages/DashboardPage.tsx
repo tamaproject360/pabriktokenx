@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -12,7 +12,8 @@ import {
   Network,
 } from 'lucide-react';
 import { getUsage, getConfig, listAuthFiles } from '../lib/api';
-import { animatePageEnter, animateCounter, animateList } from '../lib/animations';
+import { animateCounter } from '../lib/animations';
+import gsap from 'gsap';
 
 // Ambient Background Component
 function AmbientBackground() {
@@ -45,22 +46,33 @@ interface StatCardProps {
   color: string;
   subtitle?: string;
   large?: boolean;
+  suffix?: string; // Added for % or other suffixes
 }
 
-function StatCard({ title, value, icon: Icon, color, subtitle, large = false }: StatCardProps) {
+function StatCard({ title, value, icon: Icon, color, subtitle, large = false, suffix = '' }: StatCardProps) {
   const countRef = useRef<HTMLParagraphElement>(null);
   const targetValue = typeof value === 'number' ? value : parseInt(value.toString().replace(/,/g, '')) || 0;
-  const hasAnimated = useRef(false);
+  const prevValueRef = useRef<number>(0);
 
   useEffect(() => {
-    if (countRef.current && !hasAnimated.current) {
-      hasAnimated.current = true;
+    if (countRef.current && targetValue !== prevValueRef.current) {
+      prevValueRef.current = targetValue;
       animateCounter(countRef.current, targetValue, {
-        duration: 1.5,
+        duration: 1.2,
         decimals: 0,
       });
     }
   }, [targetValue]);
+
+  // Format number untuk display
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`;
+    } else if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`;
+    }
+    return num.toString();
+  };
 
   return (
     <div className={`dashboard-card glass-panel rounded-2xl p-6 card-hover relative overflow-hidden ${large ? 'lg:col-span-2' : ''}`}>
@@ -95,34 +107,54 @@ function StatCard({ title, value, icon: Icon, color, subtitle, large = false }: 
         </div>
 
         {/* Big Value */}
-        <p 
-          ref={countRef}
-          className={`font-bold text-white tracking-tight ${large ? 'text-5xl' : 'text-4xl'}`}
-          style={{ fontFamily: 'JetBrains Mono, monospace' }}
-        >
-          0
-        </p>
+        <div className="flex items-baseline gap-1">
+          <p 
+            ref={countRef}
+            className={`font-bold text-white tracking-tight ${large ? 'text-5xl' : 'text-4xl'}`}
+            style={{ fontFamily: 'JetBrains Mono, monospace' }}
+          >
+            {value}
+          </p>
+          {suffix && (
+            <span className="text-2xl font-semibold text-slate-400">{suffix}</span>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 interface ModelUsageProps {
-  models: Record<string, { requests: number; input_tokens: number; output_tokens: number }>;
+  models: Record<string, { requests: number; tokens: number }>;
 }
 
 function ModelUsageTable({ models }: ModelUsageProps) {
   const tableRef = useRef<HTMLDivElement>(null);
   const entries = Object.entries(models || {}).sort((a, b) => b[1].requests - a[1].requests);
-  const hasAnimated = useRef(false);
+  const prevEntriesLength = useRef(0);
 
   useEffect(() => {
-    if (tableRef.current && !hasAnimated.current && entries.length > 0) {
-      hasAnimated.current = true;
+    if (tableRef.current && entries.length > 0 && entries.length !== prevEntriesLength.current) {
+      prevEntriesLength.current = entries.length;
       const rows = tableRef.current.querySelectorAll('tbody tr');
-      animateList(rows, { delay: 0.2 });
+      
+      gsap.set(rows, { 
+        opacity: 0, 
+        x: -8,
+        willChange: 'transform, opacity'
+      });
+      
+      gsap.to(rows, {
+        opacity: 1,
+        x: 0,
+        duration: 0.15,
+        stagger: 0.03,
+        ease: 'power2.out',
+        force3D: true,
+        clearProps: 'willChange',
+      });
     }
-  }, [entries]);
+  }, [entries.length]);
 
   if (entries.length === 0) {
     return (
@@ -140,8 +172,8 @@ function ModelUsageTable({ models }: ModelUsageProps) {
           <tr className="border-b border-white/[0.06]">
             <th className="text-left py-4 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Model</th>
             <th className="text-right py-4 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Requests</th>
-            <th className="text-right py-4 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Input</th>
-            <th className="text-right py-4 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Output</th>
+            <th className="text-right py-4 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Tokens</th>
+            <th className="text-right py-4 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Avg/Request</th>
           </tr>
         </thead>
         <tbody>
@@ -159,10 +191,12 @@ function ModelUsageTable({ models }: ModelUsageProps) {
                 <span className="text-sm text-slate-300 font-mono">{stats.requests.toLocaleString()}</span>
               </td>
               <td className="text-right py-4 px-4">
-                <span className="text-sm text-slate-400 font-mono">{(stats.input_tokens / 1000).toFixed(1)}K</span>
+                <span className="text-sm text-slate-400 font-mono">{(stats.tokens / 1000).toFixed(1)}K</span>
               </td>
               <td className="text-right py-4 px-4">
-                <span className="text-sm text-slate-400 font-mono">{(stats.output_tokens / 1000).toFixed(1)}K</span>
+                <span className="text-xs text-slate-500 font-mono">
+                  {stats.requests > 0 ? Math.round(stats.tokens / stats.requests) : 0}
+                </span>
               </td>
             </tr>
           ))}
@@ -175,13 +209,15 @@ function ModelUsageTable({ models }: ModelUsageProps) {
 export default function DashboardPage() {
   const gridRef = useRef<HTMLDivElement>(null);
   
-  const { data: usageData, isLoading: usageLoading } = useQuery({
+  const { data: usageData, isLoading: usageLoading, refetch: refetchUsage } = useQuery({
     queryKey: ['usage'],
     queryFn: async () => {
       const response = await getUsage();
       return response.data;
     },
-    refetchInterval: 30000,
+    refetchInterval: 3000, // Refresh setiap 3 detik untuk real-time
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 
   const { data: configData, isLoading: configLoading } = useQuery({
@@ -190,6 +226,8 @@ export default function DashboardPage() {
       const response = await getConfig();
       return response.data;
     },
+    refetchInterval: 10000, // Refresh setiap 10 detik
+    refetchOnWindowFocus: true,
   });
 
   const { data: authFilesData } = useQuery({
@@ -198,15 +236,85 @@ export default function DashboardPage() {
       const response = await listAuthFiles();
       return response.data;
     },
+    refetchInterval: 5000, // Refresh setiap 5 detik
+    refetchOnWindowFocus: true,
   });
 
-  useEffect(() => {
-    // Page Entry Animation - Using standardized animation utilities
-    if (gridRef.current && !usageLoading && !configLoading) {
-      const cards = gridRef.current.querySelectorAll('.dashboard-card');
-      animatePageEnter(cards);
+  // Parse usage data dengan fallback - HARUS DI ATAS SEBELUM HOOKS LAIN
+  const usage = usageData?.usage || usageData;
+  const totalRequests = usage?.total_requests || 0;
+  const successCount = usage?.success_count || 0;
+  const failureCount = usage?.failure_count || 0;
+  const totalTokens = usage?.total_tokens || 0;
+  const failedRequests = usageData?.failed_requests || failureCount || 0;
+  const authFilesCount = authFilesData?.files?.length || authFilesData?.length || 0;
+  const serverPort = configData?.port || 9999;
+  
+  // Extract models from APIs
+  const apis = usage?.apis || {};
+  const allModels: Record<string, { requests: number; tokens: number }> = {};
+  
+  Object.values(apis).forEach((api: any) => {
+    if (api.models) {
+      Object.entries(api.models).forEach(([modelName, modelData]: [string, any]) => {
+        if (!allModels[modelName]) {
+          allModels[modelName] = { requests: 0, tokens: 0 };
+        }
+        allModels[modelName].requests += modelData.total_requests || 0;
+        allModels[modelName].tokens += modelData.total_tokens || 0;
+      });
     }
-  }, [usageLoading, configLoading]);
+  });
+  
+  const modelCount = Object.keys(allModels).length;
+
+  // Smooth card animation like AuthFilesPage
+  const animateCards = useCallback(() => {
+    if (!gridRef.current) return;
+    
+    const cards = gridRef.current.querySelectorAll('.dashboard-card');
+    if (cards.length === 0) return;
+    
+    gsap.set(cards, { 
+      opacity: 0, 
+      y: 12,
+      willChange: 'transform, opacity'
+    });
+    
+    gsap.to(cards, {
+      opacity: 1,
+      y: 0,
+      duration: 0.2,
+      stagger: 0.05,
+      ease: 'power2.out',
+      force3D: true,
+      clearProps: 'willChange',
+    });
+  }, []);
+
+  // SEMUA useEffect HARUS DI SINI - SEBELUM CONDITIONAL RETURN
+  useEffect(() => {
+    if (!usageLoading && !configLoading && usageData) {
+      requestAnimationFrame(() => {
+        animateCards();
+      });
+    }
+  }, [usageLoading, configLoading, usageData, animateCards]);
+
+  // Debug logging untuk melihat data yang diterima
+  useEffect(() => {
+    if (usageData) {
+      console.log('📊 Dashboard Data Update:', {
+        totalRequests,
+        totalTokens,
+        successCount,
+        failureCount,
+        modelCount,
+        models: Object.keys(allModels),
+        rawData: usageData
+      });
+    }
+  }, [usageData, totalRequests, totalTokens, modelCount, successCount, failureCount]);
 
   const isLoading = usageLoading || configLoading;
 
@@ -227,28 +335,30 @@ export default function DashboardPage() {
     );
   }
 
-  const usage = usageData?.usage;
-  const totalRequests = usage?.total_requests || 0;
-  const totalInputTokens = usage?.total_input_tokens || 0;
-  const totalOutputTokens = usage?.total_output_tokens || 0;
-  const failedRequests = usageData?.failed_requests || 0;
-  const authFilesCount = authFilesData?.files?.length || 0;
-  const serverPort = configData?.port || 9999;
-  const modelCount = Object.keys(usage?.models || {}).length;
-
   return (
     <div className="relative min-h-screen">
       <AmbientBackground />
       
       <div className="relative z-10 space-y-8">
         {/* Page Header */}
-        <div className="space-y-2">
-          <h1 className="text-4xl font-semibold text-white tracking-tight">
-            Control Center
-          </h1>
-          <p className="text-slate-400 text-sm">
-            Real-time system diagnostics and performance metrics
-          </p>
+        <div className="flex items-start justify-between">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-semibold text-white tracking-tight">
+              Control Center
+            </h1>
+            <p className="text-slate-400 text-sm">
+              Real-time system diagnostics and performance metrics
+            </p>
+          </div>
+          
+          {/* Live Indicator */}
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl glass-panel">
+            <div className="relative flex-shrink-0">
+              <div className="absolute inset-0 bg-emerald-400 blur-md opacity-50 animate-pulse" />
+              <div className="relative w-2 h-2 rounded-full bg-emerald-400" />
+            </div>
+            <span className="text-sm font-medium text-emerald-400">Live (3s refresh)</span>
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -264,19 +374,20 @@ export default function DashboardPage() {
           />
           
           <StatCard
-            title="Input Tokens"
-            value={totalInputTokens}
+            title="Total Tokens"
+            value={totalTokens}
             icon={TrendingUp}
             color="#10B981"
-            subtitle="data ingestion"
+            subtitle="tokens processed"
           />
           
           <StatCard
-            title="Output Tokens"
-            value={totalOutputTokens}
+            title="Success Rate"
+            value={totalRequests > 0 ? Math.round((successCount / totalRequests) * 100) : 0}
             icon={Zap}
             color="#8B5CF6"
-            subtitle="data generation"
+            subtitle="% successful"
+            suffix="%"
           />
 
           {/* Secondary Stats */}
@@ -327,7 +438,7 @@ export default function DashboardPage() {
               <span className="text-xs font-medium text-emerald-400">Live</span>
             </div>
           </div>
-          <ModelUsageTable models={usage?.models || {}} />
+          <ModelUsageTable models={allModels} />
         </div>
       </div>
     </div>

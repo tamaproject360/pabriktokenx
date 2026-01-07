@@ -8,8 +8,8 @@ import {
   updateClaudeKeys,
   updateCodexKeys,
 } from '../lib/api';
-import { useState, useEffect, useRef } from 'react';
-import { animatePageEnter } from '../lib/animations';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import gsap from 'gsap';
 
 // Ambient Background
 function AmbientBackground() {
@@ -227,12 +227,37 @@ export default function APIKeysPage() {
     },
   });
 
-  useEffect(() => {
-    if (sectionsRef.current) {
-      const sections = sectionsRef.current.querySelectorAll('.key-section');
-      animatePageEnter(sections, { stagger: 0.1 });
-    }
+  // Smooth card animation like AuthFilesPage
+  const animateCards = useCallback(() => {
+    if (!sectionsRef.current) return;
+    
+    const sections = sectionsRef.current.querySelectorAll('.key-section');
+    if (sections.length === 0) return;
+    
+    gsap.set(sections, { 
+      opacity: 0, 
+      y: 12,
+      willChange: 'transform, opacity'
+    });
+    
+    gsap.to(sections, {
+      opacity: 1,
+      y: 0,
+      duration: 0.2,
+      stagger: 0.05,
+      ease: 'power2.out',
+      force3D: true,
+      clearProps: 'willChange',
+    });
   }, []);
+
+  useEffect(() => {
+    if (!geminiLoading && !claudeLoading && !codexLoading) {
+      requestAnimationFrame(() => {
+        animateCards();
+      });
+    }
+  }, [geminiLoading, claudeLoading, codexLoading, animateCards]);
 
   const refetchAll = () => {
     queryClient.invalidateQueries({ queryKey: ['geminiKeys'] });

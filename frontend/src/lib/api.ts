@@ -44,16 +44,39 @@ api.interceptors.response.use(
 );
 
 // API Types
+export interface RequestDetail {
+  timestamp: string;
+  source: string;
+  auth_index: string;
+  tokens: {
+    input_tokens: number;
+    output_tokens: number;
+    reasoning_tokens: number;
+    cached_tokens: number;
+    total_tokens: number;
+  };
+  failed: boolean;
+}
+
 export interface UsageStatistics {
   usage: {
     total_requests: number;
-    total_input_tokens: number;
-    total_output_tokens: number;
-    models: Record<string, {
-      requests: number;
-      input_tokens: number;
-      output_tokens: number;
+    success_count: number;
+    failure_count: number;
+    total_tokens: number;
+    apis?: Record<string, {
+      total_requests: number;
+      total_tokens: number;
+      models: Record<string, {
+        total_requests: number;
+        total_tokens: number;
+        details?: RequestDetail[];
+      }>;
     }>;
+    requests_by_day?: Record<string, number>;
+    requests_by_hour?: Record<string, number>;
+    tokens_by_day?: Record<string, number>;
+    tokens_by_hour?: Record<string, number>;
   };
   failed_requests: number;
 }
@@ -116,7 +139,7 @@ export const getLoggingToFile = () => api.get<{ 'logging-to-file': boolean }>('/
 export const setLoggingToFile = (enabled: boolean) => api.put('/logging-to-file', { value: enabled });
 
 // Logs
-export const getLogs = () => api.get<{ logs: string }>('/logs');
+export const getLogs = () => api.get<{ lines: string[]; 'line-count': number; 'latest-timestamp': number }>('/logs');
 export const deleteLogs = () => api.delete('/logs');
 export const getRequestErrorLogs = () => api.get<{ files: string[] }>('/request-error-logs');
 export const getRequestLog = () => api.get('/request-log');

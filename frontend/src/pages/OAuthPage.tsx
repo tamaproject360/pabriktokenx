@@ -13,8 +13,8 @@ import {
   requestQwenAuth,
   requestIFlowAuth,
 } from '../lib/api';
-import { useState, useEffect, useRef } from 'react';
-import { animatePageEnter } from '../lib/animations';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import gsap from 'gsap';
 
 // Ambient Background
 function AmbientBackground() {
@@ -155,12 +155,35 @@ function OAuthProviderCard({ title, description, color, icon, onLogin }: OAuthPr
 export default function OAuthPage() {
   const cardsRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (cardsRef.current) {
-      const cards = cardsRef.current.querySelectorAll('.oauth-card');
-      animatePageEnter(cards, { stagger: 0.08 });
-    }
+  // Smooth card animation like AuthFilesPage
+  const animateCards = useCallback(() => {
+    if (!cardsRef.current) return;
+    
+    const cards = cardsRef.current.querySelectorAll('.oauth-card');
+    if (cards.length === 0) return;
+    
+    gsap.set(cards, { 
+      opacity: 0, 
+      y: 12,
+      willChange: 'transform, opacity'
+    });
+    
+    gsap.to(cards, {
+      opacity: 1,
+      y: 0,
+      duration: 0.2,
+      stagger: 0.05,
+      ease: 'power2.out',
+      force3D: true,
+      clearProps: 'willChange',
+    });
   }, []);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      animateCards();
+    });
+  }, [animateCards]);
 
   return (
     <div className="relative min-h-screen">
