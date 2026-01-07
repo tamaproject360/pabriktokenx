@@ -213,13 +213,19 @@ export default function PlaygroundPage() {
       try {
         const response = await getAPIKeys();
         const keys = response.data?.['api-keys'] || [];
+        console.log('Fetched proxy keys:', keys.length > 0 ? `Found ${keys.length} keys` : 'No keys found');
         if (keys.length > 0 && typeof keys[0] === 'object' && 'key' in keys[0]) {
           setApiKey(keys[0].key);
+          console.log('Using proxy key for authentication');
         } else if (keys.length > 0 && typeof keys[0] === 'string') {
           setApiKey(keys[0]);
+          console.log('Using proxy key for authentication');
+        } else {
+          console.warn('No proxy API keys configured. Please add a key in config.yaml or via Proxy Keys page.');
         }
       } catch (err) {
         console.error('Failed to fetch API keys:', err);
+        console.error('Make sure you are logged in with a valid management key');
       }
     };
     fetchApiKey();
@@ -388,6 +394,8 @@ export default function PlaygroundPage() {
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error(`Chat completion failed: ${response.status} - ${errorText}`);
+        console.error('Request model:', selectedModel, 'Has API key:', !!apiKey);
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
@@ -400,16 +408,23 @@ export default function PlaygroundPage() {
       const generatedImages: string[] = [];
       let imageFound = false;
 
+      let buffer = '';
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        buffer += chunk;
+        
+        // Split buffer by newlines and process complete lines
+        const lines = buffer.split('\n');
+        // Keep the last potentially incomplete line in buffer
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
+          const trimmedLine = line.trim();
+          if (trimmedLine.startsWith('data: ')) {
+            const data = trimmedLine.slice(6);
             if (data === '[DONE]') continue;
 
             try {
@@ -418,8 +433,8 @@ export default function PlaygroundPage() {
               fullContent += content;
 
               // Check for image generation in streaming response (delta.images)
-              if (parsed.choices?.[0]?.delta?.images) {
-                const deltaImages = parsed.choices[0].delta.images;
+              const deltaImages = parsed.choices?.[0]?.delta?.images;
+              if (deltaImages) {
                 deltaImages.forEach((img: { image_url?: { url?: string }; url?: string }) => {
                   const imageUrl = img.image_url?.url || img.url;
                   if (imageUrl && !generatedImages.includes(imageUrl)) {
@@ -677,7 +692,7 @@ export default function PlaygroundPage() {
       {/* Main Chat Area */}
       <div className="relative z-10 flex-1 flex flex-col">
         {/* Header */}
-        <div className="h-16 border-b border-white/[0.06] flex items-center justify-between px-6 bg-[#09090B]/80 backdrop-blur-sm">
+        <div className="h-16 border-b border-white/[0.06] flex items-center justify-between px-6 bg-[#09090B]/80 backdrop-blur-sm relative z-50">
           <div className="relative">
             <button
               onClick={() => setShowModelSelector(!showModelSelector)}
@@ -698,8 +713,8 @@ export default function PlaygroundPage() {
             {/* Model Selector Dropdown */}
             {showModelSelector && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowModelSelector(false)} />
-                <div className="absolute top-full left-0 mt-2 w-96 glass-panel rounded-2xl shadow-2xl z-50 overflow-hidden">
+                <div className="fixed inset-0 z-[100] bg-black/20" onClick={() => setShowModelSelector(false)} />
+                <div className="absolute top-full left-0 mt-2 w-96 bg-[#0a0a0c] border border-white/10 rounded-2xl shadow-2xl z-[101] overflow-hidden">
                   <div className="p-4 border-b border-white/[0.06]">
                     <div className="relative">
                       <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
