@@ -19,6 +19,10 @@ import {
   CheckCircle,
   XCircle,
   Info,
+  DownloadSimple,
+  Shield,
+  FilePdf,
+  FileText,
 } from 'phosphor-react';
 import { listAuthFiles, getAuthKey, getAPIKeys } from '../lib/api';
 import { animateFadeIn, durations } from '../lib/animations';
@@ -175,6 +179,7 @@ export default function PlaygroundPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -207,6 +212,200 @@ export default function PlaygroundPage() {
     const lower = modelName.toLowerCase();
     return lower.includes('image') || lower.includes('dall-e') || lower.includes('imagen');
   }, []);
+
+  // Export chat to markdown
+  const exportChatToMarkdown = useCallback(() => {
+    if (messages.length === 0) {
+      addToast('error', 'No messages to export');
+      return;
+    }
+
+    let markdown = `# Chat Export\n\n`;
+    markdown += `**Model:** ${selectedModel}\n`;
+    markdown += `**Date:** ${new Date().toLocaleString()}\n\n`;
+    markdown += `---\n\n`;
+
+    messages.forEach((message, index) => {
+      const role = message.role === 'user' ? '👤 **User**' : '🤖 **Assistant**';
+      markdown += `### ${role}\n\n`;
+      
+      if (message.content) {
+        markdown += `${message.content}\n\n`;
+      }
+      
+      if (message.images && message.images.length > 0) {
+        markdown += `**Generated Images:** ${message.images.length}\n\n`;
+        message.images.forEach((img, idx) => {
+          markdown += `![Generated Image ${idx + 1}](${img})\n\n`;
+        });
+      }
+      
+      if (index < messages.length - 1) {
+        markdown += `---\n\n`;
+      }
+    });
+
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chat-export-${Date.now()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    addToast('success', '📥 Chat exported as Markdown!');
+  }, [messages, selectedModel, addToast]);
+
+  // Export chat to PDF
+  const exportChatToPDF = useCallback(() => {
+    if (messages.length === 0) {
+      addToast('error', 'No messages to export');
+      return;
+    }
+
+    // Create a printable HTML content
+    let html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Chat Export</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: white;
+            color: #1a1a1a;
+          }
+          h1 { color: #0ea5e9; margin-bottom: 10px; }
+          .metadata { color: #64748b; margin-bottom: 30px; font-size: 14px; }
+          .message {
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            page-break-inside: avoid;
+          }
+          .message.user {
+            background: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+          }
+          .message.assistant {
+            background: #f8fafc;
+            border-left: 4px solid #8b5cf6;
+          }
+          .message-header {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #0ea5e9;
+          }
+          .message.assistant .message-header { color: #8b5cf6; }
+          .message-content {
+            white-space: pre-wrap;
+            line-height: 1.6;
+          }
+          .message-content code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+          }
+          .message-content pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+          }
+          th, td {
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            text-align: left;
+          }
+          th {
+            background: #f1f5f9;
+            font-weight: 600;
+            color: #0ea5e9;
+          }
+          tr:nth-child(even) { background: #f8fafc; }
+          hr { border: none; border-top: 2px solid #e2e8f0; margin: 20px 0; }
+          @media print {
+            body { padding: 20px; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>💬 Chat Export</h1>
+        <div class="metadata">
+          <div><strong>Model:</strong> ${selectedModel}</div>
+          <div><strong>Date:</strong> ${new Date().toLocaleString()}</div>
+          <div><strong>Messages:</strong> ${messages.length}</div>
+        </div>
+        <hr>
+    `;
+
+    messages.forEach((message) => {
+      const role = message.role === 'user' ? 'user' : 'assistant';
+      const icon = message.role === 'user' ? '👤' : '🤖';
+      const label = message.role === 'user' ? 'User' : 'Assistant';
+      
+      // Helper function to escape HTML
+      const escapeHtml = (text: string) => {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML.replace(/\n/g, '<br>');
+      };
+      
+      html += `
+        <div class="message ${role}">
+          <div class="message-header">${icon} ${label}</div>
+          <div class="message-content">${escapeHtml(message.content || '')}</div>
+      `;
+      
+      if (message.images && message.images.length > 0) {
+        html += `<div style="margin-top: 15px; color: #64748b;"><em>🖼️ ${message.images.length} image(s) generated</em></div>`;
+      }
+      
+      html += `</div>`;
+    });
+
+    html += `
+        <hr>
+        <div style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 30px;">
+          Exported from Pabrik Token v2.8 • ${new Date().toLocaleDateString()}
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      
+      // Wait for content to load, then print
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+          addToast('success', '🖨️ PDF print dialog opened!');
+        }, 250);
+      };
+    } else {
+      addToast('error', 'Please allow popups to export PDF');
+    }
+    
+    setShowExportMenu(false);
+  }, [messages, selectedModel, addToast]);
 
   useEffect(() => {
     const fetchApiKey = async () => {
@@ -680,7 +879,7 @@ export default function PlaygroundPage() {
           </p>
           <button 
             onClick={() => window.location.href = '/oauth'}
-            className="px-6 py-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all duration-300 font-medium"
+            className="px-4 py-2 rounded-xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/30 transition-colors"
           >
             Go to OAuth
           </button>
@@ -827,12 +1026,47 @@ export default function PlaygroundPage() {
             )}
           </div>
 
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className={`p-2.5 rounded-xl transition-all duration-300 ${showSettings ? 'bg-cyan-500/20 text-cyan-400' : 'hover:bg-white/[0.05] text-slate-400'}`}
-          >
-            <GearSix className="h-5 w-5" weight="bold" />
-          </button>
+          <div className="flex items-center gap-2">
+            {messages.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className="p-2.5 rounded-xl transition-all duration-300 hover:bg-white/[0.05] text-slate-400 hover:text-cyan-400"
+                  title="Export chat"
+                >
+                  <DownloadSimple className="h-5 w-5" weight="bold" />
+                </button>
+                
+                {showExportMenu && (
+                  <>
+                    <div className="fixed inset-0 z-[100]" onClick={() => setShowExportMenu(false)} />
+                    <div className="absolute top-full right-0 mt-2 w-48 bg-[#0a0a0c] border border-white/10 rounded-xl shadow-2xl z-[101] overflow-hidden">
+                      <button
+                        onClick={exportChatToMarkdown}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-white/[0.05] transition-colors"
+                      >
+                        <FileText className="h-4 w-4 text-cyan-400" weight="bold" />
+                        <span>Export as Markdown</span>
+                      </button>
+                      <button
+                        onClick={exportChatToPDF}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-white/[0.05] transition-colors border-t border-white/[0.06]"
+                      >
+                        <FilePdf className="h-4 w-4 text-rose-400" weight="bold" />
+                        <span>Export as PDF</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className={`p-2.5 rounded-xl transition-all duration-300 ${showSettings ? 'bg-cyan-500/20 text-cyan-400' : 'hover:bg-white/[0.05] text-slate-400'}`}
+            >
+              <GearSix className="h-5 w-5" weight="bold" />
+            </button>
+          </div>
         </div>
 
         {/* Messages Area */}
@@ -989,6 +1223,22 @@ export default function PlaygroundPage() {
                                 h3: ({ children }) => <h3 className="text-base font-semibold text-white mt-2 mb-1">{children}</h3>,
                                 blockquote: ({ children }) => <blockquote className="border-l-2 border-cyan-400 pl-3 my-2 text-slate-400">{children}</blockquote>,
                                 a: ({ children, href }) => <a href={href} className="text-cyan-400 hover:text-cyan-300 underline" target="_blank" rel="noopener noreferrer">{children}</a>,
+                                table: ({ children }) => (
+                                  <div className="my-4 overflow-x-auto rounded-lg border border-white/10">
+                                    <table className="min-w-full divide-y divide-white/10">{children}</table>
+                                  </div>
+                                ),
+                                thead: ({ children }) => <thead className="bg-white/[0.03]">{children}</thead>,
+                                tbody: ({ children }) => <tbody className="divide-y divide-white/10">{children}</tbody>,
+                                tr: ({ children }) => <tr className="hover:bg-white/[0.02] transition-colors">{children}</tr>,
+                                th: ({ children }) => (
+                                  <th className="px-4 py-3 text-left text-xs font-semibold text-cyan-400 uppercase tracking-wider">
+                                    {children}
+                                  </th>
+                                ),
+                                td: ({ children }) => (
+                                  <td className="px-4 py-3 text-sm text-slate-300 whitespace-nowrap">{children}</td>
+                                ),
                               }}
                             >
                               {message.content || '...'}
