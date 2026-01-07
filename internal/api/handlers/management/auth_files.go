@@ -1427,7 +1427,7 @@ func (h *Handler) RequestCodexToken(c *gin.Context) {
 
 func (h *Handler) RequestAntigravityToken(c *gin.Context) {
 	const (
-		antigravityCallbackPort = 51121
+		antigravityCallbackPort = 19121
 		antigravityClientID     = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
 		antigravityClientSecret = "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"
 	)

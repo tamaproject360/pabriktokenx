@@ -9,6 +9,22 @@ echo.
 
 cd /d "%~dp0"
 
+:: Stop any existing backend processes first
+echo [INFO] Checking for existing backend processes...
+taskkill /F /IM main.exe >nul 2>nul
+taskkill /F /IM server.exe >nul 2>nul
+taskkill /F /IM go.exe >nul 2>nul
+
+:: Kill any process on port 9999
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :9999 ^| findstr LISTENING') do (
+    echo [INFO] Stopping process on port 9999 (PID %%a)
+    taskkill /F /PID %%a >nul 2>nul
+)
+
+timeout /t 2 /nobreak >nul
+echo [INFO] Existing processes cleaned up.
+echo.
+
 :: Check if Go is installed
 where go >nul 2>nul
 if %ERRORLEVEL% neq 0 (

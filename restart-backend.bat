@@ -9,10 +9,21 @@ echo.
 
 cd /d "%~dp0"
 
-:: Stop existing server first
-echo [INFO] Stopping existing server...
+:: Stop all existing backend processes
+echo [INFO] Stopping existing backend processes...
+
+taskkill /F /IM main.exe >nul 2>nul
+taskkill /F /IM server.exe >nul 2>nul
 taskkill /F /IM go.exe >nul 2>nul
-echo [INFO] Waiting for process to stop...
+taskkill /F /IM cliproxy.exe >nul 2>nul
+
+:: Kill process on port 9999
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :9999 ^| findstr LISTENING') do (
+    echo [INFO] Killing process on port 9999 (PID %%a)
+    taskkill /F /PID %%a >nul 2>nul
+)
+
+echo [INFO] Waiting for processes to stop...
 timeout /t 3 /nobreak >nul
 
 echo.

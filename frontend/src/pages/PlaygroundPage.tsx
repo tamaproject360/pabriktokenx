@@ -469,6 +469,28 @@ export default function PlaygroundPage() {
                   }
                 });
               }
+              
+              // Check for base64 image data directly in message.content (Gemini image generation format)
+              // Gemini returns base64 directly in content field as a very long string
+              const messageContent = parsed.choices?.[0]?.message?.content || parsed.choices?.[0]?.delta?.content;
+              if (messageContent && typeof messageContent === 'string' && messageContent.length > 1000) {
+                // Check for common base64 image signatures
+                const isJpeg = messageContent.startsWith('/9j/'); // JPEG magic bytes in base64
+                const isPng = messageContent.startsWith('iVBOR'); // PNG magic bytes in base64
+                const isGif = messageContent.startsWith('R0lGOD'); // GIF magic bytes in base64
+                const isWebp = messageContent.startsWith('UklGR'); // WebP magic bytes in base64
+                
+                if (isJpeg || isPng || isGif || isWebp) {
+                  const mimeType = isJpeg ? 'image/jpeg' : isPng ? 'image/png' : isGif ? 'image/gif' : 'image/webp';
+                  const imgUrl = `data:${mimeType};base64,${messageContent}`;
+                  if (!generatedImages.includes(imgUrl)) {
+                    generatedImages.push(imgUrl);
+                    imageFound = true;
+                    // Clear fullContent since this is an image, not text
+                    fullContent = '';
+                  }
+                }
+              }
 
               setMessages(prev =>
                 prev.map(m =>
@@ -481,6 +503,33 @@ export default function PlaygroundPage() {
               // Skip invalid JSON
             }
           }
+        }
+      }
+
+      // After streaming is complete, check if fullContent is actually a base64 image
+      // This handles cases where the entire base64 string was streamed piece by piece
+      if (fullContent && fullContent.length > 1000 && generatedImages.length === 0) {
+        const trimmedContent = fullContent.trim();
+        const isJpeg = trimmedContent.startsWith('/9j/');
+        const isPng = trimmedContent.startsWith('iVBOR');
+        const isGif = trimmedContent.startsWith('R0lGOD');
+        const isWebp = trimmedContent.startsWith('UklGR');
+        
+        if (isJpeg || isPng || isGif || isWebp) {
+          const mimeType = isJpeg ? 'image/jpeg' : isPng ? 'image/png' : isGif ? 'image/gif' : 'image/webp';
+          const imgUrl = `data:${mimeType};base64,${trimmedContent}`;
+          generatedImages.push(imgUrl);
+          imageFound = true;
+          fullContent = ''; // Clear the text content since it's an image
+          
+          // Update the message with the image
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === assistantMessage.id
+                ? { ...m, content: '', images: [...generatedImages] }
+                : m
+            )
+          );
         }
       }
 
