@@ -267,6 +267,7 @@ func NewServer(cfg *config.Config, authManager *auth.Manager, accessManager *sdk
 		// Fallback to AuthDir/logs when logs dir doesn't exist (same as global_logger.go)
 		logDir = filepath.Join(cfg.AuthDir, "logs")
 	}
+	log.Printf("Management log directory set to: %s", logDir)
 	s.mgmt.SetLogDirectory(logDir)
 	s.localPassword = optionState.localPassword
 
