@@ -139,8 +139,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </div>
 
         {/* Logo & Toggle */}
-        <div className="relative h-20 flex items-center justify-between px-5 border-b border-white/[0.06]">
-          <div className="flex items-center gap-3 overflow-hidden">
+        <div className="relative h-20 flex items-center justify-between px-5 border-b border-white/[0.06]" style={{ minHeight: '5rem' }}>
+          <div className="flex items-center gap-3 overflow-hidden" style={{ maxWidth: collapsed ? '40px' : '100%' }}>
             <div className="relative flex-shrink-0">
               <div className="absolute inset-0 bg-cyan-400 blur-lg opacity-30 animate-pulse" />
               <div className="relative w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.1] flex items-center justify-center">
@@ -163,7 +163,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-6 overflow-y-auto overflow-x-hidden px-3">
+        <nav className="flex-1 py-6 overflow-y-auto overflow-x-hidden px-3" style={{ overflowX: 'hidden' }}>
           <ul className="space-y-2">
             {navItems.map((item, index) => {
               const isActive = location.pathname === item.to;
@@ -216,7 +216,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                     
                     {/* Label */}
                     <span 
-                      className="nav-label text-sm font-medium tracking-tight whitespace-nowrap"
+                      className="nav-label text-sm font-medium tracking-tight whitespace-nowrap overflow-hidden"
                       style={{ fontFamily: 'Inter Tight, sans-serif' }}
                     >
                       {item.label}
@@ -266,7 +266,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             `}
           >
             <LogOut className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" strokeWidth={1.5} />
-            <span className="nav-label text-sm font-medium">
+            <span className="nav-label text-sm font-medium overflow-hidden whitespace-nowrap">
               Logout
             </span>
           </button>

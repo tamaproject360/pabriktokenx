@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import ReactMarkdown from 'react-markdown';
 import {
   PencilSimple,
   Trash,
@@ -687,7 +688,31 @@ export default function PlaygroundPage() {
                           : 'glass-panel text-slate-200'
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content || '...'}</p>
+                      {message.role === 'user' ? (
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content || '...'}</p>
+                      ) : (
+                        <div className="text-sm leading-relaxed prose prose-invert prose-sm max-w-none">
+                          <ReactMarkdown
+                            components={{
+                              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                              strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+                              em: ({ children }) => <em className="italic text-slate-300">{children}</em>,
+                              code: ({ children }) => <code className="px-1.5 py-0.5 rounded bg-white/[0.08] text-cyan-400 font-mono text-xs">{children}</code>,
+                              pre: ({ children }) => <pre className="bg-black/30 p-3 rounded-lg overflow-x-auto my-2">{children}</pre>,
+                              ul: ({ children }) => <ul className="list-disc list-inside my-2 space-y-1">{children}</ul>,
+                              ol: ({ children }) => <ol className="list-decimal list-inside my-2 space-y-1">{children}</ol>,
+                              li: ({ children }) => <li className="text-slate-300">{children}</li>,
+                              h1: ({ children }) => <h1 className="text-xl font-bold text-white mt-3 mb-2">{children}</h1>,
+                              h2: ({ children }) => <h2 className="text-lg font-semibold text-white mt-3 mb-2">{children}</h2>,
+                              h3: ({ children }) => <h3 className="text-base font-semibold text-white mt-2 mb-1">{children}</h3>,
+                              blockquote: ({ children }) => <blockquote className="border-l-2 border-cyan-400 pl-3 my-2 text-slate-400">{children}</blockquote>,
+                              a: ({ children, href }) => <a href={href} className="text-cyan-400 hover:text-cyan-300 underline" target="_blank" rel="noopener noreferrer">{children}</a>,
+                            }}
+                          >
+                            {message.content || '...'}
+                          </ReactMarkdown>
+                        </div>
+                      )}
                     </div>
                     
                     {/* Copy Button */}

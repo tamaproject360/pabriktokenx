@@ -359,6 +359,68 @@ code, pre, .font-mono {
   }
 }
 
+/* Markdown rendering styles for chat */
+.prose-invert {
+  color: #E2E8F0;
+}
+
+.prose-invert code {
+  color: #22D3EE;
+}
+
+.prose-invert pre {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.prose-invert pre code {
+  color: #E2E8F0;
+  background: transparent;
+}
+
+.prose-invert strong {
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.prose-invert h1,
+.prose-invert h2,
+.prose-invert h3,
+.prose-invert h4,
+.prose-invert h5,
+.prose-invert h6 {
+  color: #FFFFFF;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.prose-invert a {
+  color: #22D3EE;
+  text-decoration: underline;
+  text-decoration-color: rgba(34, 211, 238, 0.3);
+}
+
+.prose-invert a:hover {
+  color: #06B6D4;
+  text-decoration-color: #06B6D4;
+}
+
+.prose-invert ul,
+.prose-invert ol {
+  padding-left: 1.5rem;
+}
+
+.prose-invert li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.prose-invert blockquote {
+  border-left-color: #22D3EE;
+  color: #94A3B8;
+  font-style: italic;
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   *,
