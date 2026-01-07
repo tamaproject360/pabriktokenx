@@ -135,10 +135,12 @@ func ConvertOpenAIRequestToGemini(modelName string, inputRawJSON []byte, _ bool)
 		}
 		if len(responseMods) > 0 {
 			out, _ = sjson.SetBytes(out, "generationConfig.responseModalities", responseMods)
+			log.Infof("[Image Gen] Model: %s - Modalities set from request: %v", modelName, responseMods)
 		}
 	} else if isImageGenerationModel(modelName) {
 		// Auto-enable image generation for image models when modalities not explicitly set
 		out, _ = sjson.SetBytes(out, "generationConfig.responseModalities", []string{"IMAGE", "TEXT"})
+		log.Infof("[Image Gen] Model: %s - Auto-enabled IMAGE+TEXT modalities (no explicit modalities in request)", modelName)
 	}
 
 	// OpenRouter-style image_config support

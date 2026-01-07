@@ -376,19 +376,27 @@ export default function PlaygroundPage() {
         { role: 'user', content: userMessage.content },
       ];
 
+      // Build request body with proper modalities for image generation
+      const requestBody: any = {
+        model: selectedModel,
+        messages: apiMessages,
+        stream: true,
+        temperature,
+        max_tokens: maxTokens,
+      };
+
+      // Add modalities for image generation models
+      if (isImageRequest) {
+        requestBody.modalities = ['image', 'text'];
+      }
+
       const response = await fetch('/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}),
         },
-        body: JSON.stringify({
-          model: selectedModel,
-          messages: apiMessages,
-          stream: true,
-          temperature,
-          max_tokens: maxTokens,
-        }),
+        body: JSON.stringify(requestBody),
         signal: abortControllerRef.current.signal,
       });
 
@@ -828,10 +836,10 @@ export default function PlaygroundPage() {
         </div>
 
         {/* Messages Area */}
-        <div ref={chatContainerRef} className="flex-1 overflow-y-auto">
+        <div ref={chatContainerRef} className={`flex-1 overflow-y-auto ${messages.length === 0 ? 'flex flex-col' : ''}`}>
           {/* API Key Warning */}
           {!apiKey && (
-            <div className="max-w-4xl mx-auto mt-4 px-6">
+            <div className={`max-w-4xl mx-auto px-6 ${messages.length === 0 ? 'mt-8' : 'mt-4'}`}>
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
                 <div className="flex items-start gap-3">
                   <Shield className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
@@ -853,27 +861,82 @@ export default function PlaygroundPage() {
           )}
           
           {messages.length === 0 ? (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center max-w-lg px-4">
-                <div 
-                  className="w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center"
-                  style={{ 
-                    background: `${providerColor}15`,
-                    boxShadow: `0 0 40px ${providerColor}20`,
-                  }}
-                >
-                  <Robot className="h-10 w-10" style={{ color: providerColor }} weight="fill" />
+            <div className="h-full flex items-center justify-center px-4">
+              <div className="w-full max-w-3xl">
+                {/* Title and Icon */}
+                <div className="text-center mb-8">
+                  <div 
+                    className="w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center"
+                    style={{ 
+                      background: `${providerColor}15`,
+                      boxShadow: `0 0 40px ${providerColor}20`,
+                    }}
+                  >
+                    <Robot className="h-10 w-10" style={{ color: providerColor }} weight="fill" />
+                  </div>
+                  <h2 className="text-3xl font-semibold text-white mb-3">
+                    Start a conversation
+                  </h2>
+                  <p className="text-slate-400 text-sm mb-8">
+                    Test your authenticated models with real-time streaming responses.
+                  </p>
                 </div>
-                <h2 className="text-3xl font-semibold text-white mb-3">
-                  Start a conversation
-                </h2>
-                <p className="text-slate-400 text-sm">
-                  Test your authenticated models with real-time streaming responses.
-                </p>
+
+                {/* Centered Input Area */}
+                <div>
+                  {/* Image Generation Hint */}
+                  {isImageModel(selectedModel) && (
+                    <div className="mb-4 flex items-start gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20">
+                      <ImageIcon className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" weight="duotone" />
+                      <div className="flex-1">
+                        <p className="text-sm text-purple-300 font-medium">🎨 Image Generation Mode</p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          Prompt contoh: <span className="text-cyan-400 font-mono">"Generate an image of a futuristic motorcycle"</span>
+                        </p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          💡 Gunakan prompt dalam Bahasa Inggris untuk hasil terbaik. Jelaskan gambar yang ingin dibuat dengan detail.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-3">
+                    <div className="flex-1 relative">
+                      <textarea
+                        ref={textareaRef}
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder={isImageModel(selectedModel) ? "Describe the image you want to generate..." : "Type your message..."}
+                        className="w-full px-5 py-4 bg-white/[0.05] border border-white/[0.12] rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 resize-none text-base shadow-2xl"
+                        rows={1}
+                        disabled={isLoading}
+                        autoFocus
+                      />
+                    </div>
+                    
+                    {isLoading ? (
+                      <button
+                        onClick={stopGeneration}
+                        className="px-5 py-4 rounded-2xl bg-rose-500/20 border border-rose-500/30 text-rose-400 hover:bg-rose-500/30 transition-all duration-300 flex items-center gap-2 shadow-2xl"
+                      >
+                        <Stop className="h-5 w-5" weight="fill" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={sendMessage}
+                        disabled={!input.trim() || !selectedModel}
+                        className="px-5 py-4 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2 shadow-2xl hover:shadow-cyan-500/25"
+                      >
+                        <PaperPlaneTilt className="h-5 w-5" weight="fill" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
-            <div className="max-w-4xl mx-auto py-8 px-6">
+            <div className="max-w-4xl mx-auto py-8 px-6 pb-4">
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -1005,42 +1068,60 @@ export default function PlaygroundPage() {
           )}
         </div>
 
-        {/* Input Area */}
-        <div className="border-t border-white/[0.06] p-4 bg-[#09090B]/80 backdrop-blur-sm">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex gap-3">
-              <div className="flex-1 relative">
-                <textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Type your message..."
-                  className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 resize-none text-sm"
-                  rows={1}
-                  disabled={isLoading}
-                />
-              </div>
-              
-              {isLoading ? (
-                <button
-                  onClick={stopGeneration}
-                  className="px-4 py-3 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-400 hover:bg-rose-500/30 transition-all duration-300 flex items-center gap-2"
-                >
-                  <Stop className="h-5 w-5" weight="fill" />
-                </button>
-              ) : (
-                <button
-                  onClick={sendMessage}
-                  disabled={!input.trim() || !selectedModel}
-                  className="px-4 py-3 rounded-xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2"
-                >
-                  <PaperPlaneTilt className="h-5 w-5" weight="fill" />
-                </button>
+        {/* Input Area - Only show when there are messages */}
+        {messages.length > 0 && (
+          <div className="border-t border-white/[0.06] p-4 bg-[#09090B]/80 backdrop-blur-sm">
+            <div className="max-w-4xl mx-auto">
+              {/* Image Generation Hint */}
+              {isImageModel(selectedModel) && (
+                <div className="mb-3 flex items-start gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20">
+                  <ImageIcon className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" weight="duotone" />
+                  <div className="flex-1">
+                    <p className="text-sm text-purple-300 font-medium">🎨 Image Generation Mode</p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Prompt contoh: <span className="text-cyan-400 font-mono">"Generate an image of a futuristic motorcycle"</span>
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      💡 Gunakan prompt dalam Bahasa Inggris untuk hasil terbaik. Jelaskan gambar yang ingin dibuat dengan detail.
+                    </p>
+                  </div>
+                </div>
               )}
+              
+              <div className="flex gap-3">
+                <div className="flex-1 relative">
+                  <textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={isImageModel(selectedModel) ? "Describe the image you want to generate..." : "Type your message..."}
+                    className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 resize-none text-sm"
+                    rows={1}
+                    disabled={isLoading}
+                  />
+                </div>
+                
+                {isLoading ? (
+                  <button
+                    onClick={stopGeneration}
+                    className="px-4 py-3 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-400 hover:bg-rose-500/30 transition-all duration-300 flex items-center gap-2"
+                  >
+                    <Stop className="h-5 w-5" weight="fill" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={sendMessage}
+                    disabled={!input.trim() || !selectedModel}
+                    className="px-4 py-3 rounded-xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2"
+                  >
+                    <PaperPlaneTilt className="h-5 w-5" weight="fill" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Settings Panel */}
