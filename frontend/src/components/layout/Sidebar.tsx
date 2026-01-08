@@ -14,6 +14,7 @@ import {
   Menu,
   Sparkles,
   Cpu,
+  Database,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import gsap from 'gsap';
@@ -28,6 +29,7 @@ const navItems = [
   { to: '/playground', icon: Sparkles, label: 'Playground', color: '#8B5CF6' },
   { to: '/usage', icon: Activity, label: 'Usage', color: '#10B981' },
   { to: '/auth-files', icon: UserCircle, label: 'Auth Files', color: '#F59E0B' },
+  { to: '/quota', icon: Database, label: 'Quota', color: '#3B82F6' },
   { to: '/proxy-keys', icon: Shield, label: 'Proxy Keys', color: '#F97316' },
   { to: '/api-keys', icon: Key, label: 'AI Providers', color: '#F43F5E' },
   { to: '/oauth', icon: Globe, label: 'OAuth', color: '#06B6D4' },

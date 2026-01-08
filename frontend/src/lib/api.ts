@@ -228,6 +228,25 @@ export const importVertexCredential = (credential: unknown) =>
 export const getWebsocketAuth = () => api.get<{ 'ws-auth': boolean }>('/ws-auth');
 export const setWebsocketAuth = (enabled: boolean) => api.put('/ws-auth', { value: enabled });
 
+// Quota Management - API Call Proxy
+export interface QuotaAPICallRequest {
+  authIndex: number;
+  method: string;
+  url: string;
+  header?: Record<string, string>;
+  data?: string;
+}
+
+export interface QuotaAPICallResponse {
+  statusCode: number;
+  headers: Record<string, string>;
+  body?: unknown;
+  bodyText?: string;
+}
+
+export const makeQuotaAPICall = (request: QuotaAPICallRequest) => 
+  api.post<QuotaAPICallResponse>('/api-call', request);
+
 // Latest version check
 export const getLatestVersion = () => api.get('/latest-version');
 
