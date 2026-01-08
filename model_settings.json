@@ -1,0 +1,116 @@
+{
+  "models": {
+    "github-copilot-faysdevops.json:claude-sonnet-4": {
+      "model_id": "claude-sonnet-4",
+      "display_name": "Claude Sonnet 4",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-3.5-turbo": {
+      "model_id": "gpt-3.5-turbo",
+      "display_name": "GPT 3.5 Turbo",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-3.5-turbo-0613": {
+      "model_id": "gpt-3.5-turbo-0613",
+      "display_name": "GPT 3.5 Turbo",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4": {
+      "model_id": "gpt-4",
+      "display_name": "GPT 4",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4-0125-preview": {
+      "model_id": "gpt-4-0125-preview",
+      "display_name": "GPT 4 Turbo",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4-0613": {
+      "model_id": "gpt-4-0613",
+      "display_name": "GPT 4",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4-o-preview": {
+      "model_id": "gpt-4-o-preview",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4.1": {
+      "model_id": "gpt-4.1",
+      "display_name": "GPT-4.1",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4.1-2025-04-14": {
+      "model_id": "gpt-4.1-2025-04-14",
+      "display_name": "GPT-4.1",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4o": {
+      "model_id": "gpt-4o",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4o-2024-05-13": {
+      "model_id": "gpt-4o-2024-05-13",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4o-2024-08-06": {
+      "model_id": "gpt-4o-2024-08-06",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4o-2024-11-20": {
+      "model_id": "gpt-4o-2024-11-20",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4o-mini": {
+      "model_id": "gpt-4o-mini",
+      "display_name": "GPT-4o mini",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4o-mini-2024-07-18": {
+      "model_id": "gpt-4o-mini-2024-07-18",
+      "display_name": "GPT-4o mini",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:oswe-vscode-secondary": {
+      "model_id": "oswe-vscode-secondary",
+      "display_name": "Raptor mini (Preview)",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    }
+  }
+}

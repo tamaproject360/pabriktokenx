@@ -1,17 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Activity,
   AlertTriangle,
   Zap,
   Server,
   Users,
-  Database,
   TrendingUp,
   Cpu,
   Network,
+  SlidersHorizontal,
 } from 'lucide-react';
-import { getUsage, getConfig, listAuthFiles } from '../lib/api';
+import { getUsage, getConfig, listAuthFiles, getAuthKey } from '../lib/api';
 import { animateCounter } from '../lib/animations';
 import gsap from 'gsap';
 
@@ -424,9 +425,40 @@ export default function DashboardPage() {
             value={modelCount}
             icon={Network}
             color="#A78BFA"
-            subtitle="neural networks"
+            subtitle="in use"
           />
         </div>
+
+        {/* Model Settings Link Card */}
+        <Link 
+          to="/model-settings"
+          className="dashboard-card glass-panel rounded-2xl p-6 card-hover relative overflow-hidden block group"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div 
+                className="w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"
+                style={{ 
+                  background: 'rgba(168, 85, 247, 0.15)',
+                  boxShadow: '0 0 20px rgba(168, 85, 247, 0.25)',
+                }}
+              >
+                <SlidersHorizontal className="h-6 w-6 text-purple-400" strokeWidth={1.5} />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-white tracking-tight group-hover:text-purple-300 transition-colors">
+                  Model Settings
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">
+                  Enable or disable models for Playground and API requests
+                </p>
+              </div>
+            </div>
+            <div className="px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 group-hover:bg-purple-500/20 transition-colors">
+              <span className="text-sm font-medium text-purple-400">Configure →</span>
+            </div>
+          </div>
+        </Link>
 
         {/* Model Usage Table */}
         <div className="dashboard-card glass-panel rounded-2xl p-8">

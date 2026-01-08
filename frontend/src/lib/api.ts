@@ -247,6 +247,28 @@ export interface QuotaAPICallResponse {
 export const makeQuotaAPICall = (request: QuotaAPICallRequest) => 
   api.post<QuotaAPICallResponse>('/api-call', request);
 
+// Model Settings
+export interface ModelSetting {
+  model_id: string;
+  display_name?: string;
+  provider: string;
+  auth_file: string;
+  enabled: boolean;
+}
+
+export interface ModelSettingsResponse {
+  models: ModelSetting[];
+}
+
+export const getModelSettings = () => 
+  api.get<ModelSettingsResponse>('/model-settings');
+
+export const updateModelSetting = (setting: ModelSetting) => 
+  api.put<{ message: string; model: ModelSetting }>('/model-settings', setting);
+
+export const bulkUpdateModelSettings = (models: ModelSetting[]) => 
+  api.post<{ message: string; count: number }>('/model-settings/bulk', { models });
+
 // Latest version check
 export const getLatestVersion = () => api.get('/latest-version');
 

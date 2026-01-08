@@ -24,7 +24,8 @@ import {
   FilePdf,
   FileText,
 } from 'phosphor-react';
-import { listAuthFiles, getAuthKey, getAPIKeys } from '../lib/api';
+import { listAuthFiles, getAuthKey, getAPIKeys, getModelSettings } from '../lib/api';
+import type { ModelSetting } from '../lib/api';
 import { animateFadeIn, durations } from '../lib/animations';
 
 // Toast notification types
@@ -438,10 +439,32 @@ export default function PlaygroundPage() {
     },
   });
 
+  // Fetch model settings to filter enabled/disabled models
+  const { data: modelSettingsData } = useQuery({
+    queryKey: ['modelSettings'],
+    queryFn: async () => {
+      const response = await getModelSettings();
+      return response.data;
+    },
+  });
+
+  // Store all models (unfiltered) from auth files
+  const [allProviders, setAllProviders] = useState<AvailableProvider[]>([]);
+
+  // Helper to check if a model is enabled
+  const isModelEnabled = useCallback((modelId: string, authFile: string): boolean => {
+    if (!modelSettingsData?.models) return true; // Default to enabled if no settings
+    const setting = modelSettingsData.models.find(
+      (s: ModelSetting) => s.model_id === modelId && s.auth_file === authFile
+    );
+    return setting?.enabled !== false; // Default to enabled if not found
+  }, [modelSettingsData]);
+
+  // Fetch all models from auth files (only when authFilesData changes)
   useEffect(() => {
     const fetchModels = async () => {
       if (!authFilesData?.files || authFilesData.files.length === 0) {
-        setProviders([]);
+        setAllProviders([]);
         return;
       }
 
@@ -464,17 +487,49 @@ export default function PlaygroundPage() {
         }
       }
 
-      setProviders(providersList);
+      setAllProviders(providersList);
       setModelsLoading(false);
-
-      if (providersList.length > 0 && providersList[0].models.length > 0) {
-        setSelectedAuthFile(providersList[0].authFile);
-        setSelectedModel(providersList[0].models[0].id);
-      }
     };
 
     fetchModels();
   }, [authFilesData]);
+
+  // Filter providers based on model settings (runs when settings or all providers change)
+  useEffect(() => {
+    if (allProviders.length === 0) {
+      setProviders([]);
+      return;
+    }
+
+    // Filter out disabled models from each provider
+    const filteredProviders: AvailableProvider[] = [];
+    for (const provider of allProviders) {
+      const enabledModels = provider.models.filter((model: ModelInfo) =>
+        isModelEnabled(model.id, provider.authFile)
+      );
+      if (enabledModels.length > 0) {
+        filteredProviders.push({
+          ...provider,
+          models: enabledModels,
+        });
+      }
+    }
+
+    setProviders(filteredProviders);
+
+    // Reset selection if current model is now disabled
+    if (selectedModel && selectedAuthFile) {
+      const isCurrentModelEnabled = isModelEnabled(selectedModel, selectedAuthFile);
+      if (!isCurrentModelEnabled && filteredProviders.length > 0 && filteredProviders[0].models.length > 0) {
+        setSelectedAuthFile(filteredProviders[0].authFile);
+        setSelectedModel(filteredProviders[0].models[0].id);
+      }
+    } else if (filteredProviders.length > 0 && filteredProviders[0].models.length > 0) {
+      // Set initial selection
+      setSelectedAuthFile(filteredProviders[0].authFile);
+      setSelectedModel(filteredProviders[0].models[0].id);
+    }
+  }, [allProviders, isModelEnabled, selectedModel, selectedAuthFile]);
 
   // Animations
   useEffect(() => {

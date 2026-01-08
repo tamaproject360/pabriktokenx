@@ -619,6 +619,11 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.DELETE("/auth-files", s.mgmt.DeleteAuthFile)
 		mgmt.POST("/vertex/import", s.mgmt.ImportVertexCredential)
 
+		// Model settings
+		mgmt.GET("/model-settings", s.mgmt.GetModelSettings)
+		mgmt.PUT("/model-settings", s.mgmt.UpdateModelSettings)
+		mgmt.POST("/model-settings/bulk", s.mgmt.BulkUpdateModelSettings)
+
 		mgmt.GET("/anthropic-auth-url", s.mgmt.RequestAnthropicToken)
 		mgmt.GET("/codex-auth-url", s.mgmt.RequestCodexToken)
 		mgmt.GET("/gemini-cli-auth-url", s.mgmt.RequestGeminiCLIToken)
