@@ -46,7 +46,7 @@ interface OAuthProviderCardProps {
   title: string;
   description: string;
   color: string;
-  icon: string;
+  icon: string; // Path to image or emoji
   onLogin: () => Promise<{ url?: string; error?: string; user_code?: string; device_flow?: boolean; verification_uri?: string }>;
   isDeviceFlow?: boolean;
 }
@@ -88,13 +88,16 @@ function OAuthProviderCard({ title, description, color, icon, onLogin, isDeviceF
       <div className="p-6">
         <div className="flex items-start justify-between mb-5">
           <div 
-            className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl"
+            className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl overflow-hidden"
             style={{ background: `${color}15`, boxShadow: `0 0 30px ${color}20` }}
           >
-            {icon}
+            {icon.startsWith('/') || icon.includes('.png') || icon.includes('.svg') ? (
+              <img src={icon} alt={title} className="w-10 h-10 object-contain" />
+            ) : (
+              <span>{icon}</span>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            {status === 'success' && (
+          <div className="flex items-center gap-2">{status === 'success' && (
               <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-medium">
                 <CheckCircle className="h-3 w-3" />
                 Ready
@@ -176,7 +179,7 @@ interface CookieAuthCardProps {
   title: string;
   description: string;
   color: string;
-  icon: string;
+  icon: string; // Path to image or emoji
   onSubmit: (cookie: string, email: string) => Promise<void>;
 }
 
@@ -226,10 +229,14 @@ function CookieAuthCard({ title, description, color, icon, onSubmit }: CookieAut
       <div className="p-6">
         <div className="flex items-start justify-between mb-5">
           <div 
-            className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl"
+            className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl overflow-hidden"
             style={{ background: `${color}15`, boxShadow: `0 0 30px ${color}20` }}
           >
-            {icon}
+            {icon.startsWith('/') || icon.includes('.png') || icon.includes('.svg') ? (
+              <img src={icon} alt={title} className="w-10 h-10 object-contain" />
+            ) : (
+              <span>{icon}</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {status === 'success' && (
@@ -433,7 +440,7 @@ export default function OAuthPage() {
             title="Anthropic Claude"
             description="Login with your Claude subscription to access Claude Code models"
             color="#F97316"
-            icon="🤖"
+            icon="/src/assets/claude.png"
             onLogin={async () => {
               const response = await requestAnthropicAuth();
               return response.data;
@@ -444,7 +451,7 @@ export default function OAuthPage() {
             title="OpenAI Codex"
             description="Login with your ChatGPT subscription to access GPT models"
             color="#10B981"
-            icon="🧠"
+            icon="/src/assets/codex.png"
             onLogin={async () => {
               const response = await requestCodexAuth();
               return response.data;
@@ -455,7 +462,7 @@ export default function OAuthPage() {
             title="Gemini CLI"
             description="Login with your Google account to access Gemini models"
             color="#22D3EE"
-            icon="✨"
+            icon="/src/assets/gemini-cli.png"
             onLogin={async () => {
               const response = await requestGeminiCLIAuth();
               return response.data;
@@ -466,7 +473,7 @@ export default function OAuthPage() {
             title="Antigravity"
             description="Login with Antigravity for alternative AI access"
             color="#8B5CF6"
-            icon="🚀"
+            icon="/src/assets/antigravity.png"
             onLogin={async () => {
               const response = await requestAntigravityAuth();
               return response.data;
@@ -477,7 +484,7 @@ export default function OAuthPage() {
             title="Qwen Code"
             description="Login with Alibaba Cloud to access Qwen models"
             color="#06B6D4"
-            icon="💫"
+            icon="/src/assets/qwen.png"
             onLogin={async () => {
               const response = await requestQwenAuth();
               return response.data;
@@ -488,7 +495,7 @@ export default function OAuthPage() {
             title="iFlow"
             description="Login with iFlow for AI coding assistance"
             color="#EC4899"
-            icon="🌊"
+            icon="/src/assets/iflow.png"
             onLogin={async () => {
               const response = await requestIFlowAuth();
               return response.data;
@@ -499,7 +506,7 @@ export default function OAuthPage() {
             title="GitHub Copilot"
             description="Login with GitHub Copilot subscription to access Copilot models"
             color="#6366F1"
-            icon="🐙"
+            icon="/src/assets/github.png"
             isDeviceFlow={true}
             onLogin={async () => {
               const response = await requestGitHubCopilotAuth();
@@ -511,7 +518,7 @@ export default function OAuthPage() {
             title="Gemini Web (Cookie)"
             description="Login using Google session cookies for image generation models"
             color="#22D3EE"
-            icon="🍪"
+            icon="/src/assets/gemini-web.png"
             onSubmit={async (cookie: string, email: string) => {
               await requestGeminiWebCookieAuth(cookie, email);
             }}

@@ -13,7 +13,6 @@ import {
   Globe,
   Menu,
   Sparkles,
-  Cpu,
   Database,
   SlidersHorizontal,
 } from 'lucide-react';
@@ -143,12 +142,14 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </div>
 
         {/* Logo & Toggle */}
-        <div className="relative h-20 flex items-center justify-between px-5 border-b border-white/[0.06]" style={{ minHeight: '5rem' }}>
-          <div className="flex items-center gap-3 overflow-hidden" style={{ maxWidth: collapsed ? '40px' : '100%' }}>
-            <div className="relative flex-shrink-0">
-              <div className="absolute inset-0 bg-cyan-400 blur-lg opacity-30 animate-pulse" />
-              <div className="relative w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.1] flex items-center justify-center">
-                <Cpu className="w-5 h-5 text-cyan-400" strokeWidth={1.5} />
+          <div className="relative h-20 flex items-center justify-between px-5 border-b border-white/[0.06]" style={{ minHeight: '5rem' }}>
+          <div className="flex items-center gap-3 overflow-hidden" style={{ maxWidth: collapsed ? '40px' : '100%', position: 'relative', overflow: 'hidden' }}>
+            <div className="relative flex-shrink-0 overflow-hidden">
+              {!collapsed && (
+                <div className="absolute inset-0 bg-cyan-400 blur-lg opacity-30 animate-pulse" />
+              )}
+              <div className={`relative ${collapsed ? 'w-8 h-8' : 'w-10 h-10'} rounded-xl bg-white/[0.05] border border-white/[0.1] flex items-center justify-center overflow-hidden`}>
+                <img src="/logo.png" alt="Pabrik Token" className={`${collapsed ? 'w-6 h-6' : 'w-8 h-8'} object-contain`} style={{ transform: 'none', marginLeft: 0 }} />
               </div>
             </div>
             <div ref={logoTextRef} className="flex flex-col leading-tight">

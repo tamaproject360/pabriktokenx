@@ -30,6 +30,7 @@ interface KeySectionProps {
   title: string;
   provider: string;
   color: string;
+  icon: string; // Path to logo image
   keys: string[];
   onSave: (keys: string[]) => void;
   isLoading: boolean;
@@ -39,7 +40,8 @@ interface KeySectionProps {
 function KeySection({ 
   title, 
   provider, 
-  color, 
+  color,
+  icon, 
   keys, 
   onSave, 
   isLoading,
@@ -84,10 +86,10 @@ function KeySection({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden"
               style={{ background: `${color}15`, boxShadow: `0 0 20px ${color}20` }}
             >
-              <Key className="h-5 w-5" style={{ color }} strokeWidth={1.5} />
+              <img src={icon} alt={provider} className="w-7 h-7 object-contain" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-white">{title}</h3>
@@ -314,6 +316,7 @@ export default function APIKeysPage() {
             title="Gemini API Keys"
             provider="Gemini"
             color="#22D3EE"
+            icon="/src/assets/gemini-cli.png"
             keys={geminiData?.keys || []}
             onSave={(keys) => geminiMutation.mutate(keys)}
             isLoading={geminiLoading}
@@ -324,6 +327,7 @@ export default function APIKeysPage() {
             title="Claude API Keys"
             provider="Claude"
             color="#F97316"
+            icon="/src/assets/claude.png"
             keys={claudeData?.keys || []}
             onSave={(keys) => claudeMutation.mutate(keys)}
             isLoading={claudeLoading}
@@ -334,6 +338,7 @@ export default function APIKeysPage() {
             title="Codex (OpenAI) API Keys"
             provider="OpenAI"
             color="#10B981"
+            icon="/src/assets/codex.png"
             keys={codexData?.keys || []}
             onSave={(keys) => codexMutation.mutate(keys)}
             isLoading={codexLoading}

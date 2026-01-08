@@ -251,7 +251,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-8">
           
           {/* Logo & Branding */}
-          <div ref={logoRef} className="text-center space-y-6" style={{ opacity: 0 }}>
+          <div ref={logoRef} className="text-center space-y-1" style={{ opacity: 0, marginTop: '40px' }}>
             <div className="inline-flex items-center justify-center">
               <div className="relative logo-icon">
                 {/* Glow effect */}
@@ -262,21 +262,21 @@ export default function LoginPage() {
                     filter: 'blur(20px)',
                   }}
                 />
-                {/* Icon container */}
+                {/* Logo container */}
                 <div 
-                  className="relative w-20 h-20 rounded-2xl flex items-center justify-center"
+                  className="relative w-[300px] h-[300px] rounded-2xl flex items-center justify-center overflow-hidden"
                   style={{
                     background: 'rgba(255, 255, 255, 0.03)',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
                     backdropFilter: 'blur(20px)',
                   }}
                 >
-                  <Cpu className="w-10 h-10 text-cyan-400" strokeWidth={1.5} />
+                  <img src="/logo.png" alt="PabrikTokenX Logo" className="w-[300px] h-[300px] object-contain" />
                 </div>
               </div>
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-1" style={{ marginTop: '-36px' }}>
               <h1 className="text-4xl font-semibold tracking-tight">
                 <span className="brand-text text-white" style={{ opacity: 0, transform: 'translateY(10px)' }}>Pabrik</span>
                 <span className="brand-text text-cyan-400 mx-2" style={{ opacity: 0, transform: 'translateY(10px)' }}>Token</span>

@@ -14,18 +14,21 @@ PabrikTokenX is a production-ready proxy server that provides OpenAI/Gemini/Clau
 
 ### ✨ Key Features
 
-- **🔐 OAuth Authentication** - Support for Claude Code, OpenAI Codex, Gemini CLI, Qwen Code, and iFlow
+- **🔐 OAuth Authentication** - Support for Claude Code, OpenAI Codex, Gemini CLI, Qwen Code, iFlow, Antigravity, and GitHub Copilot
 - **🌐 OpenAI-Compatible API** - Drop-in replacement for OpenAI API clients
 - **⚖️ Load Balancing** - Round-robin distribution across multiple accounts
 - **🎯 Provider Routing** - Smart routing with automatic failover
 - **🔄 Multi-Modal Support** - Text, images, and function calling
 - **📊 Usage Tracking** - Built-in statistics and monitoring
-- **🎨 Management Dashboard** - Modern React-based UI with real-time updates
+- **🎨 Modern Dashboard** - Sleek React-based UI with glassmorphism design and smooth animations
+- **🖼️ Custom Branding** - Professional logo integration across all pages
 - **🔌 Extensible SDK** - Reusable Go SDK for custom integrations
 - **🐳 Docker Support** - Configured to work with Docker containers (0.0.0.0 binding)
-- **🎮 Interactive Playground** - Test models directly from the dashboard
+- **🎮 Interactive Playground** - Test models directly from the dashboard with streaming responses
 - **🔑 Proxy Key Management** - Secure API key generation and management
-- **📱 Responsive Design** - Works seamlessly on desktop and mobile devices
+- **📱 Responsive Design** - Works seamlessly on desktop, tablet, and mobile devices
+- **🎭 Provider Icons** - Official provider logos for better visual recognition
+- **🍪 Cookie Authentication** - Support for Gemini Web cookie-based authentication
 
 ---
 
@@ -285,24 +288,58 @@ curl http://localhost:9999/v1beta/models/gemini-2.5-flash:generateContent \
 
 ## 🎨 Dashboard Features
 
-The web dashboard provides a comprehensive management interface:
+The web dashboard provides a comprehensive management interface with modern glassmorphism design:
 
-### 📊 Dashboard Overview
-- Real-time usage statistics
-- Request counters and token usage
-- Model distribution charts
+### 🏠 Dashboard Overview
+- Real-time usage statistics and metrics
+- Request counters and token usage tracking
+- Model distribution charts and analytics
 - Failed request monitoring
+- Beautiful particle background effects
+- Responsive card layouts
+
+### 🎯 Branding & Design
+- **Custom Logo Integration** - Professional branding throughout the application
+- **Login Page** - Large 300x300px logo with animated glow effects
+- **Sidebar Navigation** - Compact logo that adapts to collapsed/expanded states
+- **Provider Logos** - Official AI provider icons (Claude, OpenAI, Gemini, etc.)
+- **Glassmorphism UI** - Modern frosted glass design with backdrop blur
+- **Smooth Animations** - GSAP-powered transitions and micro-interactions
 
 ### 🔐 OAuth Management
-- One-click authentication for:
-  - Gemini CLI (Google)
-  - Claude Code (Anthropic)
-  - OpenAI Codex
-  - Qwen Code
-  - iFlow
-  - Antigravity
+- One-click authentication with visual provider cards:
+  - **Gemini CLI** (Google) - Official Gemini logo
+  - **Claude Code** (Anthropic) - Official Claude logo
+  - **OpenAI Codex** - Official OpenAI logo
+  - **Qwen Code** - Qwen branding
+  - **iFlow** - iFlow logo
+  - **Antigravity** - Antigravity branding
+  - **GitHub Copilot** - GitHub logo with device flow support
+  - **Gemini Web (Cookie)** - Cookie-based authentication
 - Visual provider status indicators
 - Email/account information display
+- Device flow support for GitHub Copilot
+
+### 🔑 AI Providers (API Keys)
+- Manage API keys for multiple providers with provider-specific logos:
+  - **Gemini API Keys** - Gemini branding
+  - **Claude API Keys** - Claude logo
+  - **Codex (OpenAI) API Keys** - OpenAI logo
+- Add/remove keys with real-time validation
+- Masked key display for security
+- Visual save indicators
+
+### 🎮 Interactive Playground
+- Test models in real-time with streaming support
+- Multi-turn conversations with message history
+- Model selector with search and filtering
+- Adjustable parameters:
+  - Temperature (0-2)
+  - Max tokens
+  - System prompts
+- Copy responses to clipboard
+- Export conversations
+- Clean, distraction-free interface
 
 ### 🔑 Proxy Keys
 - Generate secure API keys (format: `cl...`)
@@ -344,9 +381,46 @@ The web dashboard provides a comprehensive management interface:
 ### 📈 Usage Analytics
 - Total requests tracking
 - Input/output token counting
-- Per-model statistics
-- Failed request logs
-- Export/import data
+- Per-model statistics with visual charts
+- Failed request logs with detailed error messages
+- Export/import data in JSON format
+- Real-time usage graphs
+
+### 🎨 UI/UX Improvements
+- **Streamlined Header** - Removed clutter, keeping only essential notifications and system status
+- **Optimized Navigation** - Quick access to all features via sidebar
+- **Dark Mode Design** - Eye-friendly dark theme with cyan accents
+- **Responsive Tables** - Mobile-optimized data tables and forms
+- **Toast Notifications** - Non-intrusive success/error messages
+- **Loading States** - Elegant loading indicators and skeleton screens
+
+---
+
+## 🆕 Recent Updates (January 2026)
+
+### Visual & Branding Enhancements
+✅ **Custom Logo Integration**
+- Added professional PabrikTokenX logo throughout the application
+- 300x300px logo on login page with animated glow effects
+- Responsive sidebar logo (adapts to collapsed/expanded states)
+- Favicon update for browser tabs
+
+✅ **Provider Logo Integration**
+- Replaced emoji icons with official provider logos on OAuth page
+- Added provider-specific logos to AI Providers (API Keys) page
+- All logos properly sized and styled for consistency
+
+✅ **UI Refinements**
+- Removed Quick Actions button from header for cleaner interface
+- Removed Refresh button from top bar (redundant with page-level refresh)
+- Fixed logo overflow issues when sidebar is collapsed
+- Optimized spacing between logo and brand text for symmetry
+
+### Technical Improvements
+- Enhanced glassmorphism effects with proper backdrop filtering
+- GSAP animation integration for smooth transitions
+- Improved mobile responsiveness across all pages
+- Better overflow handling for small viewports
 
 ---
 

@@ -1,4 +1,4 @@
-import { RefreshCw, Bell, ExternalLink, Zap, Command } from 'lucide-react';
+import { Bell, ExternalLink, Zap } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getLatestVersion } from '../../lib/api';
 
@@ -7,7 +7,7 @@ interface HeaderProps {
 }
 
 export default function Header({ collapsed }: HeaderProps) {
-  const { data: versionData, refetch, isRefetching } = useQuery({
+  const { data: versionData } = useQuery({
     queryKey: ['version'],
     queryFn: async () => {
       const response = await getLatestVersion();
@@ -25,28 +25,9 @@ export default function Header({ collapsed }: HeaderProps) {
         borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
       }}
     >
-      <div className="flex items-center justify-between h-full px-8">
-        {/* Search / Command */}
-        <div className="flex items-center gap-4">
-          <button className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] transition-all duration-200 group">
-            <Command className="h-4 w-4 text-slate-500 group-hover:text-cyan-400 transition-colors" strokeWidth={1.5} />
-            <span className="text-sm text-slate-500 group-hover:text-slate-400 transition-colors">Quick actions...</span>
-            <kbd className="ml-4 px-2 py-0.5 text-xs rounded bg-white/[0.05] text-slate-500 font-mono">⌘K</kbd>
-          </button>
-        </div>
-
+      <div className="flex items-center justify-end h-full px-8">
         {/* Actions */}
         <div className="flex items-center gap-3">
-          {/* Refresh button */}
-          <button
-            onClick={() => refetch()}
-            disabled={isRefetching}
-            className="relative p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-slate-400 hover:text-cyan-400 hover:bg-white/[0.05] transition-all duration-200 disabled:opacity-50 group"
-            title="Refresh"
-          >
-            <RefreshCw className={`h-4 w-4 transition-transform ${isRefetching ? 'animate-spin' : 'group-hover:rotate-180 duration-500'}`} strokeWidth={2} />
-          </button>
-
           {/* Notifications */}
           <button className="relative p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-slate-400 hover:text-cyan-400 hover:bg-white/[0.05] transition-all duration-200 group">
             <Bell className="h-4 w-4" strokeWidth={2} />
