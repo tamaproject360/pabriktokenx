@@ -513,7 +513,7 @@ func applyGeminiHeaders(req *http.Request, auth *cliproxyauth.Auth) {
 }
 
 func fixGeminiImageAspectRatio(modelName string, rawJSON []byte) []byte {
-	if modelName == "gemini-2.5-flash-image-preview" {
+	if modelName == "gemini-2.5-flash-image" {
 		aspectRatioResult := gjson.GetBytes(rawJSON, "generationConfig.imageConfig.aspectRatio")
 		if aspectRatioResult.Exists() {
 			contents := gjson.GetBytes(rawJSON, "contents")

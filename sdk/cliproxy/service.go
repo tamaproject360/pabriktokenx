@@ -364,6 +364,8 @@ func (s *Service) ensureExecutorsForAuth(a *coreauth.Auth) {
 		s.coreManager.RegisterExecutor(executor.NewGeminiVertexExecutor(s.cfg))
 	case "gemini-cli":
 		s.coreManager.RegisterExecutor(executor.NewGeminiCLIExecutor(s.cfg))
+	case "gemini-web":
+		s.coreManager.RegisterExecutor(executor.NewGeminiWebExecutor(s.cfg))
 	case "aistudio":
 		if s.wsGateway != nil {
 			s.coreManager.RegisterExecutor(executor.NewAIStudioExecutor(s.cfg, a.ID, s.wsGateway))
@@ -731,6 +733,9 @@ func (s *Service) registerModelsForAuth(a *coreauth.Auth) {
 		models = applyExcludedModels(models, excluded)
 	case "gemini-cli":
 		models = registry.GetGeminiCLIModels()
+		models = applyExcludedModels(models, excluded)
+	case "gemini-web":
+		models = registry.GetGeminiWebModels()
 		models = applyExcludedModels(models, excluded)
 	case "aistudio":
 		models = registry.GetAIStudioModels()

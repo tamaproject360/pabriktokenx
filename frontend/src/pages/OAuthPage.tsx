@@ -4,6 +4,8 @@ import {
   AlertCircle,
   Globe,
   ArrowUpRight,
+  Cookie,
+  Copy,
 } from 'lucide-react';
 import { 
   requestAnthropicAuth, 
@@ -13,6 +15,7 @@ import {
   requestQwenAuth,
   requestIFlowAuth,
   requestGitHubCopilotAuth,
+  requestGeminiWebCookieAuth,
 } from '../lib/api';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import gsap from 'gsap';
@@ -168,6 +171,195 @@ function OAuthProviderCard({ title, description, color, icon, onLogin, isDeviceF
   );
 }
 
+// Cookie-based authentication card
+interface CookieAuthCardProps {
+  title: string;
+  description: string;
+  color: string;
+  icon: string;
+  onSubmit: (cookie: string, email: string) => Promise<void>;
+}
+
+function CookieAuthCard({ title, description, color, icon, onSubmit }: CookieAuthCardProps) {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [cookie, setCookie] = useState('');
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [showCookieInput, setShowCookieInput] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!cookie.trim()) {
+      setError('Cookie cannot be empty');
+      return;
+    }
+
+    setStatus('loading');
+    setError(null);
+    
+    try {
+      await onSubmit(cookie.trim(), email.trim());
+      setStatus('success');
+      setCookie('');
+      setEmail('');
+      setTimeout(() => {
+        setStatus('idle');
+        setShowCookieInput(false);
+      }, 3000);
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error || err.message || 'Authentication failed';
+      setError(errorMsg);
+      setStatus('error');
+    }
+  };
+
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setCookie(text);
+    } catch (err) {
+      setError('Failed to read clipboard');
+    }
+  };
+
+  return (
+    <div className="oauth-card glass-panel rounded-2xl overflow-hidden card-hover">
+      <div className="p-6">
+        <div className="flex items-start justify-between mb-5">
+          <div 
+            className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl"
+            style={{ background: `${color}15`, boxShadow: `0 0 30px ${color}20` }}
+          >
+            {icon}
+          </div>
+          <div className="flex items-center gap-2">
+            {status === 'success' && (
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-medium">
+                <CheckCircle className="h-3 w-3" />
+                Success
+              </span>
+            )}
+            {status === 'error' && (
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-medium">
+                <AlertCircle className="h-3 w-3" />
+                Failed
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-3 mb-5">
+          <h3 className="text-lg font-medium text-white">{title}</h3>
+          <p className="text-sm text-slate-400 leading-relaxed">
+            {description}
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            {error}
+          </div>
+        )}
+
+        {showCookieInput ? (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm text-slate-400 mb-2">
+                Browser Cookies <span className="text-red-400">*</span>
+              </label>
+              <div className="relative">
+                <textarea
+                  value={cookie}
+                  onChange={(e) => setCookie(e.target.value)}
+                  placeholder="Paste your Google cookies here..."
+                  className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 transition-colors resize-none h-24 text-sm font-mono"
+                />
+                <button
+                  onClick={handlePaste}
+                  className="absolute top-2 right-2 p-2 rounded-lg bg-slate-700/50 hover:bg-slate-600/50 transition-colors"
+                  title="Paste from clipboard"
+                >
+                  <Copy className="h-4 w-4 text-slate-400" />
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Open DevTools → Application → Cookies, copy all Google cookies
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm text-slate-400 mb-2">
+                Email (Optional)
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleSubmit}
+                disabled={status === 'loading' || !cookie.trim()}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-300 disabled:opacity-50"
+                style={{ 
+                  background: `${color}20`, 
+                  border: `1px solid ${color}30`,
+                  color: color,
+                }}
+              >
+                {status === 'loading' ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    Authenticating...
+                  </>
+                ) : (
+                  <>
+                    <Cookie className="h-4 w-4" />
+                    Submit
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setShowCookieInput(false);
+                  setCookie('');
+                  setEmail('');
+                  setError(null);
+                }}
+                className="px-4 py-3 rounded-xl font-medium bg-slate-700/30 border border-slate-600/30 text-slate-400 hover:bg-slate-600/30 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowCookieInput(true)}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-300"
+            style={{ 
+              background: `${color}20`, 
+              border: `1px solid ${color}30`,
+              color: color,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = `${color}30`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = `${color}20`;
+            }}
+          >
+            <Cookie className="h-4 w-4" />
+            Login with Cookies
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function OAuthPage() {
   const cardsRef = useRef<HTMLDivElement>(null);
 
@@ -312,6 +504,16 @@ export default function OAuthPage() {
             onLogin={async () => {
               const response = await requestGitHubCopilotAuth();
               return response.data;
+            }}
+          />
+
+          <CookieAuthCard
+            title="Gemini Web (Cookie)"
+            description="Login using Google session cookies for image generation models"
+            color="#22D3EE"
+            icon="🍪"
+            onSubmit={async (cookie: string, email: string) => {
+              await requestGeminiWebCookieAuth(cookie, email);
             }}
           />
         </div>

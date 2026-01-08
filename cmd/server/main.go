@@ -60,6 +60,7 @@ func main() {
 	var qwenLogin bool
 	var iflowLogin bool
 	var iflowCookie bool
+	var geminiCookie bool
 	var noBrowser bool
 	var antigravityLogin bool
 	var projectID string
@@ -74,6 +75,7 @@ func main() {
 	flag.BoolVar(&qwenLogin, "qwen-login", false, "Login to Qwen using OAuth")
 	flag.BoolVar(&iflowLogin, "iflow-login", false, "Login to iFlow using OAuth")
 	flag.BoolVar(&iflowCookie, "iflow-cookie", false, "Login to iFlow using Cookie")
+	flag.BoolVar(&geminiCookie, "gemini-cookie", false, "Login to Gemini using Cookie")
 	flag.BoolVar(&noBrowser, "no-browser", false, "Don't open browser automatically for OAuth")
 	flag.BoolVar(&antigravityLogin, "antigravity-login", false, "Login to Antigravity using OAuth")
 	flag.StringVar(&projectID, "project_id", "", "Project ID (Gemini only, not required)")
@@ -467,6 +469,8 @@ func main() {
 		cmd.DoIFlowLogin(cfg, options)
 	} else if iflowCookie {
 		cmd.DoIFlowCookieAuth(cfg, options)
+	} else if geminiCookie {
+		cmd.DoGeminiCookieAuth(cfg, options)
 	} else {
 		// In cloud deploy mode without config file, just wait for shutdown signals
 		if isCloudDeploy && !configFileExists {

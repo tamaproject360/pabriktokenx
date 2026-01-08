@@ -863,17 +863,48 @@ func FetchAntigravityModels(ctx context.Context, auth *cliproxyauth.Auth, cfg *c
 		}
 
 		result := gjson.GetBytes(bodyBytes, "models")
-		if !result.Exists() {
-			return nil
-		}
-
 		now := time.Now().Unix()
 		modelConfig := registry.GetAntigravityModelConfig()
-		models := make([]*registry.ModelInfo, 0, len(result.Map()))
-		for originalName := range result.Map() {
-			aliasName := modelName2Alias(originalName)
-			if aliasName != "" {
-				cfg := modelConfig[aliasName]
+
+		// Collect models from API response
+		modelMap := make(map[string]*registry.ModelInfo)
+		if result.Exists() {
+			for originalName := range result.Map() {
+				aliasName := modelName2Alias(originalName)
+				if aliasName != "" {
+					cfg := modelConfig[aliasName]
+					modelName := aliasName
+					if cfg != nil && cfg.Name != "" {
+						modelName = cfg.Name
+					}
+					modelInfo := &registry.ModelInfo{
+						ID:          aliasName,
+						Name:        modelName,
+						Description: aliasName,
+						DisplayName: aliasName,
+						Version:     aliasName,
+						Object:      "model",
+						Created:     now,
+						OwnedBy:     antigravityAuthType,
+						Type:        antigravityAuthType,
+					}
+					// Look up Thinking support from static config using alias name
+					if cfg != nil {
+						if cfg.Thinking != nil {
+							modelInfo.Thinking = cfg.Thinking
+						}
+						if cfg.MaxCompletionTokens > 0 {
+							modelInfo.MaxCompletionTokens = cfg.MaxCompletionTokens
+						}
+					}
+					modelMap[aliasName] = modelInfo
+				}
+			}
+		}
+
+		// Add all static config models that aren't already in the map
+		for aliasName, cfg := range modelConfig {
+			if _, exists := modelMap[aliasName]; !exists {
 				modelName := aliasName
 				if cfg != nil && cfg.Name != "" {
 					modelName = cfg.Name
@@ -889,7 +920,7 @@ func FetchAntigravityModels(ctx context.Context, auth *cliproxyauth.Auth, cfg *c
 					OwnedBy:     antigravityAuthType,
 					Type:        antigravityAuthType,
 				}
-				// Look up Thinking support from static config using alias name
+				// Look up Thinking support from static config
 				if cfg != nil {
 					if cfg.Thinking != nil {
 						modelInfo.Thinking = cfg.Thinking
@@ -898,8 +929,14 @@ func FetchAntigravityModels(ctx context.Context, auth *cliproxyauth.Auth, cfg *c
 						modelInfo.MaxCompletionTokens = cfg.MaxCompletionTokens
 					}
 				}
-				models = append(models, modelInfo)
+				modelMap[aliasName] = modelInfo
 			}
+		}
+
+		// Convert map to slice
+		models := make([]*registry.ModelInfo, 0, len(modelMap))
+		for _, modelInfo := range modelMap {
+			models = append(models, modelInfo)
 		}
 		return models
 	}

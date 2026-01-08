@@ -27,7 +27,6 @@ func isImageGenerationModel(modelName string) bool {
 	// Specific image models
 	imageModels := []string{
 		"gemini-3-pro-image-preview",
-		"gemini-2.5-flash-image-preview",
 		"gemini-2.5-flash-image",
 		"gemini-2.0-flash-exp-image-generation",
 		"gemini-2.0-flash-preview-image-generation",

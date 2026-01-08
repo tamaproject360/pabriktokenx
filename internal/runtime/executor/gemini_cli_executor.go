@@ -34,6 +34,7 @@ import (
 const (
 	codeAssistEndpoint      = "https://cloudcode-pa.googleapis.com"
 	codeAssistVersion       = "v1internal"
+	geminiAPIEndpoint       = "https://generativelanguage.googleapis.com/v1beta"
 	geminiOAuthClientID     = "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"
 	geminiOAuthClientSecret = "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"
 )
@@ -117,12 +118,25 @@ func (e *GeminiCLIExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth
 
 	for idx, attemptModel := range models {
 		payload := append([]byte(nil), basePayload...)
-		if action == "countTokens" {
-			payload = deleteJSONField(payload, "project")
-			payload = deleteJSONField(payload, "model")
+
+		// Different payload structure for image generation models
+		if isImageGenerationModel(attemptModel) {
+			// Gemini API format: extract contents from request wrapper
+			if gjson.GetBytes(payload, "request.contents").Exists() {
+				payload, _ = sjson.SetBytes([]byte("{}"), "contents", gjson.GetBytes(payload, "request.contents").Value())
+				if gjson.GetBytes(basePayload, "request.generationConfig").Exists() {
+					payload, _ = sjson.SetBytes(payload, "generationConfig", gjson.GetBytes(basePayload, "request.generationConfig").Value())
+				}
+			}
 		} else {
-			payload = setJSONField(payload, "project", projectID)
-			payload = setJSONField(payload, "model", attemptModel)
+			// Code Assist format: keep project and model in payload
+			if action == "countTokens" {
+				payload = deleteJSONField(payload, "project")
+				payload = deleteJSONField(payload, "model")
+			} else {
+				payload = setJSONField(payload, "project", projectID)
+				payload = setJSONField(payload, "model", attemptModel)
+			}
 		}
 
 		tok, errTok := tokenSource.Token()
@@ -132,9 +146,19 @@ func (e *GeminiCLIExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth
 		}
 		updateGeminiCLITokenMetadata(auth, baseTokenData, tok)
 
-		url := fmt.Sprintf("%s/%s:%s", codeAssistEndpoint, codeAssistVersion, action)
-		if opts.Alt != "" && action != "countTokens" {
-			url = url + fmt.Sprintf("?$alt=%s", opts.Alt)
+		var url string
+		if isImageGenerationModel(attemptModel) {
+			// Use Gemini API endpoint for image generation models
+			url = fmt.Sprintf("%s/models/%s:%s", geminiAPIEndpoint, attemptModel, action)
+			if opts.Alt != "" && action != "countTokens" {
+				url = url + fmt.Sprintf("?alt=%s", opts.Alt)
+			}
+		} else {
+			// Use Code Assist endpoint for regular models
+			url = fmt.Sprintf("%s/%s:%s", codeAssistEndpoint, codeAssistVersion, action)
+			if opts.Alt != "" && action != "countTokens" {
+				url = url + fmt.Sprintf("?$alt=%s", opts.Alt)
+			}
 		}
 
 		reqHTTP, errReq := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
@@ -255,8 +279,21 @@ func (e *GeminiCLIExecutor) ExecuteStream(ctx context.Context, auth *cliproxyaut
 
 	for idx, attemptModel := range models {
 		payload := append([]byte(nil), basePayload...)
-		payload = setJSONField(payload, "project", projectID)
-		payload = setJSONField(payload, "model", attemptModel)
+
+		// Different payload structure for image generation models
+		if isImageGenerationModel(attemptModel) {
+			// Gemini API format: extract contents from request wrapper
+			if gjson.GetBytes(payload, "request.contents").Exists() {
+				payload, _ = sjson.SetBytes([]byte("{}"), "contents", gjson.GetBytes(payload, "request.contents").Value())
+				if gjson.GetBytes(basePayload, "request.generationConfig").Exists() {
+					payload, _ = sjson.SetBytes(payload, "generationConfig", gjson.GetBytes(basePayload, "request.generationConfig").Value())
+				}
+			}
+		} else {
+			// Code Assist format: keep project and model in payload
+			payload = setJSONField(payload, "project", projectID)
+			payload = setJSONField(payload, "model", attemptModel)
+		}
 
 		tok, errTok := tokenSource.Token()
 		if errTok != nil {
@@ -265,11 +302,23 @@ func (e *GeminiCLIExecutor) ExecuteStream(ctx context.Context, auth *cliproxyaut
 		}
 		updateGeminiCLITokenMetadata(auth, baseTokenData, tok)
 
-		url := fmt.Sprintf("%s/%s:%s", codeAssistEndpoint, codeAssistVersion, "streamGenerateContent")
-		if opts.Alt == "" {
-			url = url + "?alt=sse"
+		var url string
+		if isImageGenerationModel(attemptModel) {
+			// Use Gemini API endpoint for image generation models
+			url = fmt.Sprintf("%s/models/%s:streamGenerateContent", geminiAPIEndpoint, attemptModel)
+			if opts.Alt == "" {
+				url = url + "?alt=sse"
+			} else {
+				url = url + fmt.Sprintf("?alt=%s", opts.Alt)
+			}
 		} else {
-			url = url + fmt.Sprintf("?$alt=%s", opts.Alt)
+			// Use Code Assist endpoint for regular models
+			url = fmt.Sprintf("%s/%s:%s", codeAssistEndpoint, codeAssistVersion, "streamGenerateContent")
+			if opts.Alt == "" {
+				url = url + "?alt=sse"
+			} else {
+				url = url + fmt.Sprintf("?$alt=%s", opts.Alt)
+			}
 		}
 
 		reqHTTP, errReq := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
@@ -742,8 +791,22 @@ func deleteJSONField(body []byte, key string) []byte {
 	return updated
 }
 
+// isImageGenerationModel checks if the model is an image generation model that needs Gemini API endpoint
+func isImageGenerationModel(modelName string) bool {
+	imageModels := []string{
+		"gemini-2.5-flash-image",
+		"gemini-3-pro-image-preview",
+	}
+	for _, m := range imageModels {
+		if modelName == m {
+			return true
+		}
+	}
+	return false
+}
+
 func fixGeminiCLIImageAspectRatio(modelName string, rawJSON []byte) []byte {
-	if modelName == "gemini-2.5-flash-image-preview" {
+	if modelName == "gemini-2.5-flash-image" {
 		aspectRatioResult := gjson.GetBytes(rawJSON, "request.generationConfig.imageConfig.aspectRatio")
 		if aspectRatioResult.Exists() {
 			contents := gjson.GetBytes(rawJSON, "request.contents")

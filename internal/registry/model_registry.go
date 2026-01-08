@@ -1014,6 +1014,33 @@ func (r *ModelRegistry) convertModelToMap(model *ModelInfo, handlerType string) 
 		}
 		return result
 
+	case "gemini-web":
+		result := map[string]any{}
+		if model.Name != "" {
+			result["name"] = model.Name
+		} else {
+			result["name"] = model.ID
+		}
+		if model.Version != "" {
+			result["version"] = model.Version
+		}
+		if model.DisplayName != "" {
+			result["displayName"] = model.DisplayName
+		}
+		if model.Description != "" {
+			result["description"] = model.Description
+		}
+		if model.InputTokenLimit > 0 {
+			result["inputTokenLimit"] = model.InputTokenLimit
+		}
+		if model.OutputTokenLimit > 0 {
+			result["outputTokenLimit"] = model.OutputTokenLimit
+		}
+		if len(model.SupportedGenerationMethods) > 0 {
+			result["supportedGenerationMethods"] = model.SupportedGenerationMethods
+		}
+		return result
+
 	default:
 		// Generic format
 		result := map[string]any{

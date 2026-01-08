@@ -205,6 +205,8 @@ export const requestAntigravityAuth = () => api.get<OAuthSession>('/antigravity-
 export const requestQwenAuth = () => api.get<OAuthSession>('/qwen-auth-url?is_webui=true');
 export const requestIFlowAuth = () => api.get<OAuthSession>('/iflow-auth-url?is_webui=true');
 export const requestGitHubCopilotAuth = () => api.get<OAuthSession & { user_code?: string; device_flow?: boolean; verification_uri?: string }>('/github-copilot-auth-url?is_webui=true');
+export const requestGeminiWebCookieAuth = (cookie: string, email?: string) => 
+  api.post('/gemini-web-auth-url', { cookie, email });
 export const getAuthStatus = () => api.get('/get-auth-status');
 
 // Amp Code

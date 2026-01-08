@@ -626,6 +626,7 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.GET("/qwen-auth-url", s.mgmt.RequestQwenToken)
 		mgmt.GET("/iflow-auth-url", s.mgmt.RequestIFlowToken)
 		mgmt.POST("/iflow-auth-url", s.mgmt.RequestIFlowCookieToken)
+		mgmt.POST("/gemini-web-auth-url", s.mgmt.RequestGeminiCookieToken)
 		mgmt.GET("/github-copilot-auth-url", s.mgmt.RequestGitHubCopilotToken)
 		mgmt.POST("/oauth-callback", s.mgmt.PostOAuthCallback)
 		mgmt.GET("/get-auth-status", s.mgmt.GetAuthStatus)
