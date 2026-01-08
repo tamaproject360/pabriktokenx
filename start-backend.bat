@@ -62,9 +62,8 @@ echo [INFO] Press Ctrl+C to stop the server
 echo.
 echo ============================================
 
-:: Set Go path and run the server directly (no build)
-set "PATH=C:\Program Files\Go\bin;%PATH%"
-go run ./cmd/server -config config.yaml
+:: Run the built executable
+cliproxy.exe -config config.yaml
 
 :: Keep terminal open if server crashes
 echo.

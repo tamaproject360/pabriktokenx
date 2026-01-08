@@ -93,9 +93,14 @@ export default function UsagePage() {
     queryKey: ['usage'],
     queryFn: async () => {
       const response = await getUsage();
+      console.log('[Usage] Fetched data:', {
+        total_requests: response.data?.usage?.total_requests,
+        total_tokens: response.data?.usage?.total_tokens,
+        timestamp: new Date().toISOString()
+      });
       return response.data;
     },
-    refetchInterval: 3000, // Refresh setiap 3 detik untuk real-time
+    refetchInterval: 2000, // Refresh setiap 2 detik untuk real-time
     refetchOnWindowFocus: true,
     refetchOnMount: true,
   });

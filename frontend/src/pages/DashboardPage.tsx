@@ -213,9 +213,13 @@ export default function DashboardPage() {
     queryKey: ['usage'],
     queryFn: async () => {
       const response = await getUsage();
+      console.log('[Dashboard] Usage data:', {
+        total_requests: response.data?.usage?.total_requests || response.data?.total_requests,
+        timestamp: new Date().toISOString()
+      });
       return response.data;
     },
-    refetchInterval: 3000, // Refresh setiap 3 detik untuk real-time
+    refetchInterval: 2000, // Refresh setiap 2 detik untuk real-time
     refetchOnWindowFocus: true,
     refetchOnMount: true,
   });

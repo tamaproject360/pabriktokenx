@@ -199,12 +199,12 @@ logs-max-total-size-mb: 100
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {errorFiles.map((file) => (
                   <div
-                    key={file}
+                    key={file.name}
                     className="flex items-center justify-between px-4 py-3 bg-white/[0.02] border border-white/[0.04] rounded-xl hover:bg-white/[0.03] transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-3">
                       <FileText className="h-4 w-4 text-rose-400" />
-                      <span className="text-sm text-slate-300 truncate font-mono">{file}</span>
+                      <span className="text-sm text-slate-300 truncate font-mono">{file.name}</span>
                     </div>
                     <button className="p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-white/[0.05] text-slate-400 hover:text-white transition-all duration-200">
                       <Download className="h-4 w-4" />

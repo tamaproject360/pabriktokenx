@@ -192,3 +192,8 @@ func (e *GeminiWebExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.
 	req.Metadata["action"] = "countTokens"
 	return e.Execute(ctx, auth, req, opts)
 }
+
+// Refresh attempts to refresh provider credentials (no-op for cookie-based auth)
+func (e *GeminiWebExecutor) Refresh(_ context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
+	return auth, nil
+}

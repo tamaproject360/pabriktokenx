@@ -142,7 +142,7 @@ export const setLoggingToFile = (enabled: boolean) => api.put('/logging-to-file'
 // Logs
 export const getLogs = () => api.get<{ lines: string[]; 'line-count': number; 'latest-timestamp': number }>('/logs');
 export const deleteLogs = () => api.delete('/logs');
-export const getRequestErrorLogs = () => api.get<{ files: string[] }>('/request-error-logs');
+export const getRequestErrorLogs = () => api.get<{ files: { name: string; size: number; modified: number }[] }>('/request-error-logs');
 export const getRequestLog = () => api.get('/request-log');
 export const setRequestLog = (config: { enabled: boolean; max_size_mb?: number }) => 
   api.put('/request-log', config);
