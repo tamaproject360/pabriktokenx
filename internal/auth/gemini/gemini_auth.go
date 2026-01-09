@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	geminiOauthClientID     = getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com")
+	geminiOauthClientID     = getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", "")
 	geminiOauthClientSecret = getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", "")
 )
 

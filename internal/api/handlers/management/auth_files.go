@@ -1018,7 +1018,7 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 
 	// OAuth2 configuration (mirrors internal/auth/gemini)
 	conf := &oauth2.Config{
-		ClientID:     getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"),
+		ClientID:     getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", ""),
 		ClientSecret: getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", ""),
 		RedirectURL:  "http://localhost:8085/oauth2callback",
 		Scopes: []string{
@@ -1148,7 +1148,7 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 		}
 
 		ifToken["token_uri"] = "https://oauth2.googleapis.com/token"
-		ifToken["client_id"] = getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com")
+		ifToken["client_id"] = getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", "")
 		ifToken["client_secret"] = getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", "")
 		ifToken["scopes"] = []string{
 			"https://www.googleapis.com/auth/cloud-platform",
@@ -1438,7 +1438,7 @@ func (h *Handler) RequestAntigravityToken(c *gin.Context) {
 		antigravityCallbackPort = 19121
 	)
 	var (
-		antigravityClientID     = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_ID", "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com")
+		antigravityClientID     = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_ID", "")
 		antigravityClientSecret = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_SECRET", "")
 	)
 	var antigravityScopes = []string{

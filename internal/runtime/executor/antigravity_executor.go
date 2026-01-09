@@ -48,7 +48,7 @@ const (
 )
 
 var (
-	antigravityClientID     = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_ID", "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com")
+	antigravityClientID     = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_ID", "")
 	antigravityClientSecret = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_SECRET", "")
 	randSource              = rand.New(rand.NewSource(time.Now().UnixNano()))
 	randSourceMutex         sync.Mutex

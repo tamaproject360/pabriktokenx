@@ -152,8 +152,10 @@ Before starting, ensure you have:
 
 3. **Configure environment variables:**
    ```bash
-   # Edit .env file
+   # Edit .env file and add BOTH Client ID and Client Secret
+   GEMINI_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
    GEMINI_OAUTH_CLIENT_SECRET=your-gemini-secret-here
+   ANTIGRAVITY_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
    ANTIGRAVITY_OAUTH_CLIENT_SECRET=your-antigravity-secret-here
    ```
 

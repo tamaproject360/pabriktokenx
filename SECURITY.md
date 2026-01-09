@@ -23,7 +23,9 @@ To configure OAuth credentials securely:
 Example:
 ```bash
 # .env
+GEMINI_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GEMINI_OAUTH_CLIENT_SECRET=your-secret-here
+ANTIGRAVITY_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
 ANTIGRAVITY_OAUTH_CLIENT_SECRET=your-other-secret-here
 ```
 
@@ -49,6 +51,8 @@ For production deployments:
 - Updated documentation with security best practices
 
 **Action Required:**
+- Set `GEMINI_OAUTH_CLIENT_ID` environment variable
 - Set `GEMINI_OAUTH_CLIENT_SECRET` environment variable
+- Set `ANTIGRAVITY_OAUTH_CLIENT_ID` environment variable
 - Set `ANTIGRAVITY_OAUTH_CLIENT_SECRET` environment variable
 - Remove any `.env` files from version control

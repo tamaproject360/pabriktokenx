@@ -24,7 +24,7 @@ import (
 const defaultAPICallTimeout = 60 * time.Second
 
 var (
-	geminiOAuthClientID     = getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com")
+	geminiOAuthClientID     = getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", "")
 	geminiOAuthClientSecret = getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", "")
 )
 

@@ -32,16 +32,16 @@ Kunjungi [Google Cloud Console](https://console.cloud.google.com/) dan buat OAut
 Edit file `.env` dan tambahkan credentials Anda:
 
 ```bash
-# Gemini OAuth (WAJIB)
+# Gemini OAuth (WAJIB - Client ID dan Secret)
+GEMINI_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GEMINI_OAUTH_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxxxxxxxx
 
-# Antigravity OAuth (WAJIB)
+# Antigravity OAuth (WAJIB - Client ID dan Secret)
+ANTIGRAVITY_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
 ANTIGRAVITY_OAUTH_CLIENT_SECRET=GOCSPX-yyyyyyyyyyyyyyyyyyyyyy
-
-# Optional: Override Client IDs (gunakan default jika tidak disetel)
-# GEMINI_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
-# ANTIGRAVITY_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
 ```
+
+**⚠️ PENTING:** Mulai dari versi ini, Client ID juga harus dikonfigurasi melalui environment variables untuk keamanan maksimal.
 
 ### 4. Verifikasi Konfigurasi
 
@@ -128,10 +128,10 @@ spec:
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
+| `GEMINI_OAUTH_CLIENT_ID` | ✅ Yes | None | Google OAuth Client ID untuk Gemini |
 | `GEMINI_OAUTH_CLIENT_SECRET` | ✅ Yes | None | Google OAuth Client Secret untuk Gemini |
+| `ANTIGRAVITY_OAUTH_CLIENT_ID` | ✅ Yes | None | Google OAuth Client ID untuk Antigravity |
 | `ANTIGRAVITY_OAUTH_CLIENT_SECRET` | ✅ Yes | None | Google OAuth Client Secret untuk Antigravity |
-| `GEMINI_OAUTH_CLIENT_ID` | ❌ No | Built-in default | Google OAuth Client ID untuk Gemini |
-| `ANTIGRAVITY_OAUTH_CLIENT_ID` | ❌ No | Built-in default | Google OAuth Client ID untuk Antigravity |
 
 ## 🔒 Best Practices Keamanan
 
