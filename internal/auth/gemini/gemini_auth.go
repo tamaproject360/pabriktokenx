@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/auth/codex"
@@ -28,9 +29,9 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-const (
-	geminiOauthClientID     = "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"
-	geminiOauthClientSecret = "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"
+var (
+	geminiOauthClientID     = getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com")
+	geminiOauthClientSecret = getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", "")
 )
 
 var (
@@ -40,6 +41,14 @@ var (
 		"https://www.googleapis.com/auth/userinfo.profile",
 	}
 )
+
+// getEnvOrDefault retrieves an environment variable or returns the default value if not set.
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
 
 // GeminiAuth provides methods for handling the Gemini OAuth2 authentication flow.
 // It encapsulates the logic for obtaining, storing, and refreshing authentication tokens

@@ -1018,8 +1018,8 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 
 	// OAuth2 configuration (mirrors internal/auth/gemini)
 	conf := &oauth2.Config{
-		ClientID:     "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com",
-		ClientSecret: "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",
+		ClientID:     getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"),
+		ClientSecret: getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", ""),
 		RedirectURL:  "http://localhost:8085/oauth2callback",
 		Scopes: []string{
 			"https://www.googleapis.com/auth/cloud-platform",
@@ -1148,8 +1148,8 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 		}
 
 		ifToken["token_uri"] = "https://oauth2.googleapis.com/token"
-		ifToken["client_id"] = "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"
-		ifToken["client_secret"] = "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"
+		ifToken["client_id"] = getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com")
+		ifToken["client_secret"] = getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", "")
 		ifToken["scopes"] = []string{
 			"https://www.googleapis.com/auth/cloud-platform",
 			"https://www.googleapis.com/auth/userinfo.email",

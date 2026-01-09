@@ -161,6 +161,7 @@ Before starting, ensure you have:
    - Never commit `.env` to version control
    - The file is already in `.gitignore`
    - See [SECURITY.md](SECURITY.md) for more details
+   - **📖 Complete guide**: [ENV-SETUP.md](ENV-SETUP.md)
 
 ---� Docker Deployment
 
