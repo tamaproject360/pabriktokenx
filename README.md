@@ -101,6 +101,13 @@ PabrikTokenX is a production-ready proxy server that provides OpenAI/Gemini/Clau
 
 ## 🎯 Quick Start
 
+### Prerequisites
+
+Before starting, ensure you have:
+- Configured OAuth credentials (see [Security Configuration](#-security-configuration))
+- Go 1.21+ installed
+- Node.js 18+ (for frontend)
+
 ### Windows Users
 
 1. **Clone the repository:**
@@ -109,14 +116,53 @@ PabrikTokenX is a production-ready proxy server that provides OpenAI/Gemini/Clau
    cd pabriktokenx
    ```
 
-2. **Start all services:**
+2. **Configure OAuth credentials (REQUIRED):**
+   ```bash
+   # Copy the example environment file
+   copy .env.example .env
+   
+   # Edit .env and add your OAuth credentials
+   notepad .env
+   ```
+
+3. **Start all services:**
    ```bash
    start-all.bat
    ```
 
-3. **Access the dashboard:**
+4. **Access the dashboard:**
    - **Backend API**: http://localhost:9999
-   -� Docker Deployment
+   - **Frontend Dashboard**: http://localhost:3000
+
+---
+
+## 🔒 Security Configuration
+
+**⚠️ IMPORTANT:** OAuth credentials must be configured before running the application.
+
+1. **Copy the environment template:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Obtain OAuth credentials:**
+   - Visit [Google Cloud Console](https://console.cloud.google.com/)
+   - Create OAuth 2.0 credentials for your project
+   - Copy the Client ID and Client Secret
+
+3. **Configure environment variables:**
+   ```bash
+   # Edit .env file
+   GEMINI_OAUTH_CLIENT_SECRET=your-gemini-secret-here
+   ANTIGRAVITY_OAUTH_CLIENT_SECRET=your-antigravity-secret-here
+   ```
+
+4. **Verify configuration:**
+   - Never commit `.env` to version control
+   - The file is already in `.gitignore`
+   - See [SECURITY.md](SECURITY.md) for more details
+
+---� Docker Deployment
 
 ### Quick Start with Docker Compose
 

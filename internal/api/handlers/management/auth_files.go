@@ -61,6 +61,14 @@ var (
 	callbackForwarders   = make(map[int]*callbackForwarder)
 )
 
+// getEnvOrDefault retrieves an environment variable or returns the default value if not set.
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
 func extractLastRefreshTimestamp(meta map[string]any) (time.Time, bool) {
 	if len(meta) == 0 {
 		return time.Time{}, false
@@ -1428,8 +1436,10 @@ func (h *Handler) RequestCodexToken(c *gin.Context) {
 func (h *Handler) RequestAntigravityToken(c *gin.Context) {
 	const (
 		antigravityCallbackPort = 19121
-		antigravityClientID     = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
-		antigravityClientSecret = "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"
+	)
+	var (
+		antigravityClientID     = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_ID", "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com")
+		antigravityClientSecret = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_SECRET", "")
 	)
 	var antigravityScopes = []string{
 		"https://www.googleapis.com/auth/cloud-platform",
