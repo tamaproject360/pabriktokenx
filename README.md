@@ -23,7 +23,7 @@ PabrikTokenX is a production-ready proxy server that provides OpenAI/Gemini/Clau
 - **🎨 Modern Dashboard** - Sleek React-based UI with glassmorphism design and smooth animations
 - **🖼️ Custom Branding** - Professional logo integration across all pages
 - **🔌 Extensible SDK** - Reusable Go SDK for custom integrations
-- **🐳 Docker Support** - Configured to work with Docker containers (0.0.0.0 binding)
+- **🐳 Docker Compose Ready** - One-command deployment with Docker Compose
 - **🎮 Interactive Playground** - Test models directly from the dashboard with streaming responses
 - **🔑 Proxy Key Management** - Secure API key generation and management
 - **📱 Responsive Design** - Works seamlessly on desktop, tablet, and mobile devices
@@ -34,8 +34,10 @@ PabrikTokenX is a production-ready proxy server that provides OpenAI/Gemini/Clau
 
 ## 📋 Table of Contents
 
+- [Screenshots](#-screenshots)
 - [Requirements](#-requirements)
 - [Quick Start](#-quick-start)
+- [Docker Deployment](#-docker-deployment)
 - [Installation](#-installation)
 - [Configuration](#-configuration)
 - [Usage](#-usage)
@@ -45,7 +47,39 @@ PabrikTokenX is a production-ready proxy server that provides OpenAI/Gemini/Clau
 - [Contributing](#-contributing)
 - [License](#-license)
 
+---� Screenshots
+
+### Login Page
+![Login Page](assets/screenshoot/1.login.png)
+*Secure authentication with professional branding and animated effects*
+
+### Dashboard Overview
+![Dashboard](assets/screenshoot/2.dashboard.png)
+*Real-time statistics, usage metrics, and beautiful glassmorphism design*
+
+### Interactive Playground
+![Playground](assets/screenshoot/3.playground.png)
+*Test AI models in real-time with streaming responses and conversation history*
+
+### Usage Analytics
+![Usage](assets/screenshoot/4.usage.png)
+*Comprehensive usage tracking with per-model statistics and visual charts*
+
+### OAuth Management
+![OAuth](assets/screenshoot/5.oauth.png)
+*One-click authentication with multiple AI providers using official provider logos*
+
+### Model Settings
+![Model Settings](assets/screenshoot/6.model-setting.png)
+*Configure model parameters and routing strategies*
+
+### Logs Monitoring
+![Logs](assets/screenshoot/7.logs.png)
+*Real-time logs and error tracking for debugging*
+
 ---
+
+## �
 
 ## 💻 Requirements
 
@@ -82,7 +116,85 @@ PabrikTokenX is a production-ready proxy server that provides OpenAI/Gemini/Clau
 
 3. **Access the dashboard:**
    - **Backend API**: http://localhost:9999
-   - **Frontend Dashboard**: http://localhost:8686
+   -� Docker Deployment
+
+### Quick Start with Docker Compose
+
+The easiest way to deploy PabrikTokenX is using Docker Compose:
+
+```bash
+# Clone repository
+git clone https://github.com/tamaproject360/pabriktokenx.git
+cd pabriktokenx
+
+# Setup configuration
+cp config.example.yaml config.yaml
+# Edit config.yaml as needed
+
+# Build and start all services
+docker-compose up -d
+
+# Check status
+docker-compose ps
+
+# View logs
+docker-compose logs -f
+```
+
+**Access the application:**
+- 🌐 Frontend Dashboard: http://localhost:3000
+- 🔌 Backend API: http://localhost:9999
+- 📊 Management API: http://localhost:9999/v0/management
+
+### Docker Compose Features
+
+✅ **Production-ready** - Multi-stage builds for optimized images  
+✅ **Auto-restart** - Health checks and automatic recovery  
+✅ **Data persistence** - Volumes for auth, logs, and assets  
+✅ **Network isolation** - Secure inter-service communication  
+✅ **Development mode** - Hot-reload support with `docker-compose.dev.yml`
+
+### Docker Commands
+
+```bash
+# Stop all services
+docker-compose down
+
+# Rebuild after code changes
+docker-compose up -d --build
+
+# View logs for specific service
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# Restart a service
+docker-compose restart backend
+
+# Execute command in container
+docker-compose exec backend sh
+```
+
+### Development Mode
+
+For development with hot-reload:
+
+```bash
+docker-compose -f docker-compose.dev.yml up
+```
+
+### Production Deployment Tips
+
+1. **Use environment variables** for sensitive data
+2. **Enable TLS/SSL** via reverse proxy (Nginx/Traefik)
+3. **Set resource limits** to prevent memory issues
+4. **Regular backups** of volumes (auths, logs, assets)
+5. **Monitor health checks** with `docker-compose ps`
+
+📖 **Complete Docker guide**: See [DOCKER-DEPLOYMENT.md](DOCKER-DEPLOYMENT.md) for detailed instructions, troubleshooting, and best practices.
+
+---
+
+## � **Frontend Dashboard**: http://localhost:8686
    - **Management API**: http://localhost:9999/v0/management
 
 4. **First-time setup:**

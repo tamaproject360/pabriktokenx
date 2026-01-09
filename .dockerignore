@@ -1,0 +1,64 @@
+# Git
+.git
+.gitignore
+.github
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+
+# Build artifacts
+bin/
+dist/
+build/
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files
+*_test.go
+test/
+coverage.txt
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Batch files
+*.bat
+*.ps1
+
+# Auth credentials (will be mounted)
+auths/
+
+# Assets (will be mounted)
+assets/
+
+# Documentation
+*.md
+!README.md
+
+# Example configs
+config.example.yaml
+
+# License
+LICENSE

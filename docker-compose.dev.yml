@@ -1,0 +1,45 @@
+version: '3.8'
+
+# Development version with hot-reload
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pabriktokenx-backend-dev
+    restart: unless-stopped
+    ports:
+      - "9999:9999"
+    volumes:
+      # Mount entire source for hot-reload (development only)
+      - .:/app
+      - /app/bin  # Exclude bin directory
+    environment:
+      - TZ=Asia/Jakarta
+      - DEBUG=true
+    networks:
+      - pabriktokenx-network
+    command: sh -c "go run ./cmd/server"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../Dockerfile.frontend
+      target: builder
+    container_name: pabriktokenx-frontend-dev
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - TZ=Asia/Jakarta
+      - VITE_API_URL=http://localhost:9999
+    networks:
+      - pabriktokenx-network
+    command: npm run dev -- --host 0.0.0.0
+
+networks:
+  pabriktokenx-network:
+    driver: bridge

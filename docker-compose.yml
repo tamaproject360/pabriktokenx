@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pabriktokenx-backend
+    restart: unless-stopped
+    ports:
+      - "9999:9999"
+    volumes:
+      # Mount config file
+      - ./config.yaml:/app/config.yaml:ro
+      # Mount auth directory (persistent)
+      - ./auths:/app/auths
+      # Mount logs directory (persistent)
+      - ./logs:/app/logs
+      # Mount assets directory (persistent)
+      - ./assets:/app/assets
+      # Optional: Mount model settings
+      - ./model_settings.json:/app/model_settings.json:ro
+    environment:
+      - TZ=Asia/Jakarta
+    networks:
+      - pabriktokenx-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/v1/models"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: pabriktokenx-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - TZ=Asia/Jakarta
+    networks:
+      - pabriktokenx-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  pabriktokenx-network:
+    driver: bridge
+
+volumes:
+  # Define named volumes if you prefer
+  auths-data:
+  logs-data:
+  assets-data:

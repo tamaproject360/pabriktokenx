@@ -48,6 +48,7 @@ GEMINI.md
 .bmad/*
 _bmad/*
 _bmad-output/*
+.github
 
 # macOS
 .DS_Store
