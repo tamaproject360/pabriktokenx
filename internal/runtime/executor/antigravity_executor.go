@@ -15,7 +15,6 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -53,14 +52,6 @@ var (
 	randSource              = rand.New(rand.NewSource(time.Now().UnixNano()))
 	randSourceMutex         sync.Mutex
 )
-
-// getEnvOrDefault retrieves an environment variable or returns the default value if not set.
-func getEnvOrDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
 
 // AntigravityExecutor proxies requests to the antigravity upstream.
 type AntigravityExecutor struct {
