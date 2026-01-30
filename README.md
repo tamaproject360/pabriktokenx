@@ -138,32 +138,160 @@ Before starting, ensure you have:
 
 ## 🔒 Security Configuration
 
-**⚠️ IMPORTANT:** OAuth credentials must be configured before running the application.
+### Default vs Custom OAuth Credentials
+
+PabrikTokenX comes with **default OAuth credentials** for quick setup, but you can use your own for better security and control.
+
+| Feature | Default Credentials | Custom Credentials |
+|---------|-------------------|-------------------|
+| **Setup Time** | ✅ Instant - No configuration needed | ⏱️ 10-15 minutes setup |
+| **Rate Limits** | ⚠️ Shared with all users | ✅ Dedicated for you |
+| **Privacy** | ⚠️ Google tracks "CLIProxyAPI" usage | ✅ Your own app name |
+| **Revocation Risk** | ⚠️ If abused, affects all users | ✅ Only affects you |
+| **Recommended For** | Testing, Development | Production, Personal Use |
+
+### Option 1: Use Default Credentials (Quick Start)
+
+**No configuration needed!** Just start the application and authenticate:
+
+```bash
+# Start the application
+start-all.bat
+
+# Go to OAuth page in dashboard
+# Click "Authenticate" for Gemini CLI or Antigravity
+# Login with your Google account
+```
+
+The application uses embedded OAuth credentials that work out-of-the-box.
+
+### Option 2: Use Custom Credentials (Recommended for Production)
+
+For better security, privacy, and dedicated rate limits, create your own OAuth credentials:
+
+#### Step 1: Create Google Cloud Project
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Click **"Select a project"** → **"New Project"**
+3. Enter project name (e.g., "My PabrikTokenX")
+4. Click **"Create"**
+
+#### Step 2: Enable Required APIs
+
+1. In your project, go to **"APIs & Services"** → **"Library"**
+2. Search and enable these APIs:
+   - **Cloud Resource Manager API**
+   - **Cloud Code API** (for Antigravity)
+   - **Generative Language API** (for Gemini)
+
+#### Step 3: Configure OAuth Consent Screen
+
+1. Go to **"APIs & Services"** → **"OAuth consent screen"**
+2. Choose **"External"** user type
+3. Fill in required fields:
+   - **App name**: Your app name (e.g., "My PabrikTokenX")
+   - **User support email**: Your email
+   - **Developer contact**: Your email
+4. Click **"Save and Continue"**
+
+#### Step 4: Add Required Scopes
+
+Click **"Add or Remove Scopes"** and add these scopes:
+
+**For Gemini CLI:**
+```
+https://www.googleapis.com/auth/cloud-platform
+https://www.googleapis.com/auth/userinfo.email
+https://www.googleapis.com/auth/userinfo.profile
+```
+
+**For Antigravity (additional scopes):**
+```
+https://www.googleapis.com/auth/cclog
+https://www.googleapis.com/auth/experimentsandconfigs
+```
+
+Click **"Update"** → **"Save and Continue"**
+
+#### Step 5: Add Test Users (Optional)
+
+If your app is in testing mode:
+1. Click **"Add Users"**
+2. Add your Google account email
+3. Click **"Save and Continue"**
+
+#### Step 6: Create OAuth Credentials
+
+1. Go to **"APIs & Services"** → **"Credentials"**
+2. Click **"+ Create Credentials"** → **"OAuth client ID"**
+3. Choose **"Desktop app"** as application type
+4. Enter name (e.g., "PabrikTokenX Desktop")
+5. Click **"Create"**
+6. **Copy the Client ID and Client Secret** (you'll need these!)
+
+#### Step 7: Configure Environment Variables
 
 1. **Copy the environment template:**
    ```bash
    cp .env.example .env
    ```
 
-2. **Obtain OAuth credentials:**
-   - Visit [Google Cloud Console](https://console.cloud.google.com/)
-   - Create OAuth 2.0 credentials for your project
-   - Copy the Client ID and Client Secret
-
-3. **Configure environment variables:**
+2. **Edit `.env` file and add your credentials:**
    ```bash
-   # Edit .env file and add BOTH Client ID and Client Secret
+   # For Gemini CLI
    GEMINI_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
-   GEMINI_OAUTH_CLIENT_SECRET=your-gemini-secret-here
+   GEMINI_OAUTH_CLIENT_SECRET=GOCSPX-your-secret-here
+   
+   # For Antigravity (can use same credentials if scopes are enabled)
    ANTIGRAVITY_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
-   ANTIGRAVITY_OAUTH_CLIENT_SECRET=your-antigravity-secret-here
+   ANTIGRAVITY_OAUTH_CLIENT_SECRET=GOCSPX-your-secret-here
    ```
 
-4. **Verify configuration:**
-   - Never commit `.env` to version control
-   - The file is already in `.gitignore`
-   - See [SECURITY.md](SECURITY.md) for more details
-   - **📖 Complete guide**: [ENV-SETUP.md](ENV-SETUP.md)
+3. **Restart the application:**
+   ```bash
+   restart-backend.bat
+   ```
+
+#### Step 8: Test Authentication
+
+1. Open dashboard at http://localhost:8686
+2. Go to **OAuth** page
+3. Click **"Authenticate"** for Gemini CLI or Antigravity
+4. You should see your custom app name in the Google OAuth consent screen
+5. Authorize and complete authentication
+
+### Security Best Practices
+
+✅ **DO:**
+- Use custom credentials for production deployments
+- Keep `.env` file secure and never commit to Git
+- Regularly rotate OAuth credentials
+- Monitor usage in Google Cloud Console
+- Use separate credentials for different environments (dev/prod)
+
+❌ **DON'T:**
+- Share your Client Secret publicly
+- Commit `.env` or `config.yaml` to version control
+- Use default credentials for production with sensitive data
+- Give OAuth credentials to untrusted users
+
+### Troubleshooting OAuth Setup
+
+**Error: "Access blocked: This app's request is invalid"**
+- Make sure you added all required scopes in OAuth consent screen
+- Verify your email is added as a test user (if app is in testing mode)
+
+**Error: "redirect_uri_mismatch"**
+- OAuth client type must be **"Desktop app"**, not "Web application"
+- No need to configure redirect URIs for desktop apps
+
+**Error: "invalid_scope"**
+- Check that all required APIs are enabled in your project
+- Verify scopes are correctly added in OAuth consent screen
+
+**Still having issues?**
+- See [ENV-SETUP.md](ENV-SETUP.md) for detailed troubleshooting
+- Check [SECURITY.md](SECURITY.md) for security guidelines
 
 ---� Docker Deployment
 

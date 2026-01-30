@@ -11,6 +11,7 @@ import {
   Cpu,
   Network,
   SlidersHorizontal,
+  Database,
 } from 'lucide-react';
 import { getUsage, getConfig, listAuthFiles, getAuthKey } from '../lib/api';
 import { animateCounter } from '../lib/animations';

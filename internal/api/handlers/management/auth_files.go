@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/router-for-me/CLIProxyAPI/v6/internal/auth/antigravity"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/auth/claude"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/auth/codex"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/auth/copilot"
@@ -237,14 +238,6 @@ func stopForwarderInstance(port int, forwarder *callbackForwarder) {
 	}
 
 	log.Infof("callback forwarder on port %d stopped", port)
-}
-
-func sanitizeAntigravityFileName(email string) string {
-	if strings.TrimSpace(email) == "" {
-		return "antigravity.json"
-	}
-	replacer := strings.NewReplacer("@", "_", ".", "_")
-	return fmt.Sprintf("antigravity-%s.json", replacer.Replace(email))
 }
 
 func (h *Handler) managementCallbackURL(path string) (string, error) {
@@ -1016,10 +1009,10 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 
 	fmt.Println("Initializing Google authentication...")
 
-	// OAuth2 configuration (mirrors internal/auth/gemini)
+	// OAuth2 configuration using default credentials from gemini package
 	conf := &oauth2.Config{
-		ClientID:     getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", ""),
-		ClientSecret: getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", ""),
+		ClientID:     getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", geminiAuth.DefaultClientID),
+		ClientSecret: getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", geminiAuth.DefaultClientSecret),
 		RedirectURL:  "http://localhost:8085/oauth2callback",
 		Scopes: []string{
 			"https://www.googleapis.com/auth/cloud-platform",
@@ -1148,8 +1141,8 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 		}
 
 		ifToken["token_uri"] = "https://oauth2.googleapis.com/token"
-		ifToken["client_id"] = getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", "")
-		ifToken["client_secret"] = getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", "")
+		ifToken["client_id"] = getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", geminiAuth.DefaultClientID)
+		ifToken["client_secret"] = getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", geminiAuth.DefaultClientSecret)
 		ifToken["scopes"] = []string{
 			"https://www.googleapis.com/auth/cloud-platform",
 			"https://www.googleapis.com/auth/userinfo.email",
@@ -1437,17 +1430,11 @@ func (h *Handler) RequestAntigravityToken(c *gin.Context) {
 	const (
 		antigravityCallbackPort = 19121
 	)
-	var (
-		antigravityClientID     = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_ID", "")
-		antigravityClientSecret = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_SECRET", "")
-	)
-	var antigravityScopes = []string{
-		"https://www.googleapis.com/auth/cloud-platform",
-		"https://www.googleapis.com/auth/userinfo.email",
-		"https://www.googleapis.com/auth/userinfo.profile",
-		"https://www.googleapis.com/auth/cclog",
-		"https://www.googleapis.com/auth/experimentsandconfigs",
-	}
+	
+	// Get OAuth credentials with fallback to default values from upstream CLIProxyAPI
+	antigravityClientID, antigravityClientSecret := antigravity.GetClientCredentials()
+	
+	var antigravityScopes = antigravity.Scopes
 
 	ctx := context.Background()
 
@@ -1644,7 +1631,7 @@ func (h *Handler) RequestAntigravityToken(c *gin.Context) {
 			metadata["project_id"] = projectID
 		}
 
-		fileName := sanitizeAntigravityFileName(email)
+		fileName := antigravity.CredentialFileName(email)
 		label := strings.TrimSpace(email)
 		if label == "" {
 			label = "antigravity"

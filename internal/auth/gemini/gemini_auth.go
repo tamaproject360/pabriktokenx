@@ -29,9 +29,15 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+// OAuth configuration constants for Gemini (fallback values from upstream)
+const (
+	DefaultClientID     = "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"
+	DefaultClientSecret = "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"
+)
+
 var (
-	geminiOauthClientID     = getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", "")
-	geminiOauthClientSecret = getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", "")
+	geminiOauthClientID     = getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", DefaultClientID)
+	geminiOauthClientSecret = getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", DefaultClientSecret)
 )
 
 var (
