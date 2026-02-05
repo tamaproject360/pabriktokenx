@@ -144,3 +144,18 @@ func GetPlatformInfo() map[string]interface{} {
 
 	return info
 }
+
+var incognitoMode = true
+
+// SetIncognitoMode sets whether to use incognito/private mode when opening browser.
+func SetIncognitoMode(enabled bool) {
+	incognitoMode = enabled
+}
+
+// CloseBrowser attempts to close the browser window (placeholder function).
+// Note: Closing browser programmatically is platform-dependent and may not work reliably.
+func CloseBrowser() error {
+	// This is a placeholder - actual browser closing is difficult to implement reliably
+	log.Debug("Browser close requested (note: may not work on all platforms)")
+	return nil
+}

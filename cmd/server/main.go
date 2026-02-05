@@ -63,6 +63,9 @@ func main() {
 	var geminiCookie bool
 	var noBrowser bool
 	var antigravityLogin bool
+	var kiroLogin bool
+	var kiroProvider string
+	var kiroImport bool
 	var projectID string
 	var vertexImport string
 	var configPath string
@@ -78,6 +81,9 @@ func main() {
 	flag.BoolVar(&geminiCookie, "gemini-cookie", false, "Login to Gemini using Cookie")
 	flag.BoolVar(&noBrowser, "no-browser", false, "Don't open browser automatically for OAuth")
 	flag.BoolVar(&antigravityLogin, "antigravity-login", false, "Login to Antigravity using OAuth")
+	flag.BoolVar(&kiroLogin, "kiro-login", false, "Login to Kiro using OAuth (Google or GitHub)")
+	flag.StringVar(&kiroProvider, "kiro-provider", "google", "Kiro OAuth provider (google or github)")
+	flag.BoolVar(&kiroImport, "kiro-import", false, "Import Kiro token from IDE")
 	flag.StringVar(&projectID, "project_id", "", "Project ID (Gemini only, not required)")
 	flag.StringVar(&configPath, "config", DefaultConfigPath, "Configure File Path")
 	flag.StringVar(&vertexImport, "vertex-import", "", "Import Vertex service account key JSON file")
@@ -457,6 +463,14 @@ func main() {
 	} else if antigravityLogin {
 		// Handle Antigravity login
 		cmd.DoAntigravityLogin(cfg, options)
+	} else if kiroLogin || kiroImport {
+		// Handle Kiro login
+		kiroOpts := &cmd.KiroLoginOptions{
+			LoginOptions: options,
+			Provider:     kiroProvider,
+			Import:       kiroImport,
+		}
+		cmd.DoKiroLogin(cfg, kiroOpts)
 	} else if codexLogin {
 		// Handle Codex login
 		cmd.DoCodexLogin(cfg, options)

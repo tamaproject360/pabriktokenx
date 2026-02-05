@@ -203,6 +203,8 @@ export const requestCodexAuth = () => api.get<OAuthSession>('/codex-auth-url?is_
 export const requestGeminiCLIAuth = () => api.get<OAuthSession>('/gemini-cli-auth-url?is_webui=true');
 export const requestAntigravityAuth = () => api.get<OAuthSession>('/antigravity-auth-url?is_webui=true');
 export const requestQwenAuth = () => api.get<OAuthSession>('/qwen-auth-url?is_webui=true');
+export const requestKiroAuth = (provider: 'google' | 'github' = 'google') => 
+  api.get<OAuthSession>(`/kiro-auth-url?is_webui=true&provider=${provider}`);
 export const requestIFlowAuth = () => api.get<OAuthSession>('/iflow-auth-url?is_webui=true');
 export const requestGitHubCopilotAuth = () => api.get<OAuthSession & { user_code?: string; device_flow?: boolean; verification_uri?: string }>('/github-copilot-auth-url?is_webui=true');
 export const requestGeminiWebCookieAuth = (cookie: string, email?: string) => 

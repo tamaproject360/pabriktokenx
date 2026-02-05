@@ -74,3 +74,15 @@ func (m *Manager) Login(ctx context.Context, provider string, cfg *config.Config
 	}
 	return record, savedPath, nil
 }
+
+// SaveAuth saves an auth record to the store.
+func (m *Manager) SaveAuth(record *coreauth.Auth) (string, error) {
+	if m.store == nil {
+		return "", fmt.Errorf("cliproxy auth: no store configured")
+	}
+	if record == nil {
+		return "", fmt.Errorf("cliproxy auth: cannot save nil record")
+	}
+
+	return m.store.Save(context.Background(), record)
+}

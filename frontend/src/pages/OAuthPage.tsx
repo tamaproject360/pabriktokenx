@@ -524,6 +524,21 @@ export default function OAuthPage() {
             }}
           />
         </div>
+
+        {/* Kiro Note Section */}
+        <div className="mt-8 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+          <h4 className="text-amber-400 font-semibold mb-2 flex items-center gap-2">
+            <span>🤖</span> AWS CodeWhisperer (Kiro)
+          </h4>
+          <p className="text-sm text-slate-400 mb-2">
+            Kiro OAuth requires direct integration with Kiro IDE. To use Kiro authentication:
+          </p>
+          <ol className="text-sm text-slate-400 list-decimal list-inside space-y-1">
+            <li>Download and install <a href="https://kiro.dev" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">Kiro IDE</a></li>
+            <li>Login to Kiro IDE using Google, GitHub, or AWS Builder ID</li>
+            <li>Run CLI command: <code className="px-2 py-0.5 bg-slate-800 rounded text-cyan-300">cliproxy.exe -kiro-import</code></li>
+          </ol>
+        </div>
       </div>
     </div>
   );
