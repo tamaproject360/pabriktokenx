@@ -94,8 +94,12 @@ func DoKiroImport(cfg *config.Config, options *LoginOptions) {
 	}
 
 	// Save the imported auth record
-	manager := newAuthManager()
-	savedPath, err := manager.SaveAuth(record)
+	store := sdkAuth.GetTokenStore()
+	if setter, ok := store.(interface{ SetBaseDir(string) }); ok && cfg != nil {
+		setter.SetBaseDir(cfg.AuthDir)
+	}
+	
+	savedPath, err := store.Save(context.Background(), record)
 	if err != nil {
 		log.Errorf("Failed to save imported token: %v", err)
 		return
