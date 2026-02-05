@@ -84,6 +84,23 @@ func (a *KiroAuthenticator) createAuthRecord(tokenData *kiroauth.KiroTokenData, 
 	now := time.Now()
 	fileName := fmt.Sprintf("%s-%s.json", label, idPart)
 
+	// Create token storage
+	storage := &kiroauth.KiroTokenStorage{
+		AccessToken:  tokenData.AccessToken,
+		RefreshToken: tokenData.RefreshToken,
+		ProfileArn:   tokenData.ProfileArn,
+		ExpiresAt:    tokenData.ExpiresAt,
+		AuthMethod:   tokenData.AuthMethod,
+		Provider:     tokenData.Provider,
+		ClientID:     tokenData.ClientID,
+		ClientSecret: tokenData.ClientSecret,
+		ClientIDHash: tokenData.ClientIDHash,
+		Email:        tokenData.Email,
+		Region:       tokenData.Region,
+		StartURL:     tokenData.StartURL,
+		Type:         "kiro",
+	}
+
 	metadata := map[string]any{
 		"type":          "kiro",
 		"access_token":  tokenData.AccessToken,
@@ -132,6 +149,7 @@ func (a *KiroAuthenticator) createAuthRecord(tokenData *kiroauth.KiroTokenData, 
 		UpdatedAt:        now,
 		Metadata:         metadata,
 		Attributes:       attributes,
+		Storage:          storage,
 		NextRefreshAfter: expiresAt.Add(-20 * time.Minute),
 	}
 
@@ -239,6 +257,23 @@ func (a *KiroAuthenticator) ImportFromKiroIDE(ctx context.Context, cfg *config.C
 	now := time.Now()
 	fileName := fmt.Sprintf("kiro-%s-%s.json", provider, idPart)
 
+	// Create token storage
+	storage := &kiroauth.KiroTokenStorage{
+		AccessToken:  tokenData.AccessToken,
+		RefreshToken: tokenData.RefreshToken,
+		ProfileArn:   tokenData.ProfileArn,
+		ExpiresAt:    tokenData.ExpiresAt,
+		AuthMethod:   tokenData.AuthMethod,
+		Provider:     tokenData.Provider,
+		ClientID:     tokenData.ClientID,
+		ClientSecret: tokenData.ClientSecret,
+		ClientIDHash: tokenData.ClientIDHash,
+		Email:        tokenData.Email,
+		Region:       tokenData.Region,
+		StartURL:     tokenData.StartURL,
+		Type:         "kiro",
+	}
+
 	record := &coreauth.Auth{
 		ID:       fileName,
 		Provider: "kiro",
@@ -268,6 +303,7 @@ func (a *KiroAuthenticator) ImportFromKiroIDE(ctx context.Context, cfg *config.C
 			"email":       tokenData.Email,
 			"region":      tokenData.Region,
 		},
+		Storage:          storage,
 		NextRefreshAfter: expiresAt.Add(-20 * time.Minute),
 	}
 
