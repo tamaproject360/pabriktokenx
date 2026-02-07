@@ -1,116 +1,297 @@
 {
-  "models": {
-    "github-copilot-faysdevops.json:claude-sonnet-4": {
-      "model_id": "claude-sonnet-4",
-      "display_name": "Claude Sonnet 4",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
-    },
-    "github-copilot-faysdevops.json:gpt-3.5-turbo": {
-      "model_id": "gpt-3.5-turbo",
-      "display_name": "GPT 3.5 Turbo",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
-    },
-    "github-copilot-faysdevops.json:gpt-3.5-turbo-0613": {
-      "model_id": "gpt-3.5-turbo-0613",
-      "display_name": "GPT 3.5 Turbo",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
-    },
-    "github-copilot-faysdevops.json:gpt-4": {
-      "model_id": "gpt-4",
-      "display_name": "GPT 4",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
-    },
-    "github-copilot-faysdevops.json:gpt-4-0125-preview": {
-      "model_id": "gpt-4-0125-preview",
-      "display_name": "GPT 4 Turbo",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
-    },
-    "github-copilot-faysdevops.json:gpt-4-0613": {
-      "model_id": "gpt-4-0613",
-      "display_name": "GPT 4",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
-    },
-    "github-copilot-faysdevops.json:gpt-4-o-preview": {
-      "model_id": "gpt-4-o-preview",
-      "display_name": "GPT-4o",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
-    },
-    "github-copilot-faysdevops.json:gpt-4.1": {
-      "model_id": "gpt-4.1",
-      "display_name": "GPT-4.1",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
-    },
-    "github-copilot-faysdevops.json:gpt-4.1-2025-04-14": {
-      "model_id": "gpt-4.1-2025-04-14",
-      "display_name": "GPT-4.1",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
-    },
-    "github-copilot-faysdevops.json:gpt-4o": {
-      "model_id": "gpt-4o",
-      "display_name": "GPT-4o",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
-    },
-    "github-copilot-faysdevops.json:gpt-4o-2024-05-13": {
-      "model_id": "gpt-4o-2024-05-13",
-      "display_name": "GPT-4o",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
-    },
-    "github-copilot-faysdevops.json:gpt-4o-2024-08-06": {
-      "model_id": "gpt-4o-2024-08-06",
-      "display_name": "GPT-4o",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
-    },
-    "github-copilot-faysdevops.json:gpt-4o-2024-11-20": {
-      "model_id": "gpt-4o-2024-11-20",
-      "display_name": "GPT-4o",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
-    },
-    "github-copilot-faysdevops.json:gpt-4o-mini": {
-      "model_id": "gpt-4o-mini",
-      "display_name": "GPT-4o mini",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
-    },
-    "github-copilot-faysdevops.json:gpt-4o-mini-2024-07-18": {
-      "model_id": "gpt-4o-mini-2024-07-18",
-      "display_name": "GPT-4o mini",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
-    },
-    "github-copilot-faysdevops.json:oswe-vscode-secondary": {
-      "model_id": "oswe-vscode-secondary",
-      "display_name": "Raptor mini (Preview)",
-      "provider": "github-copilot",
-      "auth_file": "github-copilot-faysdevops.json",
-      "enabled": false
+  "antigravity": {
+    "auth_files": [
+      "antigravity-mhpratama90_gmail_com.json"
+    ],
+    "models": {
+      "gemini-claude-sonnet-4-5-thinking": {
+        "display_name": "gemini-claude-sonnet-4-5-thinking",
+        "enabled": true
+      },
+      "gemini-2.5-computer-use-preview-10-2025": {
+        "display_name": "gemini-2.5-computer-use-preview-10-2025",
+        "enabled": false
+      },
+      "gpt-oss-120b-medium": {
+        "display_name": "gpt-oss-120b-medium",
+        "enabled": false
+      },
+      "gemini-3-pro-preview": {
+        "display_name": "gemini-3-pro-preview",
+        "enabled": true
+      },
+      "tab_flash_lite_preview": {
+        "display_name": "tab_flash_lite_preview",
+        "enabled": false
+      },
+      "gemini-2.5-flash-image": {
+        "display_name": "gemini-2.5-flash-image",
+        "enabled": false
+      },
+      "gemini-claude-opus-4-5-thinking": {
+        "display_name": "gemini-claude-opus-4-5-thinking",
+        "enabled": true
+      },
+      "gemini-2.5-flash-lite": {
+        "display_name": "gemini-2.5-flash-lite",
+        "enabled": false
+      },
+      "gemini-2.5-flash": {
+        "display_name": "gemini-2.5-flash",
+        "enabled": false
+      },
+      "gemini-3-flash-preview": {
+        "display_name": "gemini-3-flash-preview",
+        "enabled": true
+      },
+      "gemini-claude-sonnet-4-5": {
+        "display_name": "gemini-claude-sonnet-4-5",
+        "enabled": true
+      },
+      "gemini-3-pro-image-preview": {
+        "display_name": "gemini-3-pro-image-preview",
+        "enabled": true
+      }
+    }
+  },
+  "github-copilot": {
+    "auth_files": [
+      "github-copilot-faysdevops.json",
+      "github-copilot-ginzoproject.json",
+      "github-copilot-tamaproject360.json"
+    ],
+    "models": {
+      "gpt-5.1-codex-max": {
+        "display_name": "GPT-5.1-Codex-Max",
+        "enabled": true
+      },
+      "text-embedding-3-small": {
+        "display_name": "Embedding V3 small",
+        "enabled": false
+      },
+      "gpt-4-0613": {
+        "display_name": "GPT 4",
+        "enabled": false
+      },
+      "gpt-5": {
+        "display_name": "GPT-5",
+        "enabled": true
+      },
+      "gpt-5-codex": {
+        "display_name": "GPT-5-Codex (Preview)",
+        "enabled": false
+      },
+      "oswe-vscode-prime": {
+        "display_name": "Raptor mini (Preview)",
+        "enabled": false
+      },
+      "claude-opus-4.6": {
+        "display_name": "Claude Opus 4.6",
+        "enabled": true
+      },
+      "gpt-4.1": {
+        "display_name": "GPT-4.1",
+        "enabled": false
+      },
+      "oswe-vscode-secondary": {
+        "display_name": "Raptor mini (Preview)",
+        "enabled": false
+      },
+      "gpt-4-0125-preview": {
+        "display_name": "GPT 4 Turbo",
+        "enabled": false
+      },
+      "gpt-3.5-turbo-0613": {
+        "display_name": "GPT 3.5 Turbo",
+        "enabled": false
+      },
+      "gpt-4o-mini": {
+        "display_name": "GPT-4o mini",
+        "enabled": false
+      },
+      "gpt-4-o-preview": {
+        "display_name": "GPT-4o",
+        "enabled": false
+      },
+      "claude-opus-4.5": {
+        "display_name": "Claude Opus 4.5",
+        "enabled": true
+      },
+      "gpt-5.2": {
+        "display_name": "GPT-5.2",
+        "enabled": true
+      },
+      "gpt-4o": {
+        "display_name": "GPT-4o",
+        "enabled": false
+      },
+      "gpt-4": {
+        "display_name": "GPT 4",
+        "enabled": false
+      },
+      "gemini-3-flash-preview": {
+        "display_name": "Gemini 3 Flash (Preview)",
+        "enabled": true
+      },
+      "gemini-2.5-pro": {
+        "display_name": "Gemini 2.5 Pro",
+        "enabled": false
+      },
+      "claude-sonnet-4": {
+        "display_name": "Claude Sonnet 4",
+        "enabled": false
+      },
+      "claude-sonnet-4.5": {
+        "display_name": "Claude Sonnet 4.5",
+        "enabled": true
+      },
+      "gpt-5-mini": {
+        "display_name": "GPT-5 mini",
+        "enabled": true
+      },
+      "text-embedding-ada-002": {
+        "display_name": "Embedding V2 Ada",
+        "enabled": false
+      },
+      "gpt-4o-2024-05-13": {
+        "display_name": "GPT-4o",
+        "enabled": false
+      },
+      "text-embedding-3-small-inference": {
+        "display_name": "Embedding V3 small (Inference)",
+        "enabled": false
+      },
+      "gpt-4.1-2025-04-14": {
+        "display_name": "GPT-4.1",
+        "enabled": false
+      },
+      "gpt-5.1": {
+        "display_name": "GPT-5.1",
+        "enabled": true
+      },
+      "gpt-5.1-codex-mini": {
+        "display_name": "GPT-5.1-Codex-Mini",
+        "enabled": true
+      },
+      "gemini-3-pro-preview": {
+        "display_name": "Gemini 3 Pro (Preview)",
+        "enabled": true
+      },
+      "gpt-4o-2024-11-20": {
+        "display_name": "GPT-4o",
+        "enabled": false
+      },
+      "grok-code-fast-1": {
+        "display_name": "Grok Code Fast 1",
+        "enabled": false
+      },
+      "gpt-5.2-codex": {
+        "display_name": "GPT-5.2-Codex",
+        "enabled": true
+      },
+      "gpt-4o-2024-08-06": {
+        "display_name": "GPT-4o",
+        "enabled": false
+      },
+      "gpt-3.5-turbo": {
+        "display_name": "GPT 3.5 Turbo",
+        "enabled": false
+      },
+      "gpt-4o-mini-2024-07-18": {
+        "display_name": "GPT-4o mini",
+        "enabled": false
+      },
+      "gpt-5.1-codex": {
+        "display_name": "GPT-5.1-Codex",
+        "enabled": true
+      },
+      "claude-haiku-4.5": {
+        "display_name": "Claude Haiku 4.5",
+        "enabled": true
+      }
+    }
+  },
+  "gemini-cli": {
+    "auth_files": [
+      "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json",
+      "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json",
+      "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json"
+    ],
+    "models": {
+      "gemini-2.5-pro": {
+        "display_name": "Gemini 2.5 Pro",
+        "enabled": false
+      },
+      "gemini-3-pro-preview": {
+        "display_name": "Gemini 3 Pro Preview",
+        "enabled": false
+      },
+      "gemini-2.5-flash-image": {
+        "display_name": "Gemini 2.5 Flash Image",
+        "enabled": false
+      },
+      "gemini-2.5-flash-lite": {
+        "display_name": "Gemini 2.5 Flash Lite",
+        "enabled": false
+      },
+      "gemini-2.5-flash": {
+        "display_name": "Gemini 2.5 Flash",
+        "enabled": false
+      },
+      "gemini-3-flash-preview": {
+        "display_name": "Gemini 3 Flash Preview",
+        "enabled": false
+      },
+      "gemini-3-pro-image-preview": {
+        "display_name": "Gemini 3 Pro Image Preview",
+        "enabled": false
+      }
+    }
+  },
+  "codex": {
+    "auth_files": [
+      "codex-mhpratama90@gmail.com.json",
+      "codex-ppkasn.kemensetneg@gmail.com.json",
+      "codex-tamadevops@gmail.com.json",
+      "codex-tamaproject360@gmail.com.json"
+    ],
+    "models": {
+      "gpt-5.1-codex-mini": {
+        "display_name": "GPT 5.1 Codex Mini",
+        "enabled": true
+      },
+      "gpt-5-codex-mini": {
+        "display_name": "GPT 5 Codex Mini",
+        "enabled": true
+      },
+      "gpt-5": {
+        "display_name": "GPT 5",
+        "enabled": true
+      },
+      "gpt-5.1-codex-max": {
+        "display_name": "GPT 5.1 Codex Max",
+        "enabled": true
+      },
+      "gpt-5.2": {
+        "display_name": "GPT 5.2",
+        "enabled": true
+      },
+      "gpt-5.1-codex": {
+        "display_name": "GPT 5.1 Codex",
+        "enabled": true
+      },
+      "gpt-5.1": {
+        "display_name": "GPT 5",
+        "enabled": true
+      },
+      "gpt-5-codex": {
+        "display_name": "GPT 5 Codex",
+        "enabled": true
+      },
+      "gpt-5.2-codex": {
+        "display_name": "GPT 5.2 Codex",
+        "enabled": true
+      }
     }
   }
 }
