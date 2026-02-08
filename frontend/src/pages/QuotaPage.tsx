@@ -4,6 +4,8 @@ import { listAuthFiles } from '../lib/api';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import gsap from 'gsap';
 import type { AuthFile } from '../lib/api';
+import ViewToggle from '../components/ViewToggle';
+import type { ViewMode } from '../components/ViewToggle';
 
 // Ambient Background
 function AmbientBackground() {
@@ -154,6 +156,7 @@ export default function QuotaPage() {
   const gridRef = useRef<HTMLDivElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('card');
 
   const { data: authFilesData, isLoading, refetch } = useQuery({
     queryKey: ['authFiles'],
@@ -162,6 +165,29 @@ export default function QuotaPage() {
       return response.data;
     },
   });
+
+  const getQuotaData = (authFile: AuthFile): QuotaData => {
+    const provider = authFile.provider || authFile.type || 'unknown';
+    
+    // Placeholder data - in real implementation this would be fetched from the API
+    return {
+      provider,
+      status: Math.random() > 0.3 ? 'active' : 'inactive',
+      usage: Math.floor(Math.random() * 100),
+      limit: 100,
+    };
+  };
+
+  const getProviderColor = (provider: string) => {
+    const colors: Record<string, string> = {
+      'claude': 'from-orange-500/20 to-orange-600/10',
+      'gemini': 'from-blue-500/20 to-blue-600/10',
+      'codex': 'from-green-500/20 to-green-600/10',
+      'antigravity': 'from-cyan-500/20 to-cyan-600/10',
+      'iflow': 'from-purple-500/20 to-purple-600/10',
+    };
+    return colors[provider.toLowerCase()] || 'from-gray-500/20 to-gray-600/10';
+  };
 
   const handleRefreshAll = () => {
     setRefreshing(true);
@@ -246,14 +272,17 @@ export default function QuotaPage() {
                 <p className="text-white/60 text-sm mt-1">Monitor and manage API quotas for all providers</p>
               </div>
             </div>
-            <button
-              onClick={handleRefreshAll}
-              disabled={refreshing || isLoading}
-              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 border border-white/10"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh All
-            </button>
+            <div className="flex items-center gap-3">
+              <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+              <button
+                onClick={handleRefreshAll}
+                disabled={refreshing || isLoading}
+                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 border border-white/10"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh All
+              </button>
+            </div>
           </div>
         </div>
 
@@ -311,7 +340,7 @@ export default function QuotaPage() {
               Go to Auth Files
             </button>
           </div>
-        ) : (
+        ) : viewMode === 'card' ? (
           <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {authFiles.map((authFile, index) => (
               <QuotaCard
@@ -319,6 +348,85 @@ export default function QuotaPage() {
                 authFile={{ ...authFile, authIndex: index }}
               />
             ))}
+          </div>
+        ) : (
+          <div ref={gridRef} className="overflow-hidden rounded-2xl border border-white/10 bg-black/20 backdrop-blur-sm">
+            <table className="min-w-full table-fixed">
+              <thead className="bg-white/5">
+                <tr>
+                  <th className="w-1/3 px-6 py-4 text-left text-xs font-semibold text-white/70 uppercase tracking-wider">
+                    Account
+                  </th>
+                  <th className="w-1/5 px-6 py-4 text-left text-xs font-semibold text-white/70 uppercase tracking-wider">
+                    Provider
+                  </th>
+                  <th className="w-1/5 px-6 py-4 text-left text-xs font-semibold text-white/70 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="w-1/5 px-6 py-4 text-left text-xs font-semibold text-white/70 uppercase tracking-wider">
+                    Usage
+                  </th>
+                  <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-white/70 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {authFiles.map((authFile, index) => {
+                  const quotaData = getQuotaData(authFile);
+                  return (
+                    <tr key={authFile.name} className="hover:bg-white/5 transition-colors duration-200">
+                      <td className="px-6 py-4">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium text-white break-words">
+                            {authFile.name}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex-shrink-0">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/10 text-white/90">
+                            {quotaData.provider}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          quotaData.status === 'active' 
+                            ? 'bg-green-500/20 text-green-400' 
+                            : 'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                          {quotaData.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <div className="flex-1 mr-3">
+                            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
+                                style={{ width: `${quotaData.usage}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div className="text-sm text-white/70 min-w-0">
+                            {quotaData.usage}%
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => {}}
+                          className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all duration-200"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
