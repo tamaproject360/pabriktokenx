@@ -23,6 +23,8 @@ import {
   Shield,
   FilePdf,
   FileText,
+  CaretLeft,
+  CaretRight,
 } from 'phosphor-react';
 import { listAuthFiles, getAuthKey, getAPIKeys, getModelSettings } from '../lib/api';
 import type { ModelSetting } from '../lib/api';
@@ -175,9 +177,10 @@ const getPlaygroundAuthStatus = (file: AuthFileInfo): { status: string; label: s
     if (msg.includes('429') || msg.includes('quota') || msg.includes('exhausted') || msg.includes('resource_exhausted')) {
       return { status: 'rate-limited', label: 'Rate Limited', color: '#F59E0B' };
     }
-    // Unsupported API endpoint - account works but tested model isn't accessible
+    // Unsupported API endpoint - account works, backend just tested against an incompatible model
+    // Treat as active since other models work fine
     if (msg.includes('unsupported') || msg.includes('not accessible') || msg.includes('not supported')) {
-      return { status: 'warning', label: 'Limited', color: '#F59E0B' };
+      return { status: 'active', label: 'Active', color: '#22C55E' };
     }
     // Auth/token errors
     if (msg.includes('unauthorized') || msg.includes('401') || msg.includes('403') || msg.includes('invalid_token')) {
@@ -232,6 +235,7 @@ export default function PlaygroundPage() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -599,7 +603,18 @@ export default function PlaygroundPage() {
         cat.activeAccounts++;
       }
       for (const model of provider.models) {
-        if (!cat.models.has(model.id)) {
+        const displayName = (model.display_name || model.id).toLowerCase();
+        // Deduplicate by display_name — keep canonical (shorter) model ID
+        const existingKey = Array.from(cat.models.entries()).find(
+          ([, m]) => (m.display_name || m.id).toLowerCase() === displayName
+        );
+        if (existingKey) {
+          // Keep the shorter (canonical) ID version
+          if (model.id.length < existingKey[0].length) {
+            cat.models.delete(existingKey[0]);
+            cat.models.set(model.id, model);
+          }
+        } else {
           cat.models.set(model.id, model);
         }
       }
@@ -617,9 +632,6 @@ export default function PlaygroundPage() {
         status = 'rate-limited';
         const rlCount = data.statuses.filter(s => s === 'rate-limited').length;
         statusLabel = `${rlCount}/${data.totalAccounts} rate limited`;
-      } else if (data.statuses.includes('warning')) {
-        status = 'warning';
-        statusLabel = `${data.totalAccounts} limited`;
       } else if (data.statuses.includes('disabled')) {
         status = 'disabled';
         statusLabel = 'Inactive';
@@ -1026,7 +1038,6 @@ export default function PlaygroundPage() {
   const providerColor = currentCategory ? getProviderColor(currentCategory.type) : '#64748B';
   const currentCategoryStatusColor = currentCategory?.status === 'active' ? '#22C55E' :
     currentCategory?.status === 'rate-limited' ? '#F59E0B' :
-    currentCategory?.status === 'warning' ? '#F59E0B' :
     currentCategory?.status === 'error' ? '#EF4444' :
     currentCategory?.status === 'disabled' ? '#EAB308' : '#22C55E';
 
@@ -1083,53 +1094,105 @@ export default function PlaygroundPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       
       {/* Sidebar - Chat History */}
-      <div className="relative z-10 w-64 border-r border-white/[0.06] flex flex-col bg-[#09090B]/90">
-        <div className="p-4 border-b border-white/[0.06]">
-          <button
-            onClick={clearChat}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl glass-panel hover:bg-white/[0.05] transition-all duration-300"
-          >
-            <PencilSimple className="h-4 w-4 text-cyan-400" weight="bold" />
-            <span className="text-white text-sm font-medium">New Chat</span>
-          </button>
-        </div>
-        
-        <div className="flex-1 overflow-y-auto p-2">
-          {conversations.length === 0 ? (
-            <div className="text-center py-12">
-              <ChatDots className="h-8 w-8 mx-auto mb-3 text-slate-600" />
-              <p className="text-xs text-slate-500">No conversations yet</p>
+      <div 
+        className={`relative z-10 border-r border-white/[0.06] flex flex-col bg-[#09090B]/90 transition-all duration-300 ease-in-out ${
+          sidebarCollapsed ? 'w-12' : 'w-64'
+        }`}
+      >
+        {/* Collapse/Expand Toggle */}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="absolute -right-3 top-5 z-20 w-6 h-6 rounded-full bg-[#18181B] border border-white/[0.1] flex items-center justify-center hover:bg-white/[0.08] transition-colors duration-200 shadow-lg"
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {sidebarCollapsed 
+            ? <CaretRight className="h-3 w-3 text-slate-400" weight="bold" />
+            : <CaretLeft className="h-3 w-3 text-slate-400" weight="bold" />
+          }
+        </button>
+
+        {sidebarCollapsed ? (
+          /* Collapsed: icon-only strip */
+          <div className="flex flex-col items-center pt-14 gap-3">
+            <button
+              onClick={() => { setSidebarCollapsed(false); clearChat(); }}
+              className="p-2 rounded-lg hover:bg-white/[0.05] transition-colors"
+              title="New Chat"
+            >
+              <PencilSimple className="h-4 w-4 text-cyan-400" weight="bold" />
+            </button>
+            {conversations.length > 0 && (
+              <div className="w-6 h-px bg-white/[0.08]" />
+            )}
+            {conversations.slice(0, 5).map(conv => (
+              <button
+                key={conv.id}
+                onClick={() => { setSidebarCollapsed(false); loadConversation(conv); }}
+                className={`p-2 rounded-lg transition-colors ${
+                  currentConversationId === conv.id
+                    ? 'bg-cyan-500/10 text-cyan-400'
+                    : 'hover:bg-white/[0.05] text-slate-500'
+                }`}
+                title={conv.title}
+              >
+                <ChatDots className="h-4 w-4" />
+              </button>
+            ))}
+            {conversations.length > 5 && (
+              <span className="text-[10px] text-slate-600">+{conversations.length - 5}</span>
+            )}
+          </div>
+        ) : (
+          /* Expanded: full sidebar */
+          <>
+            <div className="p-4 border-b border-white/[0.06]">
+              <button
+                onClick={clearChat}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl glass-panel hover:bg-white/[0.05] transition-all duration-300"
+              >
+                <PencilSimple className="h-4 w-4 text-cyan-400" weight="bold" />
+                <span className="text-white text-sm font-medium">New Chat</span>
+              </button>
             </div>
-          ) : (
-            <div className="space-y-1">
-              {conversations.map(conv => (
-                <div
-                  key={conv.id}
-                  className={`group flex items-center gap-2 p-3 rounded-xl cursor-pointer transition-all duration-200 ${
-                    currentConversationId === conv.id
-                      ? 'bg-cyan-500/10 border-l-2 border-cyan-400'
-                      : 'hover:bg-white/[0.03]'
-                  }`}
-                  onClick={() => loadConversation(conv)}
-                >
-                  <ChatDots className="h-4 w-4 flex-shrink-0 text-slate-500" />
-                  <span className={`text-sm truncate flex-1 ${currentConversationId === conv.id ? 'text-white' : 'text-slate-400'}`}>
-                    {conv.title}
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteConversation(conv.id);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-500/20 rounded-lg transition-all duration-200"
-                  >
-                    <Trash className="h-3.5 w-3.5 text-slate-500 hover:text-rose-400" />
-                  </button>
+            
+            <div className="flex-1 overflow-y-auto p-2">
+              {conversations.length === 0 ? (
+                <div className="text-center py-12">
+                  <ChatDots className="h-8 w-8 mx-auto mb-3 text-slate-600" />
+                  <p className="text-xs text-slate-500">No conversations yet</p>
                 </div>
-              ))}
+              ) : (
+                <div className="space-y-1">
+                  {conversations.map(conv => (
+                    <div
+                      key={conv.id}
+                      className={`group flex items-center gap-2 p-3 rounded-xl cursor-pointer transition-all duration-200 ${
+                        currentConversationId === conv.id
+                          ? 'bg-cyan-500/10 border-l-2 border-cyan-400'
+                          : 'hover:bg-white/[0.03]'
+                      }`}
+                      onClick={() => loadConversation(conv)}
+                    >
+                      <ChatDots className="h-4 w-4 flex-shrink-0 text-slate-500" />
+                      <span className={`text-sm truncate flex-1 ${currentConversationId === conv.id ? 'text-white' : 'text-slate-400'}`}>
+                        {conv.title}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteConversation(conv.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-500/20 rounded-lg transition-all duration-200"
+                      >
+                        <Trash className="h-3.5 w-3.5 text-slate-500 hover:text-rose-400" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* Main Chat Area */}
@@ -1182,7 +1245,6 @@ export default function PlaygroundPage() {
                     {filteredCategories.map(category => {
                       const statusColor = category.status === 'active' ? '#22C55E' :
                         category.status === 'rate-limited' ? '#F59E0B' :
-                        category.status === 'warning' ? '#F59E0B' :
                         category.status === 'error' ? '#EF4444' :
                         category.status === 'disabled' ? '#EAB308' : '#22C55E';
                       return (

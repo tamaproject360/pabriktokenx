@@ -17,7 +17,7 @@ function AmbientBackground() {
   );
 }
 
-type AuthStatus = 'active' | 'disabled' | 'rate-limited' | 'warning' | 'error' | 'pending' | 'refreshing' | 'unknown';
+type AuthStatus = 'active' | 'disabled' | 'rate-limited' | 'error' | 'pending' | 'refreshing' | 'unknown';
 
 interface QuotaData {
   provider: string;
@@ -56,9 +56,9 @@ const getAuthFileStatus = (authFile: AuthFile): AuthStatus => {
     if (isRateLimited(authFile.status_message || '')) {
       return 'rate-limited';
     }
-    // Unsupported API endpoint - account works but tested model isn't accessible
+    // Unsupported API - account works, backend just tested an incompatible model
     if (statusMsg.includes('unsupported') || statusMsg.includes('not accessible') || statusMsg.includes('not supported')) {
-      return 'warning';
+      return 'active';
     }
     return 'error';
   }
@@ -78,7 +78,6 @@ const getStatusLabel = (status: string): string => {
     active: 'Active',
     disabled: 'Inactive',
     'rate-limited': 'Rate Limited',
-    'warning': 'Limited',
     error: 'Error',
     pending: 'Pending',
     refreshing: 'Refreshing',
@@ -95,7 +94,6 @@ const getStatusStyle = (status: string): string => {
     active: 'bg-green-500/20 text-green-400',
     disabled: 'bg-yellow-500/20 text-yellow-400',
     'rate-limited': 'bg-amber-500/20 text-amber-400',
-    'warning': 'bg-amber-500/20 text-amber-400',
     error: 'bg-red-500/20 text-red-400',
     pending: 'bg-blue-500/20 text-blue-400',
     refreshing: 'bg-cyan-500/20 text-cyan-400',
