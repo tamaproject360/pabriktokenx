@@ -1094,105 +1094,110 @@ export default function PlaygroundPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       
       {/* Sidebar - Chat History */}
-      <div 
-        className={`relative z-10 border-r border-white/[0.06] flex flex-col bg-[#09090B]/90 transition-all duration-300 ease-in-out ${
-          sidebarCollapsed ? 'w-12' : 'w-64'
-        }`}
-      >
-        {/* Collapse/Expand Toggle */}
-        <button
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="absolute -right-3 top-5 z-20 w-6 h-6 rounded-full bg-[#18181B] border border-white/[0.1] flex items-center justify-center hover:bg-white/[0.08] transition-colors duration-200 shadow-lg"
-          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      <div className="relative z-10 flex-shrink-0">
+        <div 
+          className={`h-full border-r border-white/[0.06] flex flex-col bg-[#09090B]/90 transition-all duration-300 ease-in-out ${
+            sidebarCollapsed ? 'w-12' : 'w-64'
+          }`}
         >
-          {sidebarCollapsed 
-            ? <CaretRight className="h-3 w-3 text-slate-400" weight="bold" />
-            : <CaretLeft className="h-3 w-3 text-slate-400" weight="bold" />
-          }
-        </button>
-
-        {sidebarCollapsed ? (
-          /* Collapsed: icon-only strip */
-          <div className="flex flex-col items-center pt-14 gap-3">
-            <button
-              onClick={() => { setSidebarCollapsed(false); clearChat(); }}
-              className="p-2 rounded-lg hover:bg-white/[0.05] transition-colors"
-              title="New Chat"
-            >
-              <PencilSimple className="h-4 w-4 text-cyan-400" weight="bold" />
-            </button>
-            {conversations.length > 0 && (
-              <div className="w-6 h-px bg-white/[0.08]" />
-            )}
-            {conversations.slice(0, 5).map(conv => (
+          {sidebarCollapsed ? (
+            /* Collapsed: icon-only strip */
+            <div className="flex flex-col items-center pt-4 gap-3">
               <button
-                key={conv.id}
-                onClick={() => { setSidebarCollapsed(false); loadConversation(conv); }}
-                className={`p-2 rounded-lg transition-colors ${
-                  currentConversationId === conv.id
-                    ? 'bg-cyan-500/10 text-cyan-400'
-                    : 'hover:bg-white/[0.05] text-slate-500'
-                }`}
-                title={conv.title}
+                onClick={() => setSidebarCollapsed(false)}
+                className="p-2 rounded-lg hover:bg-white/[0.05] transition-colors"
+                title="Expand sidebar"
               >
-                <ChatDots className="h-4 w-4" />
+                <CaretRight className="h-4 w-4 text-slate-400" weight="bold" />
               </button>
-            ))}
-            {conversations.length > 5 && (
-              <span className="text-[10px] text-slate-600">+{conversations.length - 5}</span>
-            )}
-          </div>
-        ) : (
-          /* Expanded: full sidebar */
-          <>
-            <div className="p-4 border-b border-white/[0.06]">
+              <div className="w-6 h-px bg-white/[0.08]" />
               <button
-                onClick={clearChat}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl glass-panel hover:bg-white/[0.05] transition-all duration-300"
+                onClick={() => { setSidebarCollapsed(false); clearChat(); }}
+                className="p-2 rounded-lg hover:bg-white/[0.05] transition-colors"
+                title="New Chat"
               >
                 <PencilSimple className="h-4 w-4 text-cyan-400" weight="bold" />
-                <span className="text-white text-sm font-medium">New Chat</span>
               </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-2">
-              {conversations.length === 0 ? (
-                <div className="text-center py-12">
-                  <ChatDots className="h-8 w-8 mx-auto mb-3 text-slate-600" />
-                  <p className="text-xs text-slate-500">No conversations yet</p>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {conversations.map(conv => (
-                    <div
-                      key={conv.id}
-                      className={`group flex items-center gap-2 p-3 rounded-xl cursor-pointer transition-all duration-200 ${
-                        currentConversationId === conv.id
-                          ? 'bg-cyan-500/10 border-l-2 border-cyan-400'
-                          : 'hover:bg-white/[0.03]'
-                      }`}
-                      onClick={() => loadConversation(conv)}
-                    >
-                      <ChatDots className="h-4 w-4 flex-shrink-0 text-slate-500" />
-                      <span className={`text-sm truncate flex-1 ${currentConversationId === conv.id ? 'text-white' : 'text-slate-400'}`}>
-                        {conv.title}
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteConversation(conv.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-500/20 rounded-lg transition-all duration-200"
-                      >
-                        <Trash className="h-3.5 w-3.5 text-slate-500 hover:text-rose-400" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+              {conversations.length > 0 && (
+                <div className="w-6 h-px bg-white/[0.08]" />
+              )}
+              {conversations.slice(0, 5).map(conv => (
+                <button
+                  key={conv.id}
+                  onClick={() => { setSidebarCollapsed(false); loadConversation(conv); }}
+                  className={`p-2 rounded-lg transition-colors ${
+                    currentConversationId === conv.id
+                      ? 'bg-cyan-500/10 text-cyan-400'
+                      : 'hover:bg-white/[0.05] text-slate-500'
+                  }`}
+                  title={conv.title}
+                >
+                  <ChatDots className="h-4 w-4" />
+                </button>
+              ))}
+              {conversations.length > 5 && (
+                <span className="text-[10px] text-slate-600">+{conversations.length - 5}</span>
               )}
             </div>
-          </>
-        )}
+          ) : (
+            /* Expanded: full sidebar */
+            <>
+              <div className="p-4 border-b border-white/[0.06] flex items-center gap-2">
+                <button
+                  onClick={() => setSidebarCollapsed(true)}
+                  className="p-1.5 rounded-lg hover:bg-white/[0.05] transition-colors flex-shrink-0"
+                  title="Collapse sidebar"
+                >
+                  <CaretLeft className="h-4 w-4 text-slate-400" weight="bold" />
+                </button>
+                <button
+                  onClick={clearChat}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl glass-panel hover:bg-white/[0.05] transition-all duration-300"
+                >
+                  <PencilSimple className="h-4 w-4 text-cyan-400" weight="bold" />
+                  <span className="text-white text-sm font-medium">New Chat</span>
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-2">
+                {conversations.length === 0 ? (
+                  <div className="text-center py-12">
+                    <ChatDots className="h-8 w-8 mx-auto mb-3 text-slate-600" />
+                    <p className="text-xs text-slate-500">No conversations yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {conversations.map(conv => (
+                      <div
+                        key={conv.id}
+                        className={`group flex items-center gap-2 p-3 rounded-xl cursor-pointer transition-all duration-200 ${
+                          currentConversationId === conv.id
+                            ? 'bg-cyan-500/10 border-l-2 border-cyan-400'
+                            : 'hover:bg-white/[0.03]'
+                        }`}
+                        onClick={() => loadConversation(conv)}
+                      >
+                        <ChatDots className="h-4 w-4 flex-shrink-0 text-slate-500" />
+                        <span className={`text-sm truncate flex-1 ${currentConversationId === conv.id ? 'text-white' : 'text-slate-400'}`}>
+                          {conv.title}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteConversation(conv.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-500/20 rounded-lg transition-all duration-200"
+                        >
+                          <Trash className="h-3.5 w-3.5 text-slate-500 hover:text-rose-400" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Main Chat Area */}

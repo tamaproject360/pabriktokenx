@@ -14,21 +14,39 @@ PabrikTokenX is a production-ready proxy server that provides OpenAI/Gemini/Clau
 
 ### ✨ Key Features
 
-- **🔐 OAuth Authentication** - Support for Claude Code, OpenAI Codex, Gemini CLI, Qwen Code, iFlow, Antigravity, and GitHub Copilot
+- **🔐 OAuth Authentication** - Support for Claude Code, OpenAI Codex, Gemini CLI, Qwen Code, iFlow, Antigravity, Kiro (AWS CodeWhisperer), and GitHub Copilot
 - **🌐 OpenAI-Compatible API** - Drop-in replacement for OpenAI API clients
 - **⚖️ Load Balancing** - Round-robin distribution across multiple accounts
 - **🎯 Provider Routing** - Smart routing with automatic failover
 - **🔄 Multi-Modal Support** - Text, images, and function calling
 - **📊 Usage Tracking** - Built-in statistics and monitoring
-- **🎨 Modern Dashboard** - Sleek React-based UI with glassmorphism design and smooth animations
+- **🎨 Modern Dashboard** - Sleek React-based UI with glassmorphism design, ambient backgrounds, and smooth GSAP animations
+- **🎮 Interactive Playground** - Test models directly from the dashboard with streaming responses, typing indicators, and collapsible chat history sidebar
+- **📦 Provider-Grouped Models** - Models grouped by provider category with deduplication and aggregate status display
+- **🩺 Smart Status Detection** - Differentiates between rate-limited (temporary), auth errors, and model-specific issues per account
+- **📋 Quota Management** - Card/List view toggle with real-time provider status from backend
+- **🔑 Proxy Key Management** - Secure API key generation and management
+- **⚙️ Model Settings** - Per-provider model enable/disable configuration
+- **📤 Bulk Import/Export** - Auth file migration between devices
 - **🖼️ Custom Branding** - Professional logo integration across all pages
 - **🔌 Extensible SDK** - Reusable Go SDK for custom integrations
 - **🐳 Docker Compose Ready** - One-command deployment with Docker Compose
-- **🎮 Interactive Playground** - Test models directly from the dashboard with streaming responses
-- **🔑 Proxy Key Management** - Secure API key generation and management
 - **📱 Responsive Design** - Works seamlessly on desktop, tablet, and mobile devices
 - **🎭 Provider Icons** - Official provider logos for better visual recognition
 - **🍪 Cookie Authentication** - Support for Gemini Web cookie-based authentication
+
+### 🆕 What's New (Latest)
+
+| Feature | Description |
+|---------|-------------|
+| **Collapsible Sidebar** | Playground chat history sidebar can be collapsed to an icon-only strip for more workspace |
+| **Model Deduplication** | Redundant model variants (e.g., multiple GPT-4o date-suffixed versions) consolidated into single entries |
+| **Provider-Grouped Models** | Playground model selector groups models by provider category instead of per-account |
+| **Smart Status Detection** | Rate-limited accounts show as "Rate Limited" instead of incorrectly showing "Active" or "Error" |
+| **Typing Animation** | AI responses show bouncing-dot typing indicator while generating |
+| **Card/List View Toggle** | Quota Management page supports both card and list view modes |
+| **Kiro Auth Support** | Added Kiro (AWS CodeWhisperer) authentication provider |
+| **Bulk Import/Export** | Auth files can be exported and imported for device migration |
 
 ---
 
