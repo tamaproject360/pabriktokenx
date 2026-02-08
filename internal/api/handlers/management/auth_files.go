@@ -279,6 +279,59 @@ func (h *Handler) ListAuthFiles(c *gin.Context) {
 	c.JSON(200, gin.H{"files": files})
 }
 
+// isDeprecatedModel checks if a model is deprecated/old and should be filtered out
+func isDeprecatedModel(modelID string) bool {
+	id := strings.ToLower(modelID)
+	
+	// Filter old GPT models (keep only gpt-4.5 and above, gpt-5 and above)
+	if strings.HasPrefix(id, "gpt-4") && !strings.Contains(id, "gpt-4.5") {
+		return true
+	}
+	if strings.HasPrefix(id, "gpt-3.5") || strings.HasPrefix(id, "gpt-3") {
+		return true
+	}
+	
+	// Filter old Claude models (keep only claude-4.5 and above)
+	if strings.Contains(id, "claude") {
+		if strings.Contains(id, "claude-3") || strings.Contains(id, "claude-2") || strings.Contains(id, "claude-1") {
+			return true
+		}
+		if strings.Contains(id, "claude-4") && !strings.Contains(id, "claude-4.5") {
+			return true
+		}
+	}
+	
+	// Filter old Gemini models (keep only gemini-3.0 and above)
+	if strings.Contains(id, "gemini") {
+		if strings.Contains(id, "gemini-2.5") || strings.Contains(id, "gemini-2.0") || 
+		   strings.Contains(id, "gemini-1") || strings.Contains(id, "gemini-pro") {
+			return true
+		}
+	}
+	
+	// Filter embedding models
+	if strings.Contains(id, "embedding") || strings.Contains(id, "embed-") {
+		return true
+	}
+	
+	// Filter whisper/audio models
+	if strings.Contains(id, "whisper") {
+		return true
+	}
+	
+	// Filter TTS models
+	if strings.Contains(id, "tts-") {
+		return true
+	}
+	
+	// Filter DALL-E and image generation
+	if strings.Contains(id, "dall-e") || strings.Contains(id, "dalle") {
+		return true
+	}
+	
+	return false
+}
+
 // GetAuthFileModels returns the models supported by a specific auth file
 func (h *Handler) GetAuthFileModels(c *gin.Context) {
 	name := c.Query("name")
@@ -309,6 +362,11 @@ func (h *Handler) GetAuthFileModels(c *gin.Context) {
 
 	result := make([]gin.H, 0, len(models))
 	for _, m := range models {
+		// Filter out deprecated/old models
+		if isDeprecatedModel(m.ID) {
+			continue
+		}
+		
 		entry := gin.H{
 			"id": m.ID,
 		}

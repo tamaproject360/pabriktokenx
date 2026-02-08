@@ -808,11 +808,12 @@ func (e *AntigravityExecutor) CountTokens(ctx context.Context, auth *cliproxyaut
 }
 
 // FetchAntigravityModels retrieves available models using the supplied auth.
-func FetchAntigravityModels(ctx context.Context, auth *cliproxyauth.Auth, cfg *config.Config) []*registry.ModelInfo {
+// Returns models and updated auth (if token was refreshed)
+func FetchAntigravityModels(ctx context.Context, auth *cliproxyauth.Auth, cfg *config.Config) ([]*registry.ModelInfo, *cliproxyauth.Auth) {
 	exec := &AntigravityExecutor{cfg: cfg}
 	token, updatedAuth, errToken := exec.ensureAccessToken(ctx, auth)
 	if errToken != nil || token == "" {
-		return nil
+		return nil, nil
 	}
 	if updatedAuth != nil {
 		auth = updatedAuth
@@ -825,7 +826,7 @@ func FetchAntigravityModels(ctx context.Context, auth *cliproxyauth.Auth, cfg *c
 		modelsURL := baseURL + antigravityModelsPath
 		httpReq, errReq := http.NewRequestWithContext(ctx, http.MethodPost, modelsURL, bytes.NewReader([]byte(`{}`)))
 		if errReq != nil {
-			return nil
+			return nil, nil
 		}
 		httpReq.Header.Set("Content-Type", "application/json")
 		httpReq.Header.Set("Authorization", "Bearer "+token)
@@ -840,7 +841,7 @@ func FetchAntigravityModels(ctx context.Context, auth *cliproxyauth.Auth, cfg *c
 				log.Debugf("antigravity executor: models request error on base url %s, retrying with fallback base url: %s", baseURL, baseURLs[idx+1])
 				continue
 			}
-			return nil
+			return nil, nil
 		}
 
 		bodyBytes, errRead := io.ReadAll(httpResp.Body)
@@ -852,14 +853,14 @@ func FetchAntigravityModels(ctx context.Context, auth *cliproxyauth.Auth, cfg *c
 				log.Debugf("antigravity executor: models read error on base url %s, retrying with fallback base url: %s", baseURL, baseURLs[idx+1])
 				continue
 			}
-			return nil
+			return nil, nil
 		}
 		if httpResp.StatusCode < http.StatusOK || httpResp.StatusCode >= http.StatusMultipleChoices {
 			if httpResp.StatusCode == http.StatusTooManyRequests && idx+1 < len(baseURLs) {
 				log.Debugf("antigravity executor: models request rate limited on base url %s, retrying with fallback base url: %s", baseURL, baseURLs[idx+1])
 				continue
 			}
-			return nil
+			return nil, nil
 		}
 
 		result := gjson.GetBytes(bodyBytes, "models")
@@ -938,9 +939,9 @@ func FetchAntigravityModels(ctx context.Context, auth *cliproxyauth.Auth, cfg *c
 		for _, modelInfo := range modelMap {
 			models = append(models, modelInfo)
 		}
-		return models
+		return models, auth
 	}
-	return nil
+	return nil, nil
 }
 
 func (e *AntigravityExecutor) ensureAccessToken(ctx context.Context, auth *cliproxyauth.Auth) (string, *cliproxyauth.Auth, error) {

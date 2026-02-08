@@ -744,8 +744,14 @@ func (s *Service) registerModelsForAuth(a *coreauth.Auth) {
 		models = applyExcludedModels(models, excluded)
 	case "antigravity":
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		models = executor.FetchAntigravityModels(ctx, a, s.cfg)
+		models, updatedAuth := executor.FetchAntigravityModels(ctx, a, s.cfg)
 		cancel()
+		// Save updated auth if token was refreshed
+		if updatedAuth != nil && s.coreManager != nil {
+			if _, err := s.coreManager.Update(context.Background(), updatedAuth); err != nil {
+				log.Errorf("failed to save refreshed antigravity auth: %v", err)
+			}
+		}
 		models = applyExcludedModels(models, excluded)
 	case "claude":
 		models = registry.GetClaudeModels()
