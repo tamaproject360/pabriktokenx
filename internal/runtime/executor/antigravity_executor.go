@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/router-for-me/CLIProxyAPI/v6/internal/auth/antigravity"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/registry"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/util"
@@ -47,8 +48,8 @@ const (
 )
 
 var (
-	antigravityClientID     = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_ID", "")
-	antigravityClientSecret = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_SECRET", "")
+	antigravityClientID     = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_ID", antigravity.DefaultClientID)
+	antigravityClientSecret = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_SECRET", antigravity.DefaultClientSecret)
 	randSource              = rand.New(rand.NewSource(time.Now().UnixNano()))
 	randSourceMutex         sync.Mutex
 )
@@ -810,11 +811,23 @@ func (e *AntigravityExecutor) CountTokens(ctx context.Context, auth *cliproxyaut
 // FetchAntigravityModels retrieves available models using the supplied auth.
 // Returns models and updated auth (if token was refreshed)
 func FetchAntigravityModels(ctx context.Context, auth *cliproxyauth.Auth, cfg *config.Config) ([]*registry.ModelInfo, *cliproxyauth.Auth) {
-	exec := &AntigravityExecutor{cfg: cfg}
-	token, updatedAuth, errToken := exec.ensureAccessToken(ctx, auth)
-	if errToken != nil || token == "" {
+	if auth == nil {
+		log.Warnf("antigravity executor: FetchAntigravityModels called with nil auth")
 		return nil, nil
 	}
+	log.Infof("antigravity executor: FetchAntigravityModels called for auth: id=%s, provider=%s", auth.ID, auth.Provider)
+	
+	exec := &AntigravityExecutor{cfg: cfg}
+	token, updatedAuth, errToken := exec.ensureAccessToken(ctx, auth)
+	if errToken != nil {
+		log.Warnf("antigravity executor: ensureAccessToken failed for %s: %v", auth.ID, errToken)
+		return nil, nil
+	}
+	if token == "" {
+		log.Warnf("antigravity executor: ensureAccessToken returned empty token for %s", auth.ID)
+		return nil, nil
+	}
+	log.Debugf("antigravity executor: got access token for %s (length=%d)", auth.ID, len(token))
 	if updatedAuth != nil {
 		auth = updatedAuth
 	}
@@ -939,8 +952,10 @@ func FetchAntigravityModels(ctx context.Context, auth *cliproxyauth.Auth, cfg *c
 		for _, modelInfo := range modelMap {
 			models = append(models, modelInfo)
 		}
+		log.Infof("antigravity executor: successfully fetched %d models for %s", len(models), auth.ID)
 		return models, auth
 	}
+	log.Warnf("antigravity executor: no models fetched after trying all base URLs for %s", auth.ID)
 	return nil, nil
 }
 

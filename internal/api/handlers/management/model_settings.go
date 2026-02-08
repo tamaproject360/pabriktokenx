@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 )
 
 // ModelSetting represents the configuration for a single model
@@ -66,20 +67,28 @@ func loadModelSettings() (*ModelSettingsConfig, error) {
 	defer modelSettingsMu.RUnlock()
 
 	path := getModelSettingsPath()
+	log.WithField("path", path).Info("[model_settings] loading settings from path")
+	
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
+			log.Info("[model_settings] file does not exist, returning empty config")
 			// Return empty config if file doesn't exist
 			return &ModelSettingsConfig{
 				Models: make(map[string]ModelSetting),
 			}, nil
 		}
+		log.WithField("error", err.Error()).Error("[model_settings] error reading file")
 		return nil, err
 	}
 
+	log.WithField("size", len(data)).Info("[model_settings] file loaded, parsing JSON")
+	log.WithField("raw_preview", string(data[:200])).Debug("[model_settings] JSON preview")
+
 	// Try to parse as new format first
 	var newConfig map[string]ProviderConfig
-	if err := json.Unmarshal(data, &newConfig); err == nil {
+	unmarshalErr := json.Unmarshal(data, &newConfig)
+	if unmarshalErr == nil {
 		// Check if it's new format by checking for auth_files and models keys
 		isNewFormat := false
 		for _, providerConfig := range newConfig {
@@ -90,12 +99,19 @@ func loadModelSettings() (*ModelSettingsConfig, error) {
 		}
 
 		if isNewFormat {
+			log.WithField("providers", len(newConfig)).Info("[model_settings] detected new format")
 			// Convert new format to old format for backward compatibility
 			oldConfig := &ModelSettingsConfig{
 				Models: make(map[string]ModelSetting),
 			}
 
 			for providerName, providerConfig := range newConfig {
+				log.WithFields(log.Fields{
+					"provider": providerName,
+					"auth_files": len(providerConfig.AuthFiles),
+					"models": len(providerConfig.Models),
+				}).Debug("[model_settings] processing provider")
+				
 				for _, authFile := range providerConfig.AuthFiles {
 					for modelID, modelConfig := range providerConfig.Models {
 						key := authFile + ":" + modelID
@@ -110,15 +126,21 @@ func loadModelSettings() (*ModelSettingsConfig, error) {
 				}
 			}
 
+			log.WithField("total_models", len(oldConfig.Models)).Info("[model_settings] conversion complete")
 			return oldConfig, nil
 		}
+	} else {
+		log.Warnf("[model_settings] failed to parse new format: %v, trying old format", unmarshalErr)
 	}
 
 	// Fall back to old format
 	var config ModelSettingsConfig
 	if err := json.Unmarshal(data, &config); err != nil {
+		log.Errorf("[model_settings] failed to parse old format too: %v", err)
 		return nil, err
 	}
+
+	log.Info("[model_settings] parsed as old format")
 
 	if config.Models == nil {
 		config.Models = make(map[string]ModelSetting)

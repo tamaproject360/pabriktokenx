@@ -32,9 +32,9 @@
   },
   "codex": {
     "auth_files": [
-      "codex-tamaproject360@gmail.com.json",
       "codex-mhpratama90@gmail.com.json",
       "codex-ppkasn.kemensetneg@gmail.com.json",
+      "codex-tamaproject360@gmail.com.json",
       "codex-tamadevops@gmail.com.json"
     ],
     "models": {
@@ -78,30 +78,30 @@
   },
   "gemini-cli": {
     "auth_files": [
-      "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json",
       "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json",
-      "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json"
+      "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json",
+      "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json"
     ],
     "models": {
       "gemini-3-flash-preview": {
         "display_name": "Gemini 3 Flash Preview",
-        "enabled": false
+        "enabled": true
       },
       "gemini-3-pro-image-preview": {
         "display_name": "Gemini 3 Pro Image Preview",
-        "enabled": false
+        "enabled": true
       },
       "gemini-3-pro-preview": {
         "display_name": "Gemini 3 Pro Preview",
-        "enabled": false
+        "enabled": true
       }
     }
   },
   "github-copilot": {
     "auth_files": [
-      "github-copilot-ginzoproject.json",
       "github-copilot-faysdevops.json",
-      "github-copilot-tamaproject360.json"
+      "github-copilot-tamaproject360.json",
+      "github-copilot-ginzoproject.json"
     ],
     "models": {
       "claude-haiku-4.5": {
@@ -118,7 +118,7 @@
       },
       "claude-sonnet-4": {
         "display_name": "Claude Sonnet 4",
-        "enabled": false
+        "enabled": true
       },
       "claude-sonnet-4.5": {
         "display_name": "Claude Sonnet 4.5",
@@ -142,10 +142,6 @@
       },
       "gpt-3.53-flash-preview": {
         "display_name": "Gemini 3 Flash (Preview)",
-        "enabled": true
-      },
-      "gemini-3-pro-preview": {
-        "display_name": "Gemini 3 Pro (Preview)",
         "enabled": true
       },
       "gpt-5": {
@@ -182,4 +178,8 @@
       },
       "gpt-5.2-codex": {
         "display_name": "GPT-5.2-Codex",
-        "enabled": tru
+        "enabled": true
+      }
+    }
+  }
+}

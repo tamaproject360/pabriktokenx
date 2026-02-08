@@ -22,11 +22,14 @@ import (
 
 const (
 	antigravityCallbackPort = 19121
+	// defaultAntigravityClientID is the OAuth client ID for Antigravity
+	defaultAntigravityClientID     = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
+	defaultAntigravityClientSecret = "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"
 )
 
 var (
-	antigravityClientID     = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_ID", "")
-	antigravityClientSecret = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_SECRET", "")
+	antigravityClientID     = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_ID", defaultAntigravityClientID)
+	antigravityClientSecret = getEnvOrDefault("ANTIGRAVITY_OAUTH_CLIENT_SECRET", defaultAntigravityClientSecret)
 )
 
 var antigravityScopes = []string{
