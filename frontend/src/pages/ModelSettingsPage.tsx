@@ -188,6 +188,39 @@ export default function ModelSettingsPage() {
     return settingsMap;
   }, [savedSettings, modelSettings, pendingChanges]);
 
+  // Group providers by type - MOVED UP BEFORE USAGE
+  const groupedByProvider = useMemo(() => {
+    if (!providersData) return [];
+
+    const grouped = new Map<string, { type: string; authFiles: Set<string>; models: Map<string, { model: ModelInfo; authFile: string }> }>();
+
+    providersData.forEach(provider => {
+      if (!grouped.has(provider.type)) {
+        grouped.set(provider.type, {
+          type: provider.type,
+          authFiles: new Set(),
+          models: new Map()
+        });
+      }
+
+      const group = grouped.get(provider.type)!;
+      group.authFiles.add(provider.authFile);
+
+      provider.models.forEach(model => {
+        // Gunakan model.id sebagai key, jika ada duplikat gunakan dari auth file pertama
+        if (!group.models.has(model.id)) {
+          group.models.set(model.id, { model, authFile: provider.authFile });
+        }
+      });
+    });
+
+    return Array.from(grouped.values()).map(group => ({
+      type: group.type,
+      authFiles: Array.from(group.authFiles),
+      models: Array.from(group.models.values())
+    }));
+  }, [providersData]);
+
   // Mutation for updating model settings
   const updateMutation = useMutation({
     mutationFn: async (setting: ModelSetting) => {
@@ -268,39 +301,6 @@ export default function ModelSettingsPage() {
       queryClient.invalidateQueries({ queryKey: ['modelSettings'] });
     });
   }, [groupedByProvider, queryClient]);
-
-  // Group providers by type
-  const groupedByProvider = useMemo(() => {
-    if (!providersData) return [];
-
-    const grouped = new Map<string, { type: string; authFiles: Set<string>; models: Map<string, { model: ModelInfo; authFile: string }> }>();
-
-    providersData.forEach(provider => {
-      if (!grouped.has(provider.type)) {
-        grouped.set(provider.type, {
-          type: provider.type,
-          authFiles: new Set(),
-          models: new Map()
-        });
-      }
-
-      const group = grouped.get(provider.type)!;
-      group.authFiles.add(provider.authFile);
-
-      provider.models.forEach(model => {
-        // Gunakan model.id sebagai key, jika ada duplikat gunakan dari auth file pertama
-        if (!group.models.has(model.id)) {
-          group.models.set(model.id, { model, authFile: provider.authFile });
-        }
-      });
-    });
-
-    return Array.from(grouped.values()).map(group => ({
-      type: group.type,
-      authFiles: Array.from(group.authFiles),
-      models: Array.from(group.models.values())
-    }));
-  }, [providersData]);
 
   // Filter providers and models
   const filteredProviders = groupedByProvider.map(provider => {
