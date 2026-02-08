@@ -285,15 +285,15 @@ export default function AuthFilesPage() {
                   
                   <div className="relative z-10">
                     <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-start gap-3 min-w-0 flex-1 pr-3">
                         <div 
-                          className="w-11 h-11 rounded-xl flex items-center justify-center"
+                          className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
                           style={{ background: `${providerColor}15`, boxShadow: `0 0 20px ${providerColor}20` }}
                         >
                           <FileText className="h-5 w-5" style={{ color: providerColor }} strokeWidth={1.5} />
                         </div>
-                        <div>
-                          <h4 className="font-medium text-white text-sm truncate max-w-[140px]">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-medium text-white text-sm break-all" title={file.name}>
                             {file.name}
                           </h4>
                           <p className="text-xs text-slate-500 mt-0.5 font-mono">
@@ -302,7 +302,7 @@ export default function AuthFilesPage() {
                         </div>
                       </div>
                       <span 
-                        className="px-2.5 py-1 text-xs rounded-lg border font-medium"
+                        className="px-2.5 py-1 text-xs rounded-lg border font-medium flex-shrink-0"
                         style={{ 
                           background: `${providerColor}15`,
                           color: providerColor,
@@ -352,14 +352,14 @@ export default function AuthFilesPage() {
         ) : (
           /* List View */
           <div ref={gridRef} className="glass-panel rounded-2xl overflow-hidden">
-            <table className="w-full">
+            <table className="w-full table-fixed">
               <thead>
                 <tr className="border-b border-white/10">
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">File</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Provider</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Size</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Modified</th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider w-2/5">File</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider w-32">Provider</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider w-24">Size</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider w-28">Modified</th>
+                  <th className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider w-24">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -378,7 +378,7 @@ export default function AuthFilesPage() {
                           >
                             <FileText className="h-4 w-4" style={{ color: providerColor }} strokeWidth={1.5} />
                           </div>
-                          <span className="font-medium text-white text-sm truncate max-w-[200px]">
+                          <span className="font-medium text-white text-sm break-all" title={file.name}>
                             {file.name}
                           </span>
                         </div>

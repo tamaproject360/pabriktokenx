@@ -547,7 +547,7 @@ export default function ModelSettingsPage() {
                             }`}
                           >
                             <div className="flex items-start justify-between gap-3">
-                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <div className="flex items-start gap-3 flex-1 min-w-0">
                                 <div 
                                   className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
                                     enabled ? '' : 'grayscale opacity-50'
@@ -558,19 +558,19 @@ export default function ModelSettingsPage() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p 
-                                    className={`text-sm font-medium truncate transition-colors ${
+                                    className={`text-sm font-medium break-words transition-colors ${
                                       enabled ? 'text-white' : 'text-white/50'
                                     }`}
                                     title={displayLabel}
                                   >
                                     {displayLabel}
                                   </p>
-                                  <p className="text-xs text-white/40 truncate font-mono" title={model.id}>
+                                  <p className="text-xs text-white/40 break-all font-mono" title={model.id}>
                                     {model.id}
                                   </p>
                                 </div>
                               </div>
-                              <ToggleSwitch
+                              <div className="flex-shrink-0">\n                                <ToggleSwitch
                                 enabled={enabled}
                                 onChange={(newEnabled) => handleToggle(
                                   authFile,
@@ -579,8 +579,9 @@ export default function ModelSettingsPage() {
                                   provider.type,
                                   newEnabled
                                 )}
-                                loading={isPending}
-                              />
+                                  loading={isPending}
+                                />
+                              </div>
                             </div>
                             
                             {/* Status indicator */}
@@ -608,13 +609,13 @@ export default function ModelSettingsPage() {
                   ) : (
                     /* List View */
                     <div className="glass-panel rounded-xl overflow-hidden border border-white/10">
-                      <table className="w-full">
+                      <table className="w-full table-fixed">
                         <thead>
                           <tr className="border-b border-white/10 bg-white/[0.02]">
-                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Model</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Model ID</th>
-                            <th className="px-4 py-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Toggle</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider w-2/5">Model</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider w-1/3">Model ID</th>
+                            <th className="px-4 py-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider w-24">Status</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider w-20">Toggle</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -641,7 +642,7 @@ export default function ModelSettingsPage() {
                                       <Cpu className="w-4 h-4" style={{ color: providerColor }} strokeWidth={2} />
                                     </div>
                                     <span 
-                                      className={`text-sm font-medium truncate max-w-[200px] ${
+                                      className={`text-sm font-medium break-words ${
                                         enabled ? 'text-white' : 'text-white/50'
                                       }`}
                                       title={displayLabel}
@@ -651,7 +652,7 @@ export default function ModelSettingsPage() {
                                   </div>
                                 </td>
                                 <td className="px-4 py-3">
-                                  <span className="text-xs text-white/40 font-mono" title={model.id}>
+                                  <span className="text-xs text-white/40 font-mono break-all" title={model.id}>
                                     {model.id}
                                   </span>
                                 </td>
