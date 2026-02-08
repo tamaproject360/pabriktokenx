@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -124,6 +124,19 @@ interface AvailableProvider {
   statusMessage?: string;
 }
 
+/**
+ * Provider category groups all accounts of the same type
+ * and shows only unique models.
+ */
+interface ProviderCategory {
+  type: string;
+  models: ModelInfo[];
+  totalAccounts: number;
+  activeAccounts: number;
+  status: string;
+  statusLabel: string;
+}
+
 const PROVIDER_COLORS: Record<string, string> = {
   gemini: '#22D3EE',
   'gemini-cli': '#22D3EE',
@@ -187,7 +200,7 @@ export default function PlaygroundPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('');
-  const [selectedAuthFile, setSelectedAuthFile] = useState<string>('');
+  const [selectedProviderType, setSelectedProviderType] = useState<string>('');
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState('You are a helpful AI assistant.');
@@ -541,20 +554,87 @@ export default function PlaygroundPage() {
     }
 
     setProviders(filteredProviders);
+  }, [allProviders, isModelEnabled]);
 
-    // Reset selection if current model is now disabled
-    if (selectedModel && selectedAuthFile) {
-      const isCurrentModelEnabled = isModelEnabled(selectedModel, selectedAuthFile);
-      if (!isCurrentModelEnabled && filteredProviders.length > 0 && filteredProviders[0].models.length > 0) {
-        setSelectedAuthFile(filteredProviders[0].authFile);
-        setSelectedModel(filteredProviders[0].models[0].id);
+  /**
+   * Group providers by category type and deduplicate models.
+   * Each category shows unique models across all accounts of that type.
+   */
+  const providerCategories = useMemo((): ProviderCategory[] => {
+    const categoryMap = new Map<string, {
+      models: Map<string, ModelInfo>;
+      totalAccounts: number;
+      activeAccounts: number;
+      statuses: string[];
+    }>();
+
+    for (const provider of providers) {
+      const type = provider.type.toLowerCase();
+      if (!categoryMap.has(type)) {
+        categoryMap.set(type, { models: new Map(), totalAccounts: 0, activeAccounts: 0, statuses: [] });
       }
-    } else if (filteredProviders.length > 0 && filteredProviders[0].models.length > 0) {
-      // Set initial selection
-      setSelectedAuthFile(filteredProviders[0].authFile);
-      setSelectedModel(filteredProviders[0].models[0].id);
+      const cat = categoryMap.get(type)!;
+      cat.totalAccounts++;
+      const st = provider.status || 'active';
+      cat.statuses.push(st);
+      if (st === 'active' || st === 'rate-limited' || st === 'pending' || st === 'refreshing') {
+        cat.activeAccounts++;
+      }
+      for (const model of provider.models) {
+        if (!cat.models.has(model.id)) {
+          cat.models.set(model.id, model);
+        }
+      }
     }
-  }, [allProviders, isModelEnabled, selectedModel, selectedAuthFile]);
+
+    const categories: ProviderCategory[] = [];
+    for (const [type, data] of categoryMap) {
+      // Determine aggregate status: if any account is active, category is active
+      let status = 'error';
+      let statusLabel = 'Error';
+      if (data.activeAccounts > 0) {
+        status = 'active';
+        statusLabel = `${data.activeAccounts}/${data.totalAccounts} active`;
+      } else if (data.statuses.includes('rate-limited')) {
+        status = 'rate-limited';
+        statusLabel = 'Rate Limited';
+      } else if (data.statuses.includes('disabled')) {
+        status = 'disabled';
+        statusLabel = 'Inactive';
+      }
+
+      categories.push({
+        type,
+        models: Array.from(data.models.values()),
+        totalAccounts: data.totalAccounts,
+        activeAccounts: data.activeAccounts,
+        status,
+        statusLabel,
+      });
+    }
+
+    return categories;
+  }, [providers]);
+
+  // Set initial selection when categories change
+  useEffect(() => {
+    if (providerCategories.length === 0) return;
+    // If no model selected yet, pick the first one
+    if (!selectedModel) {
+      const first = providerCategories[0];
+      setSelectedProviderType(first.type);
+      if (first.models.length > 0) {
+        setSelectedModel(first.models[0].id);
+      }
+    }
+    // If current model no longer exists in any category, reset
+    const modelExists = providerCategories.some(c => c.models.some(m => m.id === selectedModel));
+    if (selectedModel && !modelExists && providerCategories.length > 0) {
+      const first = providerCategories[0];
+      setSelectedProviderType(first.type);
+      setSelectedModel(first.models[0]?.id || '');
+    }
+  }, [providerCategories, selectedModel]);
 
   // Animations
   useEffect(() => {
@@ -603,10 +683,10 @@ export default function PlaygroundPage() {
     }
   }, [conversations]);
 
-  const getCurrentProvider = () => providers.find(p => p.authFile === selectedAuthFile);
+  const getCurrentCategory = () => providerCategories.find(c => c.type === selectedProviderType);
   const getCurrentModel = () => {
-    const provider = getCurrentProvider();
-    return provider?.models.find(m => m.id === selectedModel);
+    const category = getCurrentCategory();
+    return category?.models.find(m => m.id === selectedModel);
   };
 
   const sendMessage = async () => {
@@ -919,21 +999,21 @@ export default function PlaygroundPage() {
     }
   };
 
-  const currentProvider = getCurrentProvider();
+  const currentCategory = getCurrentCategory();
   const currentModel = getCurrentModel();
-  const providerColor = currentProvider ? getProviderColor(currentProvider.type) : '#64748B';
-  const currentProviderStatusColor = currentProvider?.status === 'active' ? '#22C55E' :
-    currentProvider?.status === 'rate-limited' ? '#F59E0B' :
-    currentProvider?.status === 'error' ? '#EF4444' :
-    currentProvider?.status === 'disabled' ? '#EAB308' : '#22C55E';
+  const providerColor = currentCategory ? getProviderColor(currentCategory.type) : '#64748B';
+  const currentCategoryStatusColor = currentCategory?.status === 'active' ? '#22C55E' :
+    currentCategory?.status === 'rate-limited' ? '#F59E0B' :
+    currentCategory?.status === 'error' ? '#EF4444' :
+    currentCategory?.status === 'disabled' ? '#EAB308' : '#22C55E';
 
-  const filteredProviders = providers.map(provider => ({
-    ...provider,
-    models: provider.models.filter(model =>
+  const filteredCategories = providerCategories.map(cat => ({
+    ...cat,
+    models: cat.models.filter(model =>
       model.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       model.display_name?.toLowerCase().includes(searchQuery.toLowerCase())
     )
-  })).filter(provider => provider.models.length > 0);
+  })).filter(cat => cat.models.length > 0);
 
   // Loading State
   if (authFilesLoading || modelsLoading) {
@@ -1045,12 +1125,12 @@ export default function PlaygroundPage() {
               <span className="text-sm font-medium text-white">
                 {currentModel?.display_name || currentModel?.id || 'Select Model'}
               </span>
-              {currentProvider && (
+              {currentCategory && (
                 <span
                   className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                  style={{ background: `${currentProviderStatusColor}20`, color: currentProviderStatusColor }}
+                  style={{ background: `${currentCategoryStatusColor}20`, color: currentCategoryStatusColor }}
                 >
-                  {currentProvider.statusMessage || 'Active'}
+                  {currentCategory.statusLabel}
                 </span>
               )}
               <svg className={`w-4 h-4 text-slate-400 transition-transform ${showModelSelector ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1076,24 +1156,24 @@ export default function PlaygroundPage() {
                     </div>
                   </div>
                   <div className="max-h-80 overflow-y-auto p-2">
-                    {filteredProviders.map(provider => {
-                      const statusColor = provider.status === 'active' ? '#22C55E' :
-                        provider.status === 'rate-limited' ? '#F59E0B' :
-                        provider.status === 'error' ? '#EF4444' :
-                        provider.status === 'disabled' ? '#EAB308' : '#22C55E';
+                    {filteredCategories.map(category => {
+                      const statusColor = category.status === 'active' ? '#22C55E' :
+                        category.status === 'rate-limited' ? '#F59E0B' :
+                        category.status === 'error' ? '#EF4444' :
+                        category.status === 'disabled' ? '#EAB308' : '#22C55E';
                       return (
-                      <div key={provider.authFile} className="mb-3">
+                      <div key={category.type} className="mb-3">
                         <div className="flex items-center gap-2 px-3 py-2">
                           <div 
                             className="w-2 h-2 rounded-full" 
-                            style={{ background: getProviderColor(provider.type) }}
+                            style={{ background: getProviderColor(category.type) }}
                           />
                           <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">
-                            {provider.type}
+                            {category.type}
                           </span>
-                          {provider.email && (
-                            <span className="text-xs text-slate-600">({provider.email})</span>
-                          )}
+                          <span className="text-[10px] text-slate-600 tabular-nums">
+                            {category.totalAccounts} {category.totalAccounts === 1 ? 'account' : 'accounts'}
+                          </span>
                           <span
                             className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-medium"
                             style={{ 
@@ -1101,33 +1181,27 @@ export default function PlaygroundPage() {
                               color: statusColor,
                             }}
                           >
-                            {provider.statusMessage || 'Active'}
+                            {category.statusLabel}
                           </span>
                         </div>
-                        {provider.models.map(model => (
+                        {category.models.map(model => (
                           <button
-                            key={`${provider.authFile}-${model.id}`}
+                            key={`${category.type}-${model.id}`}
                             onClick={() => {
-                              setSelectedAuthFile(provider.authFile);
+                              setSelectedProviderType(category.type);
                               setSelectedModel(model.id);
                               setShowModelSelector(false);
                               setSearchQuery('');
                             }}
                             className={`w-full text-left px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                              selectedModel === model.id && selectedAuthFile === provider.authFile
+                              selectedModel === model.id && selectedProviderType === category.type
                                 ? 'bg-cyan-500/10 border border-cyan-500/20'
                                 : 'hover:bg-white/[0.03]'
                             }`}
                           >
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                                style={{ background: statusColor }}
-                              />
-                              <span className={`text-sm ${selectedModel === model.id ? 'text-white' : 'text-slate-300'}`}>
-                                {model.display_name || model.id}
-                              </span>
-                            </div>
+                            <span className={`text-sm pl-4 ${selectedModel === model.id && selectedProviderType === category.type ? 'text-white' : 'text-slate-300'}`}>
+                              {model.display_name || model.id}
+                            </span>
                           </button>
                         ))}
                       </div>
