@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, Suspense, lazy, Component } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { KeyRound, Cpu, AlertTriangle, ArrowRight, Loader2 } from 'lucide-react';
+import { KeyRound, AlertTriangle, ArrowRight, Loader2 } from 'lucide-react';
 import gsap from 'gsap';
 import { 
   animateShake, 

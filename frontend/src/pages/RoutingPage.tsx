@@ -32,10 +32,8 @@ function AmbientBackground() {
 }
 
 const ROUTING_STRATEGIES = [
-  { value: 'round-robin', label: 'Round Robin', description: 'Distribute requests evenly across all accounts', color: '#22D3EE' },
-  { value: 'random', label: 'Random', description: 'Randomly select an account for each request', color: '#8B5CF6' },
-  { value: 'least-used', label: 'Least Used', description: 'Prefer accounts with fewer recent requests', color: '#10B981' },
-  { value: 'failover', label: 'Failover', description: 'Use primary account, switch on failure', color: '#F59E0B' },
+  { value: 'round-robin', label: 'Round Robin', description: 'Distribute requests evenly across all accounts in rotation', color: '#22D3EE' },
+  { value: 'fill-first', label: 'Fill First', description: 'Use primary account until rate-limited, then switch to next', color: '#F59E0B' },
 ];
 
 export default function RoutingPage() {

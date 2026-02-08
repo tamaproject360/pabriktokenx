@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Activity, Download, Upload, RefreshCw, Database, TrendingUp, Zap, Cpu, AlertTriangle, DollarSign, Clock, BarChart3 } from 'lucide-react';
-import { getUsage, exportUsage, importUsage, getConfig } from '../lib/api';
+import { Activity, Download, Upload, RefreshCw, Database, TrendingUp, Zap, Cpu, Timer, BadgeDollarSign } from 'lucide-react';
+import { getUsage, exportUsage, importUsage } from '../lib/api';
 import { useRef, useEffect, useCallback } from 'react';
 import { animateCounter } from '../lib/animations';
 import gsap from 'gsap';
@@ -185,12 +185,14 @@ export default function UsagePage() {
   };
 
   // Parse usage data dengan struktur backend yang benar
-  const usage = data?.usage || data;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const usage = (data as any)?.usage || data;
   const totalRequests = usage?.total_requests || 0;
   const successCount = usage?.success_count || 0;
   const failureCount = usage?.failure_count || 0;
   const totalTokens = usage?.total_tokens || 0;
-  const failedRequests = data?.failed_requests || failureCount || 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const failedRequests = (data as any)?.failed_requests || failureCount || 0;
   
   // Extract models from APIs structure
   const apis = usage?.apis || {};
@@ -304,7 +306,7 @@ export default function UsagePage() {
           <StatCard
             title="RPM"
             value={parseFloat((totalRequests / 60).toFixed(2))}
-            icon={Clock}
+            icon={Timer}
             color="#10B981"
             subtitle={`Requests: ${totalRequests}`}
           />
@@ -318,7 +320,7 @@ export default function UsagePage() {
           <StatCard
             title="Total Cost"
             value={parseFloat(((totalTokens / 1000000) * 2.8).toFixed(2))}
-            icon={DollarSign}
+            icon={BadgeDollarSign}
             color="#10B981"
             subtitle="Estimated"
             prefix="$"

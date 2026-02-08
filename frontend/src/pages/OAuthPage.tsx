@@ -51,7 +51,7 @@ interface OAuthProviderCardProps {
   isDeviceFlow?: boolean;
 }
 
-function OAuthProviderCard({ title, description, color, icon, onLogin, isDeviceFlow = false }: OAuthProviderCardProps) {
+function OAuthProviderCard({ title, description, color, icon, onLogin }: OAuthProviderCardProps) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [userCode, setUserCode] = useState<string | null>(null);

@@ -71,7 +71,6 @@ export default function LogsPage() {
 
   const logLines = logsData?.lines || [];
   const errorFiles = errorLogsData?.files || [];
-  const lineCount = logsData?.['line-count'] || 0;
 
   // Check for error
   if (error) {

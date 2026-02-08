@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Key, Plus, Trash2, Eye, EyeOff, Settings, RefreshCw, Cpu, Shield, Copy, Check, X } from 'lucide-react';
+import { Key, Plus, Trash2, Eye, EyeOff, Settings, RefreshCw, Shield, Copy, Check, X } from 'lucide-react';
 import { getAPIKeys, updateAPIKeys } from '../lib/api';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { animatePageEnter } from '../lib/animations';
+
 
 // API Key Entry type
 interface APIKeyEntry {

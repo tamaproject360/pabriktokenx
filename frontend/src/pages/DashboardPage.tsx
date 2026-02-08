@@ -247,17 +247,17 @@ export default function DashboardPage() {
   });
 
   // Parse usage data dengan fallback - HARUS DI ATAS SEBELUM HOOKS LAIN
-  const usage = usageData?.usage || usageData;
+  const usage = (usageData as any)?.usage || usageData;
   const totalRequests = usage?.total_requests || 0;
   const successCount = usage?.success_count || 0;
   const failureCount = usage?.failure_count || 0;
   const totalTokens = usage?.total_tokens || 0;
-  const failedRequests = usageData?.failed_requests || failureCount || 0;
-  const authFilesCount = authFilesData?.files?.length || authFilesData?.length || 0;
-  const serverPort = configData?.port || 9999;
+  const failedRequests = (usageData as any)?.failed_requests || failureCount || 0;
+  const authFilesCount = (authFilesData as any)?.files?.length || (authFilesData as any)?.length || 0;
+  const serverPort = (configData as any)?.port || 9999;
   
   // Extract models from APIs
-  const apis = usage?.apis || {};
+  const apis = (usage as any)?.apis || {};
   const allModels: Record<string, { requests: number; tokens: number }> = {};
   
   Object.values(apis).forEach((api: any) => {

@@ -248,17 +248,6 @@ export default function QuotaPage() {
     };
   };
 
-  const getProviderColor = (provider: string) => {
-    const colors: Record<string, string> = {
-      'claude': 'from-orange-500/20 to-orange-600/10',
-      'gemini': 'from-blue-500/20 to-blue-600/10',
-      'codex': 'from-green-500/20 to-green-600/10',
-      'antigravity': 'from-cyan-500/20 to-cyan-600/10',
-      'iflow': 'from-purple-500/20 to-purple-600/10',
-    };
-    return colors[provider.toLowerCase()] || 'from-gray-500/20 to-gray-600/10';
-  };
-
   const handleRefreshAll = () => {
     setRefreshing(true);
     refetch().finally(() => {
@@ -456,7 +445,7 @@ export default function QuotaPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
-                {authFiles.map((authFile, index) => {
+                {authFiles.map((authFile, _index) => {
                   const quotaData = getQuotaData(authFile);
                   return (
                     <tr key={authFile.name} className="hover:bg-white/5 transition-colors duration-200">
