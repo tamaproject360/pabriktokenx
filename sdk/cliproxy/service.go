@@ -744,7 +744,8 @@ func (s *Service) registerModelsForAuth(a *coreauth.Auth) {
 		models = applyExcludedModels(models, excluded)
 	case "antigravity":
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		models, updatedAuth := executor.FetchAntigravityModels(ctx, a, s.cfg)
+		var updatedAuth *coreauth.Auth
+		models, updatedAuth = executor.FetchAntigravityModels(ctx, a, s.cfg)
 		cancel()
 		// Save updated auth if token was refreshed
 		if updatedAuth != nil && s.coreManager != nil {

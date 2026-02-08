@@ -284,28 +284,40 @@ func (h *Handler) ListAuthFiles(c *gin.Context) {
 func isDeprecatedModel(modelID string) bool {
 	id := strings.ToLower(modelID)
 	
-	// Filter old GPT models (keep only gpt-4.5 and above, gpt-5 and above)
-	if strings.HasPrefix(id, "gpt-4") && !strings.Contains(id, "gpt-4.5") {
+	// Filter old GPT models (keep gpt-4o, gpt-4-turbo, gpt-4.5, gpt-5 and above)
+	if strings.HasPrefix(id, "gpt-4") {
+		// Keep gpt-4o, gpt-4-turbo, gpt-4.5
+		if strings.Contains(id, "gpt-4o") || strings.Contains(id, "gpt-4-turbo") || strings.Contains(id, "gpt-4.5") {
+			return false
+		}
+		// Filter old gpt-4-0314, gpt-4-0613, etc.
 		return true
 	}
 	if strings.HasPrefix(id, "gpt-3.5") || strings.HasPrefix(id, "gpt-3") {
 		return true
 	}
 	
-	// Filter old Claude models (keep only claude-4.5 and above)
+	// Filter old Claude models (keep claude-3.5, claude-3.6, claude-4, claude-4.5 and above)
 	if strings.Contains(id, "claude") {
-		if strings.Contains(id, "claude-3") || strings.Contains(id, "claude-2") || strings.Contains(id, "claude-1") {
-			return true
+		// Keep claude-3.5, claude-3.6, claude-3.7, claude-4, claude-4.5
+		if strings.Contains(id, "claude-3.5") || strings.Contains(id, "claude-3.6") || 
+		   strings.Contains(id, "claude-3.7") || strings.Contains(id, "claude-4") {
+			return false
 		}
-		if strings.Contains(id, "claude-4") && !strings.Contains(id, "claude-4.5") {
+		// Filter old claude-3 (non 3.5+), claude-2, claude-1
+		if strings.Contains(id, "claude-3") || strings.Contains(id, "claude-2") || strings.Contains(id, "claude-1") {
 			return true
 		}
 	}
 	
-	// Filter old Gemini models (keep only gemini-3.0 and above)
+	// Filter very old Gemini models (keep gemini-2.5, gemini-3 and above)
 	if strings.Contains(id, "gemini") {
-		if strings.Contains(id, "gemini-2.5") || strings.Contains(id, "gemini-2.0") || 
-		   strings.Contains(id, "gemini-1") || strings.Contains(id, "gemini-pro") {
+		// Keep gemini-2.5, gemini-3 and above
+		if strings.Contains(id, "gemini-2.5") || strings.Contains(id, "gemini-3") {
+			return false
+		}
+		// Filter old gemini-2.0, gemini-1, gemini-pro (legacy model)
+		if strings.Contains(id, "gemini-2.0") || strings.Contains(id, "gemini-1") || id == "gemini-pro" {
 			return true
 		}
 	}
