@@ -176,6 +176,30 @@ export const downloadAuthFile = async (filename: string) => {
   document.body.removeChild(a);
   window.URL.revokeObjectURL(url);
 };
+export const bulkDownloadAuthFiles = async () => {
+  const response = await api.get('/auth-files/download-all', {
+    responseType: 'blob',
+  });
+  const blob = new Blob([response.data], { type: 'application/zip' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+  a.download = `auth-files-backup_${timestamp}.zip`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};
+export const bulkUploadAuthFiles = async (files: FileList | File[]) => {
+  const formData = new FormData();
+  Array.from(files).forEach(file => {
+    formData.append('files', file);
+  });
+  return api.post('/auth-files/bulk', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
 
 // API Keys
 interface APIKeyEntry {

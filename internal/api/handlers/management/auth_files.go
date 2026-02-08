@@ -1,6 +1,7 @@
 package management
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -586,6 +587,144 @@ func (h *Handler) DownloadAuthFile(c *gin.Context) {
 	}
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", name))
 	c.Data(200, "application/json", data)
+}
+
+// BulkDownloadAuthFiles downloads all auth files as a ZIP archive
+func (h *Handler) BulkDownloadAuthFiles(c *gin.Context) {
+	entries, err := os.ReadDir(h.cfg.AuthDir)
+	if err != nil {
+		c.JSON(500, gin.H{"error": fmt.Sprintf("failed to read auth dir: %v", err)})
+		return
+	}
+
+	// Create ZIP in memory
+	buf := new(bytes.Buffer)
+	zipWriter := zip.NewWriter(buf)
+
+	fileCount := 0
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if !strings.HasSuffix(strings.ToLower(name), ".json") {
+			continue
+		}
+		full := filepath.Join(h.cfg.AuthDir, name)
+		data, errRead := os.ReadFile(full)
+		if errRead != nil {
+			continue
+		}
+		
+		w, errCreate := zipWriter.Create(name)
+		if errCreate != nil {
+			continue
+		}
+		if _, errWrite := w.Write(data); errWrite != nil {
+			continue
+		}
+		fileCount++
+	}
+
+	if err = zipWriter.Close(); err != nil {
+		c.JSON(500, gin.H{"error": fmt.Sprintf("failed to create zip: %v", err)})
+		return
+	}
+
+	if fileCount == 0 {
+		c.JSON(404, gin.H{"error": "no auth files found"})
+		return
+	}
+
+	timestamp := time.Now().Format("2006-01-02_150405")
+	filename := fmt.Sprintf("auth-files-backup_%s.zip", timestamp)
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	c.Data(200, "application/zip", buf.Bytes())
+}
+
+// BulkUploadAuthFiles handles multiple file uploads at once
+func (h *Handler) BulkUploadAuthFiles(c *gin.Context) {
+	if h.authManager == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "core auth manager unavailable"})
+		return
+	}
+	ctx := c.Request.Context()
+
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid multipart form"})
+		return
+	}
+
+	files := form.File["files"]
+	if len(files) == 0 {
+		// Fallback to single file field
+		files = form.File["file"]
+	}
+	if len(files) == 0 {
+		c.JSON(400, gin.H{"error": "no files provided"})
+		return
+	}
+
+	results := make([]gin.H, 0, len(files))
+	successCount := 0
+	errorCount := 0
+
+	for _, file := range files {
+		name := filepath.Base(file.Filename)
+		result := gin.H{"name": name}
+
+		if !strings.HasSuffix(strings.ToLower(name), ".json") {
+			result["status"] = "error"
+			result["error"] = "file must be .json"
+			errorCount++
+			results = append(results, result)
+			continue
+		}
+
+		dst := filepath.Join(h.cfg.AuthDir, name)
+		if !filepath.IsAbs(dst) {
+			if abs, errAbs := filepath.Abs(dst); errAbs == nil {
+				dst = abs
+			}
+		}
+
+		if errSave := c.SaveUploadedFile(file, dst); errSave != nil {
+			result["status"] = "error"
+			result["error"] = fmt.Sprintf("failed to save: %v", errSave)
+			errorCount++
+			results = append(results, result)
+			continue
+		}
+
+		data, errRead := os.ReadFile(dst)
+		if errRead != nil {
+			result["status"] = "error"
+			result["error"] = fmt.Sprintf("failed to read: %v", errRead)
+			errorCount++
+			results = append(results, result)
+			continue
+		}
+
+		if errReg := h.registerAuthFromFile(ctx, dst, data); errReg != nil {
+			result["status"] = "error"
+			result["error"] = errReg.Error()
+			errorCount++
+			results = append(results, result)
+			continue
+		}
+
+		result["status"] = "ok"
+		successCount++
+		results = append(results, result)
+	}
+
+	c.JSON(200, gin.H{
+		"status":  "ok",
+		"success": successCount,
+		"errors":  errorCount,
+		"results": results,
+	})
 }
 
 // Upload auth file: multipart or raw JSON with ?name=

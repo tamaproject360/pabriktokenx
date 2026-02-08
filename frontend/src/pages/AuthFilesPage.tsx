@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Upload, Trash2, FileText, RefreshCw, Download, AlertCircle, Cpu } from 'lucide-react';
-import { listAuthFiles, uploadAuthFile, deleteAuthFile, downloadAuthFile } from '../lib/api';
+import { Upload, Trash2, FileText, RefreshCw, Download, AlertCircle, Cpu, Archive } from 'lucide-react';
+import { listAuthFiles, uploadAuthFile, deleteAuthFile, downloadAuthFile, bulkDownloadAuthFiles, bulkUploadAuthFiles } from '../lib/api';
 import { useRef, useState, useEffect, useCallback } from 'react';
 import gsap from 'gsap';
 
@@ -42,6 +42,18 @@ export default function AuthFilesPage() {
       queryClient.invalidateQueries({ queryKey: ['authFiles'] });
     },
   });
+
+  const bulkUploadMutation = useMutation({
+    mutationFn: async (files: FileList) => {
+      const response = await bulkUploadAuthFiles(files);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['authFiles'] });
+    },
+  });
+
+  const [isExportingAll, setIsExportingAll] = useState(false);
 
   const deleteMutation = useMutation({
     mutationFn: async (filename: string) => {
@@ -90,12 +102,28 @@ export default function AuthFilesPage() {
   }, [isLoading, data, animateCards]);
 
   const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      uploadMutation.mutate(file);
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    if (files.length === 1) {
+      uploadMutation.mutate(files[0]);
+    } else {
+      bulkUploadMutation.mutate(files);
     }
+    
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleExportAll = async () => {
+    setIsExportingAll(true);
+    try {
+      await bulkDownloadAuthFiles();
+    } catch (error) {
+      console.error('Failed to export all auth files:', error);
+    } finally {
+      setIsExportingAll(false);
     }
   };
 
@@ -168,13 +196,22 @@ export default function AuthFilesPage() {
               <RefreshCw className={`h-4 w-4 text-cyan-400 ${isRefetching ? 'animate-spin' : ''}`} strokeWidth={2} />
               <span className="text-white text-sm font-medium">Refresh</span>
             </button>
+            <button
+              onClick={handleExportAll}
+              disabled={isExportingAll || files.length === 0}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl glass-panel hover:bg-white/[0.05] transition-all duration-300 disabled:opacity-50"
+            >
+              <Archive className={`h-4 w-4 text-emerald-400 ${isExportingAll ? 'animate-pulse' : ''}`} strokeWidth={2} />
+              <span className="text-white text-sm font-medium">Export All</span>
+            </button>
             <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all duration-300 cursor-pointer">
               <Upload className="h-4 w-4" strokeWidth={2} />
-              <span className="text-sm font-medium">Import File</span>
+              <span className="text-sm font-medium">Import Files</span>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".json"
+                accept=".json,.zip"
+                multiple
                 onChange={handleUpload}
                 className="hidden"
               />
@@ -183,16 +220,23 @@ export default function AuthFilesPage() {
         </div>
 
         {/* Upload/Error Status */}
-        {uploadMutation.isPending && (
+        {(uploadMutation.isPending || bulkUploadMutation.isPending) && (
           <div className="flex items-center gap-3 p-4 glass-panel rounded-xl border-cyan-500/20">
             <div className="h-4 w-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-            <span className="text-cyan-400 text-sm">Uploading file...</span>
+            <span className="text-cyan-400 text-sm">Uploading file(s)...</span>
           </div>
         )}
-        {uploadMutation.isError && (
+        {(uploadMutation.isError || bulkUploadMutation.isError) && (
           <div className="flex items-center gap-3 p-4 glass-panel rounded-xl border-rose-500/20">
             <AlertCircle className="h-5 w-5 text-rose-400" strokeWidth={2} />
             <span className="text-rose-400 text-sm">Upload failed</span>
+          </div>
+        )}
+        {bulkUploadMutation.isSuccess && bulkUploadMutation.data && (
+          <div className="flex items-center gap-3 p-4 glass-panel rounded-xl border-emerald-500/20">
+            <span className="text-emerald-400 text-sm">
+              Import complete: {bulkUploadMutation.data.success} success, {bulkUploadMutation.data.errors} errors
+            </span>
           </div>
         )}
 
@@ -210,10 +254,11 @@ export default function AuthFilesPage() {
             </p>
             <label className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all duration-300 cursor-pointer text-sm font-medium">
               <Upload className="h-4 w-4" strokeWidth={2} />
-              Import File
+              Import Files
               <input
                 type="file"
-                accept=".json"
+                accept=".json,.zip"
+                multiple
                 onChange={handleUpload}
                 className="hidden"
               />
