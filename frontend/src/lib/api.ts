@@ -89,6 +89,15 @@ export interface AuthFile {
   modtime?: string;
   modified?: string;
   email?: string;
+  status?: string;
+  status_message?: string;
+  disabled?: boolean;
+  unavailable?: boolean;
+  auth_index?: number;
+  id?: string;
+  label?: string;
+  account_type?: string;
+  account?: string;
 }
 
 export interface Config {

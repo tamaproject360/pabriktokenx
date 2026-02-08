@@ -4,8 +4,7 @@ import { listAuthFiles } from '../lib/api';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import gsap from 'gsap';
 import type { AuthFile } from '../lib/api';
-import ViewToggle from '../components/ViewToggle';
-import type { ViewMode } from '../components/ViewToggle';
+import { ViewToggle, type ViewMode } from '../components/ViewToggle';
 
 // Ambient Background
 function AmbientBackground() {
@@ -20,10 +19,57 @@ function AmbientBackground() {
 
 interface QuotaData {
   provider: string;
-  status: string;
+  status: 'active' | 'disabled' | 'error' | 'pending' | 'refreshing' | 'unknown';
   usage: number;
   limit: number;
 }
+
+/**
+ * Determine active/inactive status from backend auth file data.
+ * Uses the actual status and disabled fields returned by the API.
+ */
+const getAuthFileStatus = (authFile: AuthFile): 'active' | 'disabled' | 'error' | 'pending' | 'refreshing' | 'unknown' => {
+  if (authFile.disabled) return 'disabled';
+  if (authFile.unavailable) return 'error';
+  const status = (authFile.status || '').toLowerCase();
+  if (status === 'active') return 'active';
+  if (status === 'disabled') return 'disabled';
+  if (status === 'error') return 'error';
+  if (status === 'pending') return 'pending';
+  if (status === 'refreshing') return 'refreshing';
+  if (status === 'unknown' || status === '') return 'active'; // default to active if unknown
+  return 'active';
+};
+
+/**
+ * Get human-readable status label
+ */
+const getStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    active: 'Active',
+    disabled: 'Inactive',
+    error: 'Error',
+    pending: 'Pending',
+    refreshing: 'Refreshing',
+    unknown: 'Unknown',
+  };
+  return labels[status] || 'Unknown';
+};
+
+/**
+ * Get status badge styling
+ */
+const getStatusStyle = (status: string): string => {
+  const styles: Record<string, string> = {
+    active: 'bg-green-500/20 text-green-400',
+    disabled: 'bg-yellow-500/20 text-yellow-400',
+    error: 'bg-red-500/20 text-red-400',
+    pending: 'bg-blue-500/20 text-blue-400',
+    refreshing: 'bg-cyan-500/20 text-cyan-400',
+    unknown: 'bg-gray-500/20 text-gray-400',
+  };
+  return styles[status] || 'bg-gray-500/20 text-gray-400';
+};
 
 interface QuotaCardProps {
   authFile: AuthFile & { authIndex?: number };
@@ -46,24 +92,17 @@ function QuotaCard({ authFile }: QuotaCardProps) {
   };
 
   const fetchQuota = useCallback(async () => {
-    if (!authFile.authIndex && authFile.authIndex !== 0) {
-      setError('Auth index not available');
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
-      try {
-      // Example: Fetch quota from provider-specific endpoint
-      // This is a placeholder - actual implementation depends on provider
+    try {
       const provider = authFile.provider || authFile.type || 'unknown';
-      
-      // For now, just show a placeholder
+      const status = getAuthFileStatus(authFile);
+
       setQuotaData({
         provider,
-        status: 'active',
-        usage: Math.floor(Math.random() * 100),
+        status,
+        usage: 0,
         limit: 100,
       });
     } catch (err: unknown) {
@@ -71,7 +110,7 @@ function QuotaCard({ authFile }: QuotaCardProps) {
     } finally {
       setLoading(false);
     }
-  }, [authFile.authIndex, authFile.provider, authFile.type]);
+  }, [authFile]);
 
   useEffect(() => {
     fetchQuota();
@@ -127,8 +166,8 @@ function QuotaCard({ authFile }: QuotaCardProps) {
             {/* Status */}
             <div className="flex items-center justify-between pt-2 border-t border-white/10">
               <span className="text-sm text-white/70">Status</span>
-              <span className={`text-sm font-semibold ${quotaData.status === 'active' ? 'text-green-400' : 'text-yellow-400'}`}>
-                {quotaData.status}
+              <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${getStatusStyle(quotaData.status)}`}>
+                {getStatusLabel(quotaData.status)}
               </span>
             </div>
           </>
@@ -168,12 +207,12 @@ export default function QuotaPage() {
 
   const getQuotaData = (authFile: AuthFile): QuotaData => {
     const provider = authFile.provider || authFile.type || 'unknown';
-    
-    // Placeholder data - in real implementation this would be fetched from the API
+    const status = getAuthFileStatus(authFile);
+
     return {
       provider,
-      status: Math.random() > 0.3 ? 'active' : 'inactive',
-      usage: Math.floor(Math.random() * 100),
+      status,
+      usage: 0,
       limit: 100,
     };
   };
@@ -256,6 +295,19 @@ export default function QuotaPage() {
   const authFiles = (authFilesData?.files || []) as (AuthFile & { authIndex?: number })[];
   const hasAuthFiles = authFiles.length > 0;
 
+  // Calculate unique providers (by provider category, not per-account)
+  const uniqueProviders = new Set(authFiles.map(f => (f.provider || f.type || 'unknown').toLowerCase()));
+  const totalProviders = uniqueProviders.size;
+
+  // Calculate active accounts using actual backend status
+  const activeAccounts = authFiles.filter(f => {
+    const status = getAuthFileStatus(f);
+    return status === 'active' || status === 'refreshing' || status === 'pending';
+  }).length;
+
+  // Calculate average usage (placeholder since real usage requires API calls)
+  const totalAccounts = authFiles.length;
+
   return (
     <>
       <AmbientBackground />
@@ -273,7 +325,7 @@ export default function QuotaPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+              <ViewToggle viewMode={viewMode} onChange={setViewMode} />
               <button
                 onClick={handleRefreshAll}
                 disabled={refreshing || isLoading}
@@ -293,7 +345,7 @@ export default function QuotaPage() {
               <Cpu className="w-8 h-8 text-purple-400" />
               <TrendingUp className="w-5 h-5 text-purple-400/60" />
             </div>
-            <div className="text-3xl font-bold text-white mb-1">{authFiles.length}</div>
+            <div className="text-3xl font-bold text-white mb-1">{totalProviders}</div>
             <div className="text-sm text-white/60">Total Providers</div>
           </div>
 
@@ -303,7 +355,7 @@ export default function QuotaPage() {
               <TrendingUp className="w-5 h-5 text-blue-400/60" />
             </div>
             <div className="text-3xl font-bold text-white mb-1">
-              {authFiles.filter(f => f.provider || f.type).length}
+              {activeAccounts}
             </div>
             <div className="text-sm text-white/60">Active Accounts</div>
           </div>
@@ -313,8 +365,8 @@ export default function QuotaPage() {
               <Database className="w-8 h-8 text-green-400" />
               <TrendingUp className="w-5 h-5 text-green-400/60" />
             </div>
-            <div className="text-3xl font-bold text-white mb-1">85%</div>
-            <div className="text-sm text-white/60">Average Usage</div>
+            <div className="text-3xl font-bold text-white mb-1">{totalAccounts}</div>
+            <div className="text-sm text-white/60">Total Accounts</div>
           </div>
         </div>
 
@@ -391,12 +443,8 @@ export default function QuotaPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          quotaData.status === 'active' 
-                            ? 'bg-green-500/20 text-green-400' 
-                            : 'bg-yellow-500/20 text-yellow-400'
-                        }`}>
-                          {quotaData.status}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusStyle(quotaData.status)}`}>
+                          {getStatusLabel(quotaData.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
