@@ -410,6 +410,7 @@ func (h *Handler) listAuthFilesFromDisk(c *gin.Context) {
 				typeValue := gjson.GetBytes(data, "type").String()
 				emailValue := gjson.GetBytes(data, "email").String()
 				fileData["type"] = typeValue
+				fileData["provider"] = typeValue // Add provider field for frontend compatibility
 				fileData["email"] = emailValue
 			}
 

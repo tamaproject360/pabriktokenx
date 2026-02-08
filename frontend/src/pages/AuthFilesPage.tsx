@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Upload, Trash2, FileText, RefreshCw, Download, AlertCircle, Cpu } from 'lucide-react';
-import { listAuthFiles, uploadAuthFile, deleteAuthFile } from '../lib/api';
+import { listAuthFiles, uploadAuthFile, deleteAuthFile, downloadAuthFile } from '../lib/api';
 import { useRef, useState, useEffect, useCallback } from 'react';
 import gsap from 'gsap';
 
@@ -170,7 +170,7 @@ export default function AuthFilesPage() {
             </button>
             <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all duration-300 cursor-pointer">
               <Upload className="h-4 w-4" strokeWidth={2} />
-              <span className="text-sm font-medium">Upload File</span>
+              <span className="text-sm font-medium">Import File</span>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -210,7 +210,7 @@ export default function AuthFilesPage() {
             </p>
             <label className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all duration-300 cursor-pointer text-sm font-medium">
               <Upload className="h-4 w-4" strokeWidth={2} />
-              Upload File
+              Import File
               <input
                 type="file"
                 accept=".json"
@@ -266,12 +266,18 @@ export default function AuthFilesPage() {
                     
                     <div className="flex items-center justify-between pt-4 border-t border-white/[0.06]">
                       <span className="text-xs text-slate-500">
-                        {new Date(file.modified).toLocaleDateString()}
+                        {(() => {
+                          const dateStr = file.modtime || file.modified;
+                          if (!dateStr) return 'No date';
+                          const date = new Date(dateStr);
+                          return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString();
+                        })()}
                       </span>
                       <div className="flex items-center gap-2">
                         <button
+                          onClick={() => downloadAuthFile(file.name)}
                           className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-cyan-400 transition-all duration-200"
-                          title="Download"
+                          title="Export / Download"
                         >
                           <Download className="h-4 w-4" strokeWidth={2} />
                         </button>

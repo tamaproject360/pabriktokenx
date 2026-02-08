@@ -86,7 +86,9 @@ export interface AuthFile {
   provider: string;
   type: string;
   size: number;
-  modified: string;
+  modtime?: string;
+  modified?: string;
+  email?: string;
 }
 
 export interface Config {
@@ -159,6 +161,21 @@ export const uploadAuthFile = (file: File) => {
 };
 export const deleteAuthFile = (filename: string) => 
   api.delete('/auth-files', { params: { filename } });
+export const downloadAuthFile = async (filename: string) => {
+  const response = await api.get('/auth-files/download', {
+    params: { name: filename },
+    responseType: 'blob',
+  });
+  const blob = new Blob([response.data], { type: 'application/json' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};
 
 // API Keys
 interface APIKeyEntry {
