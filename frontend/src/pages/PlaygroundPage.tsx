@@ -102,6 +102,10 @@ interface AuthFileInfo {
   name: string;
   type?: string;
   email?: string;
+  status?: string;
+  status_message?: string;
+  disabled?: boolean;
+  unavailable?: boolean;
 }
 
 interface ModelInfo {
@@ -116,6 +120,8 @@ interface AvailableProvider {
   email?: string;
   type: string;
   models: ModelInfo[];
+  status?: string;
+  statusMessage?: string;
 }
 
 const PROVIDER_COLORS: Record<string, string> = {
@@ -140,6 +146,22 @@ const getProviderColor = (type: string): string => {
     if (lowerType.includes(key)) return value;
   }
   return '#64748B';
+};
+
+/**
+ * Determine auth file status for display in playground.
+ */
+const getPlaygroundAuthStatus = (file: AuthFileInfo): { status: string; label: string; color: string } => {
+  if (file.disabled) return { status: 'disabled', label: 'Inactive', color: '#EAB308' };
+  const st = (file.status || '').toLowerCase();
+  const msg = (file.status_message || '').toLowerCase();
+  const isRateLimit = msg.includes('429') || msg.includes('quota') || msg.includes('exhausted') || msg.includes('rate');
+  if ((st === 'error' || file.unavailable) && isRateLimit) return { status: 'rate-limited', label: 'Rate Limited', color: '#F59E0B' };
+  if (file.unavailable || st === 'error') return { status: 'error', label: 'Error', color: '#EF4444' };
+  if (st === 'active' || st === '' || st === 'unknown') return { status: 'active', label: 'Active', color: '#22C55E' };
+  if (st === 'pending') return { status: 'pending', label: 'Pending', color: '#3B82F6' };
+  if (st === 'refreshing') return { status: 'refreshing', label: 'Refreshing', color: '#06B6D4' };
+  return { status: 'active', label: 'Active', color: '#22C55E' };
 };
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -475,11 +497,14 @@ export default function PlaygroundPage() {
         try {
           const models = await fetchModelsForAuthFile(file.name);
           if (models.length > 0) {
+            const authStatus = getPlaygroundAuthStatus(file);
             providersList.push({
               authFile: file.name,
               email: file.email,
               type: file.type || 'unknown',
               models: models,
+              status: authStatus.status,
+              statusMessage: authStatus.label,
             });
           }
         } catch (err) {
@@ -897,6 +922,10 @@ export default function PlaygroundPage() {
   const currentProvider = getCurrentProvider();
   const currentModel = getCurrentModel();
   const providerColor = currentProvider ? getProviderColor(currentProvider.type) : '#64748B';
+  const currentProviderStatusColor = currentProvider?.status === 'active' ? '#22C55E' :
+    currentProvider?.status === 'rate-limited' ? '#F59E0B' :
+    currentProvider?.status === 'error' ? '#EF4444' :
+    currentProvider?.status === 'disabled' ? '#EAB308' : '#22C55E';
 
   const filteredProviders = providers.map(provider => ({
     ...provider,
@@ -1016,6 +1045,14 @@ export default function PlaygroundPage() {
               <span className="text-sm font-medium text-white">
                 {currentModel?.display_name || currentModel?.id || 'Select Model'}
               </span>
+              {currentProvider && (
+                <span
+                  className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                  style={{ background: `${currentProviderStatusColor}20`, color: currentProviderStatusColor }}
+                >
+                  {currentProvider.statusMessage || 'Active'}
+                </span>
+              )}
               <svg className={`w-4 h-4 text-slate-400 transition-transform ${showModelSelector ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -1039,7 +1076,12 @@ export default function PlaygroundPage() {
                     </div>
                   </div>
                   <div className="max-h-80 overflow-y-auto p-2">
-                    {filteredProviders.map(provider => (
+                    {filteredProviders.map(provider => {
+                      const statusColor = provider.status === 'active' ? '#22C55E' :
+                        provider.status === 'rate-limited' ? '#F59E0B' :
+                        provider.status === 'error' ? '#EF4444' :
+                        provider.status === 'disabled' ? '#EAB308' : '#22C55E';
+                      return (
                       <div key={provider.authFile} className="mb-3">
                         <div className="flex items-center gap-2 px-3 py-2">
                           <div 
@@ -1052,6 +1094,15 @@ export default function PlaygroundPage() {
                           {provider.email && (
                             <span className="text-xs text-slate-600">({provider.email})</span>
                           )}
+                          <span
+                            className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                            style={{ 
+                              background: `${statusColor}20`,
+                              color: statusColor,
+                            }}
+                          >
+                            {provider.statusMessage || 'Active'}
+                          </span>
                         </div>
                         {provider.models.map(model => (
                           <button
@@ -1068,13 +1119,20 @@ export default function PlaygroundPage() {
                                 : 'hover:bg-white/[0.03]'
                             }`}
                           >
-                            <span className={`text-sm ${selectedModel === model.id ? 'text-white' : 'text-slate-300'}`}>
-                              {model.display_name || model.id}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                                style={{ background: statusColor }}
+                              />
+                              <span className={`text-sm ${selectedModel === model.id ? 'text-white' : 'text-slate-300'}`}>
+                                {model.display_name || model.id}
+                              </span>
+                            </div>
                           </button>
                         ))}
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </>
@@ -1262,6 +1320,27 @@ export default function PlaygroundPage() {
                         <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content || '...'}</p>
                       ) : (
                         <>
+                          {/* Typing indicator - show when loading and no content yet */}
+                          {isLoading && !message.content && !isGeneratingImage && (
+                            <div className="flex items-center gap-3 py-1">
+                              <div className="flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '0ms', animationDuration: '1.2s' }} />
+                                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '200ms', animationDuration: '1.2s' }} />
+                                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '400ms', animationDuration: '1.2s' }} />
+                              </div>
+                              <span className="text-xs text-slate-500 animate-pulse">AI is thinking...</span>
+                            </div>
+                          )}
+                          
+                          {/* Streaming indicator - show when loading and content is being received */}
+                          {isLoading && message.content && !isGeneratingImage && (
+                            <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                              <CircleNotch className="w-3 h-3 animate-spin text-cyan-400" />
+                              <span>Generating response...</span>
+                            </div>
+                          )}
+
+                          {message.content && (
                           <div className="text-sm leading-relaxed prose prose-invert prose-sm max-w-none">
                             <ReactMarkdown
                               components={{
@@ -1299,6 +1378,7 @@ export default function PlaygroundPage() {
                               {message.content || '...'}
                             </ReactMarkdown>
                           </div>
+                          )}
                           
                           {/* Image Generation Loading Indicator - shown when no content yet */}
                           {isGeneratingImage && isLoading && !message.content && message.role === 'assistant' && (

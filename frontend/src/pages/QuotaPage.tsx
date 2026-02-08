@@ -17,27 +17,50 @@ function AmbientBackground() {
   );
 }
 
+type AuthStatus = 'active' | 'disabled' | 'rate-limited' | 'error' | 'pending' | 'refreshing' | 'unknown';
+
 interface QuotaData {
   provider: string;
-  status: 'active' | 'disabled' | 'error' | 'pending' | 'refreshing' | 'unknown';
+  status: AuthStatus;
   usage: number;
   limit: number;
+  statusMessage?: string;
 }
 
 /**
- * Determine active/inactive status from backend auth file data.
- * Uses the actual status and disabled fields returned by the API.
+ * Check if status_message indicates a rate limit (429 / quota exhausted).
  */
-const getAuthFileStatus = (authFile: AuthFile): 'active' | 'disabled' | 'error' | 'pending' | 'refreshing' | 'unknown' => {
+const isRateLimited = (statusMessage?: string): boolean => {
+  if (!statusMessage) return false;
+  const msg = statusMessage.toLowerCase();
+  return msg.includes('429') ||
+    msg.includes('rate') ||
+    msg.includes('quota') ||
+    msg.includes('exhausted') ||
+    msg.includes('resource_exhausted') ||
+    msg.includes('too many requests');
+};
+
+/**
+ * Determine active/inactive status from backend auth file data.
+ * Differentiates between rate-limited (temporary) and real errors.
+ */
+const getAuthFileStatus = (authFile: AuthFile): AuthStatus => {
   if (authFile.disabled) return 'disabled';
-  if (authFile.unavailable) return 'error';
+
   const status = (authFile.status || '').toLowerCase();
+  const statusMsg = authFile.status_message || '';
+
+  // Rate-limited is temporary, not a real error
+  if ((status === 'error' || authFile.unavailable) && isRateLimited(statusMsg)) {
+    return 'rate-limited';
+  }
+  if (authFile.unavailable || status === 'error') return 'error';
   if (status === 'active') return 'active';
   if (status === 'disabled') return 'disabled';
-  if (status === 'error') return 'error';
   if (status === 'pending') return 'pending';
   if (status === 'refreshing') return 'refreshing';
-  if (status === 'unknown' || status === '') return 'active'; // default to active if unknown
+  if (status === 'unknown' || status === '') return 'active';
   return 'active';
 };
 
@@ -48,6 +71,7 @@ const getStatusLabel = (status: string): string => {
   const labels: Record<string, string> = {
     active: 'Active',
     disabled: 'Inactive',
+    'rate-limited': 'Rate Limited',
     error: 'Error',
     pending: 'Pending',
     refreshing: 'Refreshing',
@@ -63,6 +87,7 @@ const getStatusStyle = (status: string): string => {
   const styles: Record<string, string> = {
     active: 'bg-green-500/20 text-green-400',
     disabled: 'bg-yellow-500/20 text-yellow-400',
+    'rate-limited': 'bg-amber-500/20 text-amber-400',
     error: 'bg-red-500/20 text-red-400',
     pending: 'bg-blue-500/20 text-blue-400',
     refreshing: 'bg-cyan-500/20 text-cyan-400',
@@ -300,9 +325,10 @@ export default function QuotaPage() {
   const totalProviders = uniqueProviders.size;
 
   // Calculate active accounts using actual backend status
+  // Rate-limited accounts are still valid (temporary condition)
   const activeAccounts = authFiles.filter(f => {
     const status = getAuthFileStatus(f);
-    return status === 'active' || status === 'refreshing' || status === 'pending';
+    return status === 'active' || status === 'refreshing' || status === 'pending' || status === 'rate-limited';
   }).length;
 
   // Calculate average usage (placeholder since real usage requires API calls)
