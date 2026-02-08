@@ -1,0 +1,1117 @@
+{
+  "models": {
+    "antigravity-mhpratama90_gmail_com.json:gemini-2.5-computer-use-preview-10-2025": {
+      "model_id": "gemini-2.5-computer-use-preview-10-2025",
+      "display_name": "gemini-2.5-computer-use-preview-10-2025",
+      "provider": "antigravity",
+      "auth_file": "antigravity-mhpratama90_gmail_com.json",
+      "enabled": false
+    },
+    "antigravity-mhpratama90_gmail_com.json:gemini-2.5-flash": {
+      "model_id": "gemini-2.5-flash",
+      "display_name": "gemini-2.5-flash",
+      "provider": "antigravity",
+      "auth_file": "antigravity-mhpratama90_gmail_com.json",
+      "enabled": false
+    },
+    "antigravity-mhpratama90_gmail_com.json:gemini-2.5-flash-image": {
+      "model_id": "gemini-2.5-flash-image",
+      "display_name": "gemini-2.5-flash-image",
+      "provider": "antigravity",
+      "auth_file": "antigravity-mhpratama90_gmail_com.json",
+      "enabled": false
+    },
+    "antigravity-mhpratama90_gmail_com.json:gemini-2.5-flash-lite": {
+      "model_id": "gemini-2.5-flash-lite",
+      "display_name": "gemini-2.5-flash-lite",
+      "provider": "antigravity",
+      "auth_file": "antigravity-mhpratama90_gmail_com.json",
+      "enabled": false
+    },
+    "antigravity-mhpratama90_gmail_com.json:gemini-3-flash-preview": {
+      "model_id": "gemini-3-flash-preview",
+      "display_name": "gemini-3-flash-preview",
+      "provider": "antigravity",
+      "auth_file": "antigravity-mhpratama90_gmail_com.json",
+      "enabled": true
+    },
+    "antigravity-mhpratama90_gmail_com.json:gemini-3-pro-image-preview": {
+      "model_id": "gemini-3-pro-image-preview",
+      "display_name": "gemini-3-pro-image-preview",
+      "provider": "antigravity",
+      "auth_file": "antigravity-mhpratama90_gmail_com.json",
+      "enabled": true
+    },
+    "antigravity-mhpratama90_gmail_com.json:gemini-3-pro-preview": {
+      "model_id": "gemini-3-pro-preview",
+      "display_name": "gemini-3-pro-preview",
+      "provider": "antigravity",
+      "auth_file": "antigravity-mhpratama90_gmail_com.json",
+      "enabled": true
+    },
+    "antigravity-mhpratama90_gmail_com.json:gemini-claude-opus-4-5-thinking": {
+      "model_id": "gemini-claude-opus-4-5-thinking",
+      "display_name": "gemini-claude-opus-4-5-thinking",
+      "provider": "antigravity",
+      "auth_file": "antigravity-mhpratama90_gmail_com.json",
+      "enabled": true
+    },
+    "antigravity-mhpratama90_gmail_com.json:gemini-claude-sonnet-4-5": {
+      "model_id": "gemini-claude-sonnet-4-5",
+      "display_name": "gemini-claude-sonnet-4-5",
+      "provider": "antigravity",
+      "auth_file": "antigravity-mhpratama90_gmail_com.json",
+      "enabled": true
+    },
+    "antigravity-mhpratama90_gmail_com.json:gemini-claude-sonnet-4-5-thinking": {
+      "model_id": "gemini-claude-sonnet-4-5-thinking",
+      "display_name": "gemini-claude-sonnet-4-5-thinking",
+      "provider": "antigravity",
+      "auth_file": "antigravity-mhpratama90_gmail_com.json",
+      "enabled": true
+    },
+    "antigravity-mhpratama90_gmail_com.json:gpt-oss-120b-medium": {
+      "model_id": "gpt-oss-120b-medium",
+      "display_name": "gpt-oss-120b-medium",
+      "provider": "antigravity",
+      "auth_file": "antigravity-mhpratama90_gmail_com.json",
+      "enabled": false
+    },
+    "antigravity-mhpratama90_gmail_com.json:tab_flash_lite_preview": {
+      "model_id": "tab_flash_lite_preview",
+      "display_name": "tab_flash_lite_preview",
+      "provider": "antigravity",
+      "auth_file": "antigravity-mhpratama90_gmail_com.json",
+      "enabled": false
+    },
+    "codex-mhpratama90@gmail.com.json:gpt-5": {
+      "model_id": "gpt-5",
+      "display_name": "GPT 5",
+      "provider": "codex",
+      "auth_file": "codex-mhpratama90@gmail.com.json",
+      "enabled": true
+    },
+    "codex-mhpratama90@gmail.com.json:gpt-5-codex": {
+      "model_id": "gpt-5-codex",
+      "display_name": "GPT 5 Codex",
+      "provider": "codex",
+      "auth_file": "codex-mhpratama90@gmail.com.json",
+      "enabled": true
+    },
+    "codex-mhpratama90@gmail.com.json:gpt-5-codex-mini": {
+      "model_id": "gpt-5-codex-mini",
+      "display_name": "GPT 5 Codex Mini",
+      "provider": "codex",
+      "auth_file": "codex-mhpratama90@gmail.com.json",
+      "enabled": true
+    },
+    "codex-mhpratama90@gmail.com.json:gpt-5.1": {
+      "model_id": "gpt-5.1",
+      "display_name": "GPT 5",
+      "provider": "codex",
+      "auth_file": "codex-mhpratama90@gmail.com.json",
+      "enabled": true
+    },
+    "codex-mhpratama90@gmail.com.json:gpt-5.1-codex": {
+      "model_id": "gpt-5.1-codex",
+      "display_name": "GPT 5.1 Codex",
+      "provider": "codex",
+      "auth_file": "codex-mhpratama90@gmail.com.json",
+      "enabled": true
+    },
+    "codex-mhpratama90@gmail.com.json:gpt-5.1-codex-max": {
+      "model_id": "gpt-5.1-codex-max",
+      "display_name": "GPT 5.1 Codex Max",
+      "provider": "codex",
+      "auth_file": "codex-mhpratama90@gmail.com.json",
+      "enabled": true
+    },
+    "codex-mhpratama90@gmail.com.json:gpt-5.1-codex-mini": {
+      "model_id": "gpt-5.1-codex-mini",
+      "display_name": "GPT 5.1 Codex Mini",
+      "provider": "codex",
+      "auth_file": "codex-mhpratama90@gmail.com.json",
+      "enabled": true
+    },
+    "codex-mhpratama90@gmail.com.json:gpt-5.2": {
+      "model_id": "gpt-5.2",
+      "display_name": "GPT 5.2",
+      "provider": "codex",
+      "auth_file": "codex-mhpratama90@gmail.com.json",
+      "enabled": true
+    },
+    "codex-mhpratama90@gmail.com.json:gpt-5.2-codex": {
+      "model_id": "gpt-5.2-codex",
+      "display_name": "GPT 5.2 Codex",
+      "provider": "codex",
+      "auth_file": "codex-mhpratama90@gmail.com.json",
+      "enabled": true
+    },
+    "codex-ppkasn.kemensetneg@gmail.com.json:gpt-5": {
+      "model_id": "gpt-5",
+      "display_name": "GPT 5",
+      "provider": "codex",
+      "auth_file": "codex-ppkasn.kemensetneg@gmail.com.json",
+      "enabled": true
+    },
+    "codex-ppkasn.kemensetneg@gmail.com.json:gpt-5-codex": {
+      "model_id": "gpt-5-codex",
+      "display_name": "GPT 5 Codex",
+      "provider": "codex",
+      "auth_file": "codex-ppkasn.kemensetneg@gmail.com.json",
+      "enabled": true
+    },
+    "codex-ppkasn.kemensetneg@gmail.com.json:gpt-5-codex-mini": {
+      "model_id": "gpt-5-codex-mini",
+      "display_name": "GPT 5 Codex Mini",
+      "provider": "codex",
+      "auth_file": "codex-ppkasn.kemensetneg@gmail.com.json",
+      "enabled": true
+    },
+    "codex-ppkasn.kemensetneg@gmail.com.json:gpt-5.1": {
+      "model_id": "gpt-5.1",
+      "display_name": "GPT 5",
+      "provider": "codex",
+      "auth_file": "codex-ppkasn.kemensetneg@gmail.com.json",
+      "enabled": true
+    },
+    "codex-ppkasn.kemensetneg@gmail.com.json:gpt-5.1-codex": {
+      "model_id": "gpt-5.1-codex",
+      "display_name": "GPT 5.1 Codex",
+      "provider": "codex",
+      "auth_file": "codex-ppkasn.kemensetneg@gmail.com.json",
+      "enabled": true
+    },
+    "codex-ppkasn.kemensetneg@gmail.com.json:gpt-5.1-codex-max": {
+      "model_id": "gpt-5.1-codex-max",
+      "display_name": "GPT 5.1 Codex Max",
+      "provider": "codex",
+      "auth_file": "codex-ppkasn.kemensetneg@gmail.com.json",
+      "enabled": true
+    },
+    "codex-ppkasn.kemensetneg@gmail.com.json:gpt-5.1-codex-mini": {
+      "model_id": "gpt-5.1-codex-mini",
+      "display_name": "GPT 5.1 Codex Mini",
+      "provider": "codex",
+      "auth_file": "codex-ppkasn.kemensetneg@gmail.com.json",
+      "enabled": true
+    },
+    "codex-ppkasn.kemensetneg@gmail.com.json:gpt-5.2": {
+      "model_id": "gpt-5.2",
+      "display_name": "GPT 5.2",
+      "provider": "codex",
+      "auth_file": "codex-ppkasn.kemensetneg@gmail.com.json",
+      "enabled": true
+    },
+    "codex-ppkasn.kemensetneg@gmail.com.json:gpt-5.2-codex": {
+      "model_id": "gpt-5.2-codex",
+      "display_name": "GPT 5.2 Codex",
+      "provider": "codex",
+      "auth_file": "codex-ppkasn.kemensetneg@gmail.com.json",
+      "enabled": true
+    },
+    "codex-tamadevops@gmail.com.json:gpt-5": {
+      "model_id": "gpt-5",
+      "display_name": "GPT 5",
+      "provider": "codex",
+      "auth_file": "codex-tamadevops@gmail.com.json",
+      "enabled": true
+    },
+    "codex-tamadevops@gmail.com.json:gpt-5-codex": {
+      "model_id": "gpt-5-codex",
+      "display_name": "GPT 5 Codex",
+      "provider": "codex",
+      "auth_file": "codex-tamadevops@gmail.com.json",
+      "enabled": true
+    },
+    "codex-tamadevops@gmail.com.json:gpt-5-codex-mini": {
+      "model_id": "gpt-5-codex-mini",
+      "display_name": "GPT 5 Codex Mini",
+      "provider": "codex",
+      "auth_file": "codex-tamadevops@gmail.com.json",
+      "enabled": true
+    },
+    "codex-tamadevops@gmail.com.json:gpt-5.1": {
+      "model_id": "gpt-5.1",
+      "display_name": "GPT 5",
+      "provider": "codex",
+      "auth_file": "codex-tamadevops@gmail.com.json",
+      "enabled": true
+    },
+    "codex-tamadevops@gmail.com.json:gpt-5.1-codex": {
+      "model_id": "gpt-5.1-codex",
+      "display_name": "GPT 5.1 Codex",
+      "provider": "codex",
+      "auth_file": "codex-tamadevops@gmail.com.json",
+      "enabled": true
+    },
+    "codex-tamadevops@gmail.com.json:gpt-5.1-codex-max": {
+      "model_id": "gpt-5.1-codex-max",
+      "display_name": "GPT 5.1 Codex Max",
+      "provider": "codex",
+      "auth_file": "codex-tamadevops@gmail.com.json",
+      "enabled": true
+    },
+    "codex-tamadevops@gmail.com.json:gpt-5.1-codex-mini": {
+      "model_id": "gpt-5.1-codex-mini",
+      "display_name": "GPT 5.1 Codex Mini",
+      "provider": "codex",
+      "auth_file": "codex-tamadevops@gmail.com.json",
+      "enabled": true
+    },
+    "codex-tamadevops@gmail.com.json:gpt-5.2": {
+      "model_id": "gpt-5.2",
+      "display_name": "GPT 5.2",
+      "provider": "codex",
+      "auth_file": "codex-tamadevops@gmail.com.json",
+      "enabled": true
+    },
+    "codex-tamadevops@gmail.com.json:gpt-5.2-codex": {
+      "model_id": "gpt-5.2-codex",
+      "display_name": "GPT 5.2 Codex",
+      "provider": "codex",
+      "auth_file": "codex-tamadevops@gmail.com.json",
+      "enabled": true
+    },
+    "codex-tamaproject360@gmail.com.json:gpt-5": {
+      "model_id": "gpt-5",
+      "display_name": "GPT 5",
+      "provider": "codex",
+      "auth_file": "codex-tamaproject360@gmail.com.json",
+      "enabled": false
+    },
+    "codex-tamaproject360@gmail.com.json:gpt-5-codex": {
+      "model_id": "gpt-5-codex",
+      "display_name": "GPT 5 Codex",
+      "provider": "codex",
+      "auth_file": "codex-tamaproject360@gmail.com.json",
+      "enabled": false
+    },
+    "codex-tamaproject360@gmail.com.json:gpt-5-codex-mini": {
+      "model_id": "gpt-5-codex-mini",
+      "display_name": "GPT 5 Codex Mini",
+      "provider": "codex",
+      "auth_file": "codex-tamaproject360@gmail.com.json",
+      "enabled": false
+    },
+    "codex-tamaproject360@gmail.com.json:gpt-5.1": {
+      "model_id": "gpt-5.1",
+      "display_name": "GPT 5",
+      "provider": "codex",
+      "auth_file": "codex-tamaproject360@gmail.com.json",
+      "enabled": false
+    },
+    "codex-tamaproject360@gmail.com.json:gpt-5.1-codex": {
+      "model_id": "gpt-5.1-codex",
+      "display_name": "GPT 5.1 Codex",
+      "provider": "codex",
+      "auth_file": "codex-tamaproject360@gmail.com.json",
+      "enabled": false
+    },
+    "codex-tamaproject360@gmail.com.json:gpt-5.1-codex-max": {
+      "model_id": "gpt-5.1-codex-max",
+      "display_name": "GPT 5.1 Codex Max",
+      "provider": "codex",
+      "auth_file": "codex-tamaproject360@gmail.com.json",
+      "enabled": false
+    },
+    "codex-tamaproject360@gmail.com.json:gpt-5.1-codex-mini": {
+      "model_id": "gpt-5.1-codex-mini",
+      "display_name": "GPT 5.1 Codex Mini",
+      "provider": "codex",
+      "auth_file": "codex-tamaproject360@gmail.com.json",
+      "enabled": false
+    },
+    "codex-tamaproject360@gmail.com.json:gpt-5.2": {
+      "model_id": "gpt-5.2",
+      "display_name": "GPT 5.2",
+      "provider": "codex",
+      "auth_file": "codex-tamaproject360@gmail.com.json",
+      "enabled": false
+    },
+    "codex-tamaproject360@gmail.com.json:gpt-5.2-codex": {
+      "model_id": "gpt-5.2-codex",
+      "display_name": "GPT 5.2 Codex",
+      "provider": "codex",
+      "auth_file": "codex-tamaproject360@gmail.com.json",
+      "enabled": false
+    },
+    "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json:gemini-2.5-flash": {
+      "model_id": "gemini-2.5-flash",
+      "display_name": "Gemini 2.5 Flash",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json",
+      "enabled": false
+    },
+    "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json:gemini-2.5-flash-image": {
+      "model_id": "gemini-2.5-flash-image",
+      "display_name": "Gemini 2.5 Flash Image",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json",
+      "enabled": false
+    },
+    "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json:gemini-2.5-flash-lite": {
+      "model_id": "gemini-2.5-flash-lite",
+      "display_name": "Gemini 2.5 Flash Lite",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json",
+      "enabled": false
+    },
+    "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json:gemini-2.5-pro": {
+      "model_id": "gemini-2.5-pro",
+      "display_name": "Gemini 2.5 Pro",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json",
+      "enabled": false
+    },
+    "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json:gemini-3-flash-preview": {
+      "model_id": "gemini-3-flash-preview",
+      "display_name": "Gemini 3 Flash Preview",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json",
+      "enabled": false
+    },
+    "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json:gemini-3-pro-image-preview": {
+      "model_id": "gemini-3-pro-image-preview",
+      "display_name": "Gemini 3 Pro Image Preview",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json",
+      "enabled": false
+    },
+    "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json:gemini-3-pro-preview": {
+      "model_id": "gemini-3-pro-preview",
+      "display_name": "Gemini 3 Pro Preview",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json",
+      "enabled": false
+    },
+    "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json:gemini-2.5-flash": {
+      "model_id": "gemini-2.5-flash",
+      "display_name": "Gemini 2.5 Flash",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json",
+      "enabled": false
+    },
+    "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json:gemini-2.5-flash-image": {
+      "model_id": "gemini-2.5-flash-image",
+      "display_name": "Gemini 2.5 Flash Image",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json",
+      "enabled": false
+    },
+    "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json:gemini-2.5-flash-lite": {
+      "model_id": "gemini-2.5-flash-lite",
+      "display_name": "Gemini 2.5 Flash Lite",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json",
+      "enabled": false
+    },
+    "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json:gemini-2.5-pro": {
+      "model_id": "gemini-2.5-pro",
+      "display_name": "Gemini 2.5 Pro",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json",
+      "enabled": false
+    },
+    "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json:gemini-3-flash-preview": {
+      "model_id": "gemini-3-flash-preview",
+      "display_name": "Gemini 3 Flash Preview",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json",
+      "enabled": false
+    },
+    "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json:gemini-3-pro-image-preview": {
+      "model_id": "gemini-3-pro-image-preview",
+      "display_name": "Gemini 3 Pro Image Preview",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json",
+      "enabled": false
+    },
+    "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json:gemini-3-pro-preview": {
+      "model_id": "gemini-3-pro-preview",
+      "display_name": "Gemini 3 Pro Preview",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json",
+      "enabled": false
+    },
+    "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json:gemini-2.5-flash": {
+      "model_id": "gemini-2.5-flash",
+      "display_name": "Gemini 2.5 Flash",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json",
+      "enabled": false
+    },
+    "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json:gemini-2.5-flash-image": {
+      "model_id": "gemini-2.5-flash-image",
+      "display_name": "Gemini 2.5 Flash Image",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json",
+      "enabled": false
+    },
+    "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json:gemini-2.5-flash-lite": {
+      "model_id": "gemini-2.5-flash-lite",
+      "display_name": "Gemini 2.5 Flash Lite",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json",
+      "enabled": false
+    },
+    "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json:gemini-2.5-pro": {
+      "model_id": "gemini-2.5-pro",
+      "display_name": "Gemini 2.5 Pro",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json",
+      "enabled": false
+    },
+    "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json:gemini-3-flash-preview": {
+      "model_id": "gemini-3-flash-preview",
+      "display_name": "Gemini 3 Flash Preview",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json",
+      "enabled": false
+    },
+    "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json:gemini-3-pro-image-preview": {
+      "model_id": "gemini-3-pro-image-preview",
+      "display_name": "Gemini 3 Pro Image Preview",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json",
+      "enabled": false
+    },
+    "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json:gemini-3-pro-preview": {
+      "model_id": "gemini-3-pro-preview",
+      "display_name": "Gemini 3 Pro Preview",
+      "provider": "gemini-cli",
+      "auth_file": "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:claude-sonnet-4": {
+      "model_id": "claude-sonnet-4",
+      "display_name": "Claude Sonnet 4",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-3.5-turbo": {
+      "model_id": "gpt-3.5-turbo",
+      "display_name": "GPT 3.5 Turbo",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-3.5-turbo-0613": {
+      "model_id": "gpt-3.5-turbo-0613",
+      "display_name": "GPT 3.5 Turbo",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4": {
+      "model_id": "gpt-4",
+      "display_name": "GPT 4",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4-0125-preview": {
+      "model_id": "gpt-4-0125-preview",
+      "display_name": "GPT 4 Turbo",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4-0613": {
+      "model_id": "gpt-4-0613",
+      "display_name": "GPT 4",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4-o-preview": {
+      "model_id": "gpt-4-o-preview",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4.1": {
+      "model_id": "gpt-4.1",
+      "display_name": "GPT-4.1",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4.1-2025-04-14": {
+      "model_id": "gpt-4.1-2025-04-14",
+      "display_name": "GPT-4.1",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4o": {
+      "model_id": "gpt-4o",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4o-2024-05-13": {
+      "model_id": "gpt-4o-2024-05-13",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4o-2024-08-06": {
+      "model_id": "gpt-4o-2024-08-06",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4o-2024-11-20": {
+      "model_id": "gpt-4o-2024-11-20",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4o-mini": {
+      "model_id": "gpt-4o-mini",
+      "display_name": "GPT-4o mini",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:gpt-4o-mini-2024-07-18": {
+      "model_id": "gpt-4o-mini-2024-07-18",
+      "display_name": "GPT-4o mini",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-faysdevops.json:oswe-vscode-secondary": {
+      "model_id": "oswe-vscode-secondary",
+      "display_name": "Raptor mini (Preview)",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-faysdevops.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:claude-haiku-4.5": {
+      "model_id": "claude-haiku-4.5",
+      "display_name": "Claude Haiku 4.5",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": true
+    },
+    "github-copilot-ginzoproject.json:claude-opus-4.5": {
+      "model_id": "claude-opus-4.5",
+      "display_name": "Claude Opus 4.5",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": true
+    },
+    "github-copilot-ginzoproject.json:claude-opus-4.6": {
+      "model_id": "claude-opus-4.6",
+      "display_name": "Claude Opus 4.6",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": true
+    },
+    "github-copilot-ginzoproject.json:claude-sonnet-4": {
+      "model_id": "claude-sonnet-4",
+      "display_name": "Claude Sonnet 4",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:claude-sonnet-4.5": {
+      "model_id": "claude-sonnet-4.5",
+      "display_name": "Claude Sonnet 4.5",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": true
+    },
+    "github-copilot-ginzoproject.json:gemini-2.5-pro": {
+      "model_id": "gemini-2.5-pro",
+      "display_name": "Gemini 2.5 Pro",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gemini-3-flash-preview": {
+      "model_id": "gemini-3-flash-preview",
+      "display_name": "Gemini 3 Flash (Preview)",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": true
+    },
+    "github-copilot-ginzoproject.json:gemini-3-pro-preview": {
+      "model_id": "gemini-3-pro-preview",
+      "display_name": "Gemini 3 Pro (Preview)",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": true
+    },
+    "github-copilot-ginzoproject.json:gpt-3.5-turbo": {
+      "model_id": "gpt-3.5-turbo",
+      "display_name": "GPT 3.5 Turbo",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gpt-3.5-turbo-0613": {
+      "model_id": "gpt-3.5-turbo-0613",
+      "display_name": "GPT 3.5 Turbo",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gpt-4": {
+      "model_id": "gpt-4",
+      "display_name": "GPT 4",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gpt-4-0125-preview": {
+      "model_id": "gpt-4-0125-preview",
+      "display_name": "GPT 4 Turbo",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gpt-4-0613": {
+      "model_id": "gpt-4-0613",
+      "display_name": "GPT 4",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gpt-4-o-preview": {
+      "model_id": "gpt-4-o-preview",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gpt-4.1": {
+      "model_id": "gpt-4.1",
+      "display_name": "GPT-4.1",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gpt-4.1-2025-04-14": {
+      "model_id": "gpt-4.1-2025-04-14",
+      "display_name": "GPT-4.1",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gpt-4o": {
+      "model_id": "gpt-4o",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gpt-4o-2024-05-13": {
+      "model_id": "gpt-4o-2024-05-13",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gpt-4o-2024-08-06": {
+      "model_id": "gpt-4o-2024-08-06",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gpt-4o-2024-11-20": {
+      "model_id": "gpt-4o-2024-11-20",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gpt-4o-mini": {
+      "model_id": "gpt-4o-mini",
+      "display_name": "GPT-4o mini",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gpt-4o-mini-2024-07-18": {
+      "model_id": "gpt-4o-mini-2024-07-18",
+      "display_name": "GPT-4o mini",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gpt-5": {
+      "model_id": "gpt-5",
+      "display_name": "GPT-5",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": true
+    },
+    "github-copilot-ginzoproject.json:gpt-5-codex": {
+      "model_id": "gpt-5-codex",
+      "display_name": "GPT-5-Codex (Preview)",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:gpt-5-mini": {
+      "model_id": "gpt-5-mini",
+      "display_name": "GPT-5 mini",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": true
+    },
+    "github-copilot-ginzoproject.json:gpt-5.1": {
+      "model_id": "gpt-5.1",
+      "display_name": "GPT-5.1",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": true
+    },
+    "github-copilot-ginzoproject.json:gpt-5.1-codex": {
+      "model_id": "gpt-5.1-codex",
+      "display_name": "GPT-5.1-Codex",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": true
+    },
+    "github-copilot-ginzoproject.json:gpt-5.1-codex-max": {
+      "model_id": "gpt-5.1-codex-max",
+      "display_name": "GPT-5.1-Codex-Max",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": true
+    },
+    "github-copilot-ginzoproject.json:gpt-5.1-codex-mini": {
+      "model_id": "gpt-5.1-codex-mini",
+      "display_name": "GPT-5.1-Codex-Mini",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": true
+    },
+    "github-copilot-ginzoproject.json:gpt-5.2": {
+      "model_id": "gpt-5.2",
+      "display_name": "GPT-5.2",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": true
+    },
+    "github-copilot-ginzoproject.json:gpt-5.2-codex": {
+      "model_id": "gpt-5.2-codex",
+      "display_name": "GPT-5.2-Codex",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": true
+    },
+    "github-copilot-ginzoproject.json:grok-code-fast-1": {
+      "model_id": "grok-code-fast-1",
+      "display_name": "Grok Code Fast 1",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:oswe-vscode-prime": {
+      "model_id": "oswe-vscode-prime",
+      "display_name": "Raptor mini (Preview)",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:oswe-vscode-secondary": {
+      "model_id": "oswe-vscode-secondary",
+      "display_name": "Raptor mini (Preview)",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:text-embedding-3-small": {
+      "model_id": "text-embedding-3-small",
+      "display_name": "Embedding V3 small",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:text-embedding-3-small-inference": {
+      "model_id": "text-embedding-3-small-inference",
+      "display_name": "Embedding V3 small (Inference)",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-ginzoproject.json:text-embedding-ada-002": {
+      "model_id": "text-embedding-ada-002",
+      "display_name": "Embedding V2 Ada",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-ginzoproject.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:claude-haiku-4.5": {
+      "model_id": "claude-haiku-4.5",
+      "display_name": "Claude Haiku 4.5",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": true
+    },
+    "github-copilot-tamaproject360.json:claude-opus-4.5": {
+      "model_id": "claude-opus-4.5",
+      "display_name": "Claude Opus 4.5",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": true
+    },
+    "github-copilot-tamaproject360.json:claude-opus-4.6": {
+      "model_id": "claude-opus-4.6",
+      "display_name": "Claude Opus 4.6",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": true
+    },
+    "github-copilot-tamaproject360.json:claude-sonnet-4": {
+      "model_id": "claude-sonnet-4",
+      "display_name": "Claude Sonnet 4",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:claude-sonnet-4.5": {
+      "model_id": "claude-sonnet-4.5",
+      "display_name": "Claude Sonnet 4.5",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": true
+    },
+    "github-copilot-tamaproject360.json:gemini-2.5-pro": {
+      "model_id": "gemini-2.5-pro",
+      "display_name": "Gemini 2.5 Pro",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gemini-3-flash-preview": {
+      "model_id": "gemini-3-flash-preview",
+      "display_name": "Gemini 3 Flash (Preview)",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": true
+    },
+    "github-copilot-tamaproject360.json:gemini-3-pro-preview": {
+      "model_id": "gemini-3-pro-preview",
+      "display_name": "Gemini 3 Pro (Preview)",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": true
+    },
+    "github-copilot-tamaproject360.json:gpt-3.5-turbo": {
+      "model_id": "gpt-3.5-turbo",
+      "display_name": "GPT 3.5 Turbo",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-3.5-turbo-0613": {
+      "model_id": "gpt-3.5-turbo-0613",
+      "display_name": "GPT 3.5 Turbo",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-4": {
+      "model_id": "gpt-4",
+      "display_name": "GPT 4",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-4-0125-preview": {
+      "model_id": "gpt-4-0125-preview",
+      "display_name": "GPT 4 Turbo",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-4-0613": {
+      "model_id": "gpt-4-0613",
+      "display_name": "GPT 4",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-4-o-preview": {
+      "model_id": "gpt-4-o-preview",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-4.1": {
+      "model_id": "gpt-4.1",
+      "display_name": "GPT-4.1",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-4.1-2025-04-14": {
+      "model_id": "gpt-4.1-2025-04-14",
+      "display_name": "GPT-4.1",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-4o": {
+      "model_id": "gpt-4o",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-4o-2024-05-13": {
+      "model_id": "gpt-4o-2024-05-13",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-4o-2024-08-06": {
+      "model_id": "gpt-4o-2024-08-06",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-4o-2024-11-20": {
+      "model_id": "gpt-4o-2024-11-20",
+      "display_name": "GPT-4o",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-4o-mini": {
+      "model_id": "gpt-4o-mini",
+      "display_name": "GPT-4o mini",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-4o-mini-2024-07-18": {
+      "model_id": "gpt-4o-mini-2024-07-18",
+      "display_name": "GPT-4o mini",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-5": {
+      "model_id": "gpt-5",
+      "display_name": "GPT-5",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": true
+    },
+    "github-copilot-tamaproject360.json:gpt-5-codex": {
+      "model_id": "gpt-5-codex",
+      "display_name": "GPT-5-Codex (Preview)",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-5-mini": {
+      "model_id": "gpt-5-mini",
+      "display_name": "GPT-5 mini",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": true
+    },
+    "github-copilot-tamaproject360.json:gpt-5.1": {
+      "model_id": "gpt-5.1",
+      "display_name": "GPT-5.1",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": true
+    },
+    "github-copilot-tamaproject360.json:gpt-5.1-codex": {
+      "model_id": "gpt-5.1-codex",
+      "display_name": "GPT-5.1-Codex",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": true
+    },
+    "github-copilot-tamaproject360.json:gpt-5.1-codex-max": {
+      "model_id": "gpt-5.1-codex-max",
+      "display_name": "GPT-5.1-Codex-Max",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-5.1-codex-mini": {
+      "model_id": "gpt-5.1-codex-mini",
+      "display_name": "GPT-5.1-Codex-Mini",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-5.2": {
+      "model_id": "gpt-5.2",
+      "display_name": "GPT-5.2",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:gpt-5.2-codex": {
+      "model_id": "gpt-5.2-codex",
+      "display_name": "GPT-5.2-Codex",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": true
+    },
+    "github-copilot-tamaproject360.json:grok-code-fast-1": {
+      "model_id": "grok-code-fast-1",
+      "display_name": "Grok Code Fast 1",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:oswe-vscode-prime": {
+      "model_id": "oswe-vscode-prime",
+      "display_name": "Raptor mini (Preview)",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:oswe-vscode-secondary": {
+      "model_id": "oswe-vscode-secondary",
+      "display_name": "Raptor mini (Preview)",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:text-embedding-3-small": {
+      "model_id": "text-embedding-3-small",
+      "display_name": "Embedding V3 small",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:text-embedding-3-small-inference": {
+      "model_id": "text-embedding-3-small-inference",
+      "display_name": "Embedding V3 small (Inference)",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    },
+    "github-copilot-tamaproject360.json:text-embedding-ada-002": {
+      "model_id": "text-embedding-ada-002",
+      "display_name": "Embedding V2 Ada",
+      "provider": "github-copilot",
+      "auth_file": "github-copilot-tamaproject360.json",
+      "enabled": false
+    }
+  }
+}

@@ -19,9 +19,26 @@ type ModelSetting struct {
 	Enabled     bool   `json:"enabled"`
 }
 
-// ModelSettingsConfig represents the full model settings configuration
+// ModelSettingsConfig represents the full model settings configuration (old format - for backward compatibility)
 type ModelSettingsConfig struct {
 	Models map[string]ModelSetting `json:"models"` // key is "authFile:modelId"
+}
+
+// ProviderModelConfig represents model configuration within a provider
+type ProviderModelConfig struct {
+	DisplayName string `json:"display_name"`
+	Enabled     bool   `json:"enabled"`
+}
+
+// ProviderConfig represents a provider with its auth files and models
+type ProviderConfig struct {
+	AuthFiles []string                        `json:"auth_files"`
+	Models    map[string]ProviderModelConfig  `json:"models"` // key is modelId
+}
+
+// NewModelSettingsConfig represents the new provider-based configuration
+type NewModelSettingsConfig struct {
+	Providers map[string]ProviderConfig `json:",inline"` // provider name as key
 }
 
 var (
@@ -60,6 +77,44 @@ func loadModelSettings() (*ModelSettingsConfig, error) {
 		return nil, err
 	}
 
+	// Try to parse as new format first
+	var newConfig map[string]ProviderConfig
+	if err := json.Unmarshal(data, &newConfig); err == nil {
+		// Check if it's new format by checking for auth_files and models keys
+		isNewFormat := false
+		for _, providerConfig := range newConfig {
+			if providerConfig.AuthFiles != nil && providerConfig.Models != nil {
+				isNewFormat = true
+				break
+			}
+		}
+
+		if isNewFormat {
+			// Convert new format to old format for backward compatibility
+			oldConfig := &ModelSettingsConfig{
+				Models: make(map[string]ModelSetting),
+			}
+
+			for providerName, providerConfig := range newConfig {
+				for _, authFile := range providerConfig.AuthFiles {
+					for modelID, modelConfig := range providerConfig.Models {
+						key := authFile + ":" + modelID
+						oldConfig.Models[key] = ModelSetting{
+							ModelID:     modelID,
+							DisplayName: modelConfig.DisplayName,
+							Provider:    providerName,
+							AuthFile:    authFile,
+							Enabled:     modelConfig.Enabled,
+						}
+					}
+				}
+			}
+
+			return oldConfig, nil
+		}
+	}
+
+	// Fall back to old format
 	var config ModelSettingsConfig
 	if err := json.Unmarshal(data, &config); err != nil {
 		return nil, err
@@ -76,8 +131,48 @@ func saveModelSettings(config *ModelSettingsConfig) error {
 	modelSettingsMu.Lock()
 	defer modelSettingsMu.Unlock()
 
+	// Convert old format to new format (per provider)
+	newConfig := make(map[string]ProviderConfig)
+
+	for _, setting := range config.Models {
+		provider := setting.Provider
+		if provider == "" {
+			provider = "unknown"
+		}
+
+		// Initialize provider if doesn't exist
+		if _, exists := newConfig[provider]; !exists {
+			newConfig[provider] = ProviderConfig{
+				AuthFiles: []string{},
+				Models:    make(map[string]ProviderModelConfig),
+			}
+		}
+
+		providerConfig := newConfig[provider]
+
+		// Add auth file if not already in list
+		authFileExists := false
+		for _, af := range providerConfig.AuthFiles {
+			if af == setting.AuthFile {
+				authFileExists = true
+				break
+			}
+		}
+		if !authFileExists {
+			providerConfig.AuthFiles = append(providerConfig.AuthFiles, setting.AuthFile)
+		}
+
+		// Add or update model
+		providerConfig.Models[setting.ModelID] = ProviderModelConfig{
+			DisplayName: setting.DisplayName,
+			Enabled:     setting.Enabled,
+		}
+
+		newConfig[provider] = providerConfig
+	}
+
 	path := getModelSettingsPath()
-	data, err := json.MarshalIndent(config, "", "  ")
+	data, err := json.MarshalIndent(newConfig, "", "  ")
 	if err != nil {
 		return err
 	}

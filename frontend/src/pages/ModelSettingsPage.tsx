@@ -239,16 +239,16 @@ export default function ModelSettingsPage() {
 
   // Enable/Disable all models
   const handleBulkToggle = useCallback((enabled: boolean) => {
-    if (!providersData) return;
+    if (!groupedByProvider) return;
 
     const allModels: ModelSetting[] = [];
-    providersData.forEach(provider => {
-      provider.models.forEach(model => {
+    groupedByProvider.forEach(provider => {
+      provider.models.forEach(({ model, authFile }) => {
         allModels.push({
           model_id: model.id,
           display_name: model.display_name || model.id,
           provider: provider.type,
-          auth_file: provider.authFile,
+          auth_file: authFile,
           enabled: enabled,
         });
       });
@@ -267,11 +267,44 @@ export default function ModelSettingsPage() {
     bulkUpdateModelSettings(allModels).then(() => {
       queryClient.invalidateQueries({ queryKey: ['modelSettings'] });
     });
-  }, [providersData, queryClient]);
+  }, [groupedByProvider, queryClient]);
+
+  // Group providers by type
+  const groupedByProvider = useMemo(() => {
+    if (!providersData) return [];
+
+    const grouped = new Map<string, { type: string; authFiles: Set<string>; models: Map<string, { model: ModelInfo; authFile: string }> }>();
+
+    providersData.forEach(provider => {
+      if (!grouped.has(provider.type)) {
+        grouped.set(provider.type, {
+          type: provider.type,
+          authFiles: new Set(),
+          models: new Map()
+        });
+      }
+
+      const group = grouped.get(provider.type)!;
+      group.authFiles.add(provider.authFile);
+
+      provider.models.forEach(model => {
+        // Gunakan model.id sebagai key, jika ada duplikat gunakan dari auth file pertama
+        if (!group.models.has(model.id)) {
+          group.models.set(model.id, { model, authFile: provider.authFile });
+        }
+      });
+    });
+
+    return Array.from(grouped.values()).map(group => ({
+      type: group.type,
+      authFiles: Array.from(group.authFiles),
+      models: Array.from(group.models.values())
+    }));
+  }, [providersData]);
 
   // Filter providers and models
-  const filteredProviders = providersData?.map(provider => {
-    const filteredModels = provider.models.filter(model => {
+  const filteredProviders = groupedByProvider.map(provider => {
+    const filteredModels = provider.models.filter(({ model, authFile }) => {
       const matchesSearch = searchQuery === '' || 
         model.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (model.display_name?.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -279,7 +312,7 @@ export default function ModelSettingsPage() {
       const matchesProvider = filterProvider === 'all' || 
         provider.type.toLowerCase().includes(filterProvider.toLowerCase());
       
-      const isEnabled = isModelEnabled(provider.authFile, model.id);
+      const isEnabled = isModelEnabled(authFile, model.id);
       const matchesEnabled = filterEnabled === 'all' || 
         (filterEnabled === 'enabled' && isEnabled) ||
         (filterEnabled === 'disabled' && !isEnabled);
@@ -288,16 +321,16 @@ export default function ModelSettingsPage() {
     });
 
     return { ...provider, models: filteredModels };
-  }).filter(p => p.models.length > 0) || [];
+  }).filter(p => p.models.length > 0);
 
   // Get unique provider types for filter
-  const providerTypes = Array.from(new Set(providersData?.map(p => p.type) || []));
+  const providerTypes = Array.from(new Set(groupedByProvider.map(p => p.type)));
 
   // Stats
-  const totalModels = providersData?.reduce((acc, p) => acc + p.models.length, 0) || 0;
-  const enabledModels = providersData?.reduce((acc, provider) => {
-    return acc + provider.models.filter(m => isModelEnabled(provider.authFile, m.id)).length;
-  }, 0) || 0;
+  const totalModels = groupedByProvider.reduce((acc, p) => acc + p.models.length, 0);
+  const enabledModels = groupedByProvider.reduce((acc, provider) => {
+    return acc + provider.models.filter(({ model, authFile }) => isModelEnabled(authFile, model.id)).length;
+  }, 0);
   const disabledModels = totalModels - enabledModels;
 
   // Animate cards
@@ -469,9 +502,12 @@ export default function ModelSettingsPage() {
           <div ref={gridRef} className="space-y-8">
             {filteredProviders.map((provider) => {
               const providerColor = getProviderColor(provider.type);
+              const enabledCount = provider.models.filter(({ model, authFile }) => 
+                isModelEnabled(authFile, model.id)
+              ).length;
               
               return (
-                <div key={provider.authFile} className="space-y-4">
+                <div key={provider.type} className="space-y-4">
                   {/* Provider Header */}
                   <div className="flex items-center gap-3 pb-3 border-b border-white/10">
                     <div 
@@ -481,23 +517,23 @@ export default function ModelSettingsPage() {
                       <Cpu className="w-5 h-5" style={{ color: providerColor }} strokeWidth={2} />
                     </div>
                     <div className="flex-1">
-                      <h2 className="text-lg font-semibold text-white">{provider.authFile}</h2>
-                      <p className="text-sm text-white/50">{provider.type} • {provider.models.length} models</p>
+                      <h2 className="text-lg font-semibold text-white capitalize">{provider.type}</h2>
+                      <p className="text-sm text-white/50">{provider.authFiles.length} auth file{provider.authFiles.length > 1 ? 's' : ''} • {provider.models.length} models</p>
                     </div>
                     <div className="text-sm text-white/50">
-                      {provider.models.filter(m => isModelEnabled(provider.authFile, m.id)).length} enabled
+                      {enabledCount} enabled
                     </div>
                   </div>
 
                   {/* Models Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {provider.models.map((model) => {
-                      const enabled = isModelEnabled(provider.authFile, model.id);
-                      const isPending = pendingChanges.has(`${provider.authFile}:${model.id}`);
+                    {provider.models.map(({ model, authFile }) => {
+                      const enabled = isModelEnabled(authFile, model.id);
+                      const isPending = pendingChanges.has(`${authFile}:${model.id}`);
                       
                       return (
                         <div
-                          key={model.id}
+                          key={`${authFile}:${model.id}`}
                           className={`model-card relative overflow-hidden rounded-xl border backdrop-blur-sm p-4 transition-all duration-300 ${
                             enabled 
                               ? 'border-white/20 bg-gradient-to-br from-white/5 to-transparent' 
@@ -533,7 +569,7 @@ export default function ModelSettingsPage() {
                             <ToggleSwitch
                               enabled={enabled}
                               onChange={(newEnabled) => handleToggle(
-                                provider.authFile,
+                                authFile,
                                 model.id,
                                 model.display_name || model.id,
                                 provider.type,
