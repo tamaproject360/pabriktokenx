@@ -17,7 +17,7 @@ function AmbientBackground() {
   );
 }
 
-type AuthStatus = 'active' | 'disabled' | 'rate-limited' | 'error' | 'pending' | 'refreshing' | 'unknown';
+type AuthStatus = 'active' | 'disabled' | 'rate-limited' | 'warning' | 'error' | 'pending' | 'refreshing' | 'unknown';
 
 interface QuotaData {
   provider: string;
@@ -49,13 +49,19 @@ const getAuthFileStatus = (authFile: AuthFile): AuthStatus => {
   if (authFile.disabled) return 'disabled';
 
   const status = (authFile.status || '').toLowerCase();
-  const statusMsg = authFile.status_message || '';
+  const statusMsg = (authFile.status_message || '').toLowerCase();
 
-  // Rate-limited is temporary, not a real error
-  if ((status === 'error' || authFile.unavailable) && isRateLimited(statusMsg)) {
-    return 'rate-limited';
+  if (status === 'error' || authFile.unavailable) {
+    // Rate-limited is temporary, will recover
+    if (isRateLimited(authFile.status_message || '')) {
+      return 'rate-limited';
+    }
+    // Unsupported API endpoint - account works but tested model isn't accessible
+    if (statusMsg.includes('unsupported') || statusMsg.includes('not accessible') || statusMsg.includes('not supported')) {
+      return 'warning';
+    }
+    return 'error';
   }
-  if (authFile.unavailable || status === 'error') return 'error';
   if (status === 'active') return 'active';
   if (status === 'disabled') return 'disabled';
   if (status === 'pending') return 'pending';
@@ -72,6 +78,7 @@ const getStatusLabel = (status: string): string => {
     active: 'Active',
     disabled: 'Inactive',
     'rate-limited': 'Rate Limited',
+    'warning': 'Limited',
     error: 'Error',
     pending: 'Pending',
     refreshing: 'Refreshing',
@@ -88,6 +95,7 @@ const getStatusStyle = (status: string): string => {
     active: 'bg-green-500/20 text-green-400',
     disabled: 'bg-yellow-500/20 text-yellow-400',
     'rate-limited': 'bg-amber-500/20 text-amber-400',
+    'warning': 'bg-amber-500/20 text-amber-400',
     error: 'bg-red-500/20 text-red-400',
     pending: 'bg-blue-500/20 text-blue-400',
     refreshing: 'bg-cyan-500/20 text-cyan-400',
@@ -325,10 +333,10 @@ export default function QuotaPage() {
   const totalProviders = uniqueProviders.size;
 
   // Calculate active accounts using actual backend status
-  // Rate-limited accounts are still valid (temporary condition)
+  // Rate-limited and warning accounts are usable but degraded, not counted as fully active
   const activeAccounts = authFiles.filter(f => {
     const status = getAuthFileStatus(f);
-    return status === 'active' || status === 'refreshing' || status === 'pending' || status === 'rate-limited';
+    return status === 'active' || status === 'refreshing' || status === 'pending';
   }).length;
 
   // Calculate average usage (placeholder since real usage requires API calls)

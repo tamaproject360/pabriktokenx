@@ -163,14 +163,30 @@ const getProviderColor = (type: string): string => {
 
 /**
  * Determine auth file status for display in playground.
+ * Checks status_message for rate-limit vs unsupported API vs real errors.
  */
 const getPlaygroundAuthStatus = (file: AuthFileInfo): { status: string; label: string; color: string } => {
   if (file.disabled) return { status: 'disabled', label: 'Inactive', color: '#EAB308' };
   const st = (file.status || '').toLowerCase();
   const msg = (file.status_message || '').toLowerCase();
-  const isRateLimit = msg.includes('429') || msg.includes('quota') || msg.includes('exhausted') || msg.includes('rate');
-  if ((st === 'error' || file.unavailable) && isRateLimit) return { status: 'rate-limited', label: 'Rate Limited', color: '#F59E0B' };
-  if (file.unavailable || st === 'error') return { status: 'error', label: 'Error', color: '#EF4444' };
+
+  if (st === 'error' || file.unavailable) {
+    // Rate-limited (429 / quota exhausted) - temporary, will recover
+    if (msg.includes('429') || msg.includes('quota') || msg.includes('exhausted') || msg.includes('resource_exhausted')) {
+      return { status: 'rate-limited', label: 'Rate Limited', color: '#F59E0B' };
+    }
+    // Unsupported API endpoint - account works but tested model isn't accessible
+    if (msg.includes('unsupported') || msg.includes('not accessible') || msg.includes('not supported')) {
+      return { status: 'warning', label: 'Limited', color: '#F59E0B' };
+    }
+    // Auth/token errors
+    if (msg.includes('unauthorized') || msg.includes('401') || msg.includes('403') || msg.includes('invalid_token')) {
+      return { status: 'error', label: 'Auth Error', color: '#EF4444' };
+    }
+    // Generic error
+    return { status: 'error', label: 'Error', color: '#EF4444' };
+  }
+
   if (st === 'active' || st === '' || st === 'unknown') return { status: 'active', label: 'Active', color: '#22C55E' };
   if (st === 'pending') return { status: 'pending', label: 'Pending', color: '#3B82F6' };
   if (st === 'refreshing') return { status: 'refreshing', label: 'Refreshing', color: '#06B6D4' };
@@ -577,7 +593,9 @@ export default function PlaygroundPage() {
       cat.totalAccounts++;
       const st = provider.status || 'active';
       cat.statuses.push(st);
-      if (st === 'active' || st === 'rate-limited' || st === 'pending' || st === 'refreshing') {
+      // Only truly active/pending/refreshing count as active
+      // rate-limited and warning are usable but degraded
+      if (st === 'active' || st === 'pending' || st === 'refreshing') {
         cat.activeAccounts++;
       }
       for (const model of provider.models) {
@@ -589,7 +607,7 @@ export default function PlaygroundPage() {
 
     const categories: ProviderCategory[] = [];
     for (const [type, data] of categoryMap) {
-      // Determine aggregate status: if any account is active, category is active
+      // Determine aggregate status
       let status = 'error';
       let statusLabel = 'Error';
       if (data.activeAccounts > 0) {
@@ -597,7 +615,11 @@ export default function PlaygroundPage() {
         statusLabel = `${data.activeAccounts}/${data.totalAccounts} active`;
       } else if (data.statuses.includes('rate-limited')) {
         status = 'rate-limited';
-        statusLabel = 'Rate Limited';
+        const rlCount = data.statuses.filter(s => s === 'rate-limited').length;
+        statusLabel = `${rlCount}/${data.totalAccounts} rate limited`;
+      } else if (data.statuses.includes('warning')) {
+        status = 'warning';
+        statusLabel = `${data.totalAccounts} limited`;
       } else if (data.statuses.includes('disabled')) {
         status = 'disabled';
         statusLabel = 'Inactive';
@@ -1004,6 +1026,7 @@ export default function PlaygroundPage() {
   const providerColor = currentCategory ? getProviderColor(currentCategory.type) : '#64748B';
   const currentCategoryStatusColor = currentCategory?.status === 'active' ? '#22C55E' :
     currentCategory?.status === 'rate-limited' ? '#F59E0B' :
+    currentCategory?.status === 'warning' ? '#F59E0B' :
     currentCategory?.status === 'error' ? '#EF4444' :
     currentCategory?.status === 'disabled' ? '#EAB308' : '#22C55E';
 
@@ -1159,6 +1182,7 @@ export default function PlaygroundPage() {
                     {filteredCategories.map(category => {
                       const statusColor = category.status === 'active' ? '#22C55E' :
                         category.status === 'rate-limited' ? '#F59E0B' :
+                        category.status === 'warning' ? '#F59E0B' :
                         category.status === 'error' ? '#EF4444' :
                         category.status === 'disabled' ? '#EAB308' : '#22C55E';
                       return (
