@@ -3,6 +3,7 @@ import { Upload, Trash2, FileText, RefreshCw, Download, AlertCircle, Cpu, Archiv
 import { listAuthFiles, uploadAuthFile, deleteAuthFile, downloadAuthFile, bulkDownloadAuthFiles, bulkUploadAuthFiles } from '../lib/api';
 import { useRef, useState, useEffect, useCallback } from 'react';
 import gsap from 'gsap';
+import { ViewToggle, type ViewMode } from '../components/ViewToggle';
 
 // Ambient Background
 function AmbientBackground() {
@@ -24,6 +25,7 @@ export default function AuthFilesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('card');
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['authFiles'],
@@ -188,6 +190,7 @@ export default function AuthFilesPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <ViewToggle viewMode={viewMode} onChange={setViewMode} />
             <button
               onClick={() => refetch()}
               disabled={isRefetching}
@@ -264,7 +267,8 @@ export default function AuthFilesPage() {
               />
             </label>
           </div>
-        ) : (
+        ) : viewMode === 'card' ? (
+          /* Card View */
           <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {files.map((file) => {
               const providerColor = getProviderColor(file.provider);
@@ -344,6 +348,92 @@ export default function AuthFilesPage() {
                 </div>
               );
             })}
+          </div>
+        ) : (
+          /* List View */
+          <div ref={gridRef} className="glass-panel rounded-2xl overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-white/10">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">File</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Provider</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Size</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Modified</th>
+                  <th className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {files.map((file) => {
+                  const providerColor = getProviderColor(file.provider);
+                  return (
+                    <tr 
+                      key={file.name} 
+                      className="file-card hover:bg-white/[0.02] transition-colors"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                            style={{ background: `${providerColor}15` }}
+                          >
+                            <FileText className="h-4 w-4" style={{ color: providerColor }} strokeWidth={1.5} />
+                          </div>
+                          <span className="font-medium text-white text-sm truncate max-w-[200px]">
+                            {file.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span 
+                          className="px-2.5 py-1 text-xs rounded-lg border font-medium"
+                          style={{ 
+                            background: `${providerColor}15`,
+                            color: providerColor,
+                            borderColor: `${providerColor}30`
+                          }}
+                        >
+                          {file.provider.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-400 font-mono">
+                        {(file.size / 1024).toFixed(1)} KB
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {(() => {
+                          const dateStr = file.modtime || file.modified;
+                          if (!dateStr) return 'No date';
+                          const date = new Date(dateStr);
+                          return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString();
+                        })()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => downloadAuthFile(file.name)}
+                            className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-cyan-400 transition-all duration-200"
+                            title="Export / Download"
+                          >
+                            <Download className="h-4 w-4" strokeWidth={2} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(file.name)}
+                            disabled={deleteMutation.isPending}
+                            className={`p-2 rounded-lg transition-all duration-200 ${
+                              deleteConfirm === file.name
+                                ? 'bg-rose-500/20 border border-rose-500/40 text-rose-400'
+                                : 'hover:bg-white/[0.05] text-slate-400 hover:text-rose-400'
+                            }`}
+                            title={deleteConfirm === file.name ? 'Click to confirm' : 'Delete'}
+                          >
+                            <Trash2 className="h-4 w-4" strokeWidth={2} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

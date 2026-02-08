@@ -22,6 +22,8 @@ import {
   type ModelSetting,
 } from '../lib/api';
 import gsap from 'gsap';
+import { ViewToggle, type ViewMode } from '../components/ViewToggle';
+import { getModelLabelWithProvider } from '../lib/modelLabels';
 
 // Ambient Background
 function AmbientBackground() {
@@ -130,6 +132,7 @@ export default function ModelSettingsPage() {
   const [filterEnabled, setFilterEnabled] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [modelSettings, setModelSettings] = useState<Map<string, boolean>>(new Map());
   const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<ViewMode>('card');
 
   // Fetch auth files
   const { data: authFilesData } = useQuery({
@@ -463,6 +466,7 @@ export default function ModelSettingsPage() {
 
           {/* Bulk Actions */}
           <div className="flex items-center gap-2 ml-auto">
+            <ViewToggle viewMode={viewMode} onChange={setViewMode} />
             <button
               onClick={() => handleBulkToggle(true)}
               className="px-4 py-2.5 rounded-xl bg-green-500/20 hover:bg-green-500/30 text-green-400 font-medium transition-all duration-200 flex items-center gap-2 border border-green-500/30"
@@ -525,82 +529,173 @@ export default function ModelSettingsPage() {
                     </div>
                   </div>
 
-                  {/* Models Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {provider.models.map(({ model, authFile }) => {
-                      const enabled = isModelEnabled(authFile, model.id);
-                      const isPending = pendingChanges.has(`${authFile}:${model.id}`);
-                      
-                      return (
-                        <div
-                          key={`${authFile}:${model.id}`}
-                          className={`model-card relative overflow-hidden rounded-xl border backdrop-blur-sm p-4 transition-all duration-300 ${
-                            enabled 
-                              ? 'border-white/20 bg-gradient-to-br from-white/5 to-transparent' 
-                              : 'border-white/5 bg-gradient-to-br from-white/[0.02] to-transparent opacity-60'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <div 
-                                className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                                  enabled ? '' : 'grayscale opacity-50'
-                                }`}
-                                style={{ background: `${providerColor}15` }}
-                              >
-                                <Cpu className="w-4 h-4" style={{ color: providerColor }} strokeWidth={2} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p 
-                                  className={`text-sm font-mono truncate transition-colors ${
-                                    enabled ? 'text-white' : 'text-white/50'
+                  {/* Models - Card View */}
+                  {viewMode === 'card' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {provider.models.map(({ model, authFile }) => {
+                        const enabled = isModelEnabled(authFile, model.id);
+                        const isPending = pendingChanges.has(`${authFile}:${model.id}`);
+                        const displayLabel = getModelLabelWithProvider(model.display_name || model.id, provider.type);
+                        
+                        return (
+                          <div
+                            key={`${authFile}:${model.id}`}
+                            className={`model-card relative overflow-hidden rounded-xl border backdrop-blur-sm p-4 transition-all duration-300 ${
+                              enabled 
+                                ? 'border-white/20 bg-gradient-to-br from-white/5 to-transparent' 
+                                : 'border-white/5 bg-gradient-to-br from-white/[0.02] to-transparent opacity-60'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <div 
+                                  className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                                    enabled ? '' : 'grayscale opacity-50'
                                   }`}
-                                  title={model.display_name || model.id}
+                                  style={{ background: `${providerColor}15` }}
                                 >
-                                  {model.display_name || model.id}
-                                </p>
-                                {model.display_name && model.display_name !== model.id && (
-                                  <p className="text-xs text-white/40 truncate" title={model.id}>
+                                  <Cpu className="w-4 h-4" style={{ color: providerColor }} strokeWidth={2} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p 
+                                    className={`text-sm font-medium truncate transition-colors ${
+                                      enabled ? 'text-white' : 'text-white/50'
+                                    }`}
+                                    title={displayLabel}
+                                  >
+                                    {displayLabel}
+                                  </p>
+                                  <p className="text-xs text-white/40 truncate font-mono" title={model.id}>
                                     {model.id}
                                   </p>
-                                )}
+                                </div>
                               </div>
+                              <ToggleSwitch
+                                enabled={enabled}
+                                onChange={(newEnabled) => handleToggle(
+                                  authFile,
+                                  model.id,
+                                  model.display_name || model.id,
+                                  provider.type,
+                                  newEnabled
+                                )}
+                                loading={isPending}
+                              />
                             </div>
-                            <ToggleSwitch
-                              enabled={enabled}
-                              onChange={(newEnabled) => handleToggle(
-                                authFile,
-                                model.id,
-                                model.display_name || model.id,
-                                provider.type,
-                                newEnabled
-                              )}
-                              loading={isPending}
-                            />
+                            
+                            {/* Status indicator */}
+                            <div className={`mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs ${
+                              enabled ? 'text-green-400' : 'text-white/40'
+                            }`}>
+                              <span className="flex items-center gap-1">
+                                {enabled ? (
+                                  <>
+                                    <CheckCircle className="w-3 h-3" />
+                                    Available in Playground & API
+                                  </>
+                                ) : (
+                                  <>
+                                    <XCircle className="w-3 h-3" />
+                                    Disabled
+                                  </>
+                                )}
+                              </span>
+                            </div>
                           </div>
-                          
-                          {/* Status indicator */}
-                          <div className={`mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs ${
-                            enabled ? 'text-green-400' : 'text-white/40'
-                          }`}>
-                            <span className="flex items-center gap-1">
-                              {enabled ? (
-                                <>
-                                  <CheckCircle className="w-3 h-3" />
-                                  Available in Playground & API
-                                </>
-                              ) : (
-                                <>
-                                  <XCircle className="w-3 h-3" />
-                                  Disabled
-                                </>
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    /* List View */
+                    <div className="glass-panel rounded-xl overflow-hidden border border-white/10">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-white/10 bg-white/[0.02]">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Model</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Model ID</th>
+                            <th className="px-4 py-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Toggle</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {provider.models.map(({ model, authFile }) => {
+                            const enabled = isModelEnabled(authFile, model.id);
+                            const isPending = pendingChanges.has(`${authFile}:${model.id}`);
+                            const displayLabel = getModelLabelWithProvider(model.display_name || model.id, provider.type);
+                            
+                            return (
+                              <tr 
+                                key={`${authFile}:${model.id}`}
+                                className={`model-card hover:bg-white/[0.02] transition-colors ${
+                                  !enabled ? 'opacity-60' : ''
+                                }`}
+                              >
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-3">
+                                    <div 
+                                      className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+                                        enabled ? '' : 'grayscale opacity-50'
+                                      }`}
+                                      style={{ background: `${providerColor}15` }}
+                                    >
+                                      <Cpu className="w-4 h-4" style={{ color: providerColor }} strokeWidth={2} />
+                                    </div>
+                                    <span 
+                                      className={`text-sm font-medium truncate max-w-[200px] ${
+                                        enabled ? 'text-white' : 'text-white/50'
+                                      }`}
+                                      title={displayLabel}
+                                    >
+                                      {displayLabel}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="text-xs text-white/40 font-mono" title={model.id}>
+                                    {model.id}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+                                    enabled 
+                                      ? 'bg-green-500/20 text-green-400' 
+                                      : 'bg-white/5 text-white/40'
+                                  }`}>
+                                    {enabled ? (
+                                      <>
+                                        <CheckCircle className="w-3 h-3" />
+                                        Enabled
+                                      </>
+                                    ) : (
+                                      <>
+                                        <XCircle className="w-3 h-3" />
+                                        Disabled
+                                      </>
+                                    )}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex justify-end">
+                                    <ToggleSwitch
+                                      enabled={enabled}
+                                      onChange={(newEnabled) => handleToggle(
+                                        authFile,
+                                        model.id,
+                                        model.display_name || model.id,
+                                        provider.type,
+                                        newEnabled
+                                      )}
+                                      loading={isPending}
+                                    />
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               );
             })}
