@@ -241,17 +241,9 @@ export default function AuthFilesPage() {
   };
 
   if (isLoading) {
-  return (
-    <div className="relative min-h-screen">
-      <AmbientBackground />
-
-      {/* Delete Confirmation Modal */}
-      <DeleteModal
-        filename={deleteTarget}
-        isPending={deleteMutation.isPending}
-        onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
-      />
+    return (
+      <div className="relative min-h-screen">
+        <AmbientBackground />
         <div className="relative z-10 flex items-center justify-center h-[calc(100vh-200px)]">
           <div className="text-center space-y-4">
             <div className="relative inline-flex">
@@ -268,6 +260,14 @@ export default function AuthFilesPage() {
   return (
     <div className="relative min-h-screen">
       <AmbientBackground />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteModal
+        filename={deleteTarget}
+        isPending={deleteMutation.isPending}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
       
       <div className="relative z-10 space-y-8">
         {/* Page Header */}
