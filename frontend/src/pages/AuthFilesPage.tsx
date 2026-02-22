@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Upload, Trash2, FileText, RefreshCw, Download, AlertCircle, Cpu, Archive } from 'lucide-react';
+import { Upload, Trash2, FileText, RefreshCw, Download, AlertCircle, Cpu, Archive, AlertTriangle } from 'lucide-react';
 import { listAuthFiles, uploadAuthFile, deleteAuthFile, downloadAuthFile, bulkDownloadAuthFiles, bulkUploadAuthFiles } from '../lib/api';
 import { useRef, useState, useEffect, useCallback } from 'react';
 import gsap from 'gsap';
@@ -20,10 +20,85 @@ function AmbientBackground() {
   );
 }
 
+// Delete Confirmation Modal
+interface DeleteModalProps {
+  filename: string | null;
+  isPending: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function DeleteModal({ filename, isPending, onConfirm, onCancel }: DeleteModalProps) {
+  if (!filename) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
+    >
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+      {/* Modal */}
+      <div className="relative z-10 w-full max-w-md mx-4 glass-panel rounded-2xl p-6 border border-rose-500/20 shadow-2xl shadow-rose-500/10">
+        {/* Icon */}
+        <div className="flex items-center justify-center w-14 h-14 mx-auto mb-5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+          <AlertTriangle className="h-7 w-7 text-rose-400" strokeWidth={1.5} />
+        </div>
+
+        {/* Title */}
+        <h2 className="text-xl font-semibold text-white text-center mb-2">
+          Hapus Auth File?
+        </h2>
+
+        {/* Description */}
+        <p className="text-slate-400 text-sm text-center mb-1">
+          Anda akan menghapus file berikut secara permanen:
+        </p>
+        <p className="text-rose-300 text-sm text-center font-mono break-all mb-6 px-2">
+          {filename}
+        </p>
+
+        <p className="text-slate-500 text-xs text-center mb-6">
+          Tindakan ini tidak dapat dibatalkan.
+        </p>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            disabled={isPending}
+            className="flex-1 px-4 py-2.5 rounded-xl glass-panel hover:bg-white/[0.05] text-slate-300 text-sm font-medium transition-all duration-200 disabled:opacity-50"
+          >
+            Batal
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isPending}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-500/20 border border-rose-500/40 hover:bg-rose-500/30 text-rose-400 text-sm font-medium transition-all duration-200 disabled:opacity-50"
+          >
+            {isPending ? (
+              <>
+                <div className="h-3.5 w-3.5 border-2 border-rose-400 border-t-transparent rounded-full animate-spin" />
+                Menghapus...
+              </>
+            ) : (
+              <>
+                <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+                Ya, Hapus
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AuthFilesPage() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('card');
 
@@ -64,7 +139,10 @@ export default function AuthFilesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['authFiles'] });
-      setDeleteConfirm(null);
+      setDeleteTarget(null);
+    },
+    onError: () => {
+      setDeleteTarget(null);
     },
   });
 
@@ -130,12 +208,17 @@ export default function AuthFilesPage() {
   };
 
   const handleDelete = (filename: string) => {
-    if (deleteConfirm === filename) {
-      deleteMutation.mutate(filename);
-    } else {
-      setDeleteConfirm(filename);
-      setTimeout(() => setDeleteConfirm(null), 3000);
+    setDeleteTarget(filename);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteTarget) {
+      deleteMutation.mutate(deleteTarget);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteTarget(null);
   };
 
   const files = data?.files || [];
@@ -158,9 +241,17 @@ export default function AuthFilesPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="relative min-h-screen">
-        <AmbientBackground />
+  return (
+    <div className="relative min-h-screen">
+      <AmbientBackground />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteModal
+        filename={deleteTarget}
+        isPending={deleteMutation.isPending}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
         <div className="relative z-10 flex items-center justify-center h-[calc(100vh-200px)]">
           <div className="text-center space-y-4">
             <div className="relative inline-flex">
@@ -333,12 +424,8 @@ export default function AuthFilesPage() {
                         <button
                           onClick={() => handleDelete(file.name)}
                           disabled={deleteMutation.isPending}
-                          className={`p-2 rounded-lg transition-all duration-200 ${
-                            deleteConfirm === file.name
-                              ? 'bg-rose-500/20 border border-rose-500/40 text-rose-400'
-                              : 'hover:bg-white/[0.05] text-slate-400 hover:text-rose-400'
-                          }`}
-                          title={deleteConfirm === file.name ? 'Click to confirm' : 'Delete'}
+                          className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-rose-400 transition-all duration-200 disabled:opacity-50"
+                          title="Delete"
                         >
                           <Trash2 className="h-4 w-4" strokeWidth={2} />
                         </button>
@@ -418,12 +505,8 @@ export default function AuthFilesPage() {
                           <button
                             onClick={() => handleDelete(file.name)}
                             disabled={deleteMutation.isPending}
-                            className={`p-2 rounded-lg transition-all duration-200 ${
-                              deleteConfirm === file.name
-                                ? 'bg-rose-500/20 border border-rose-500/40 text-rose-400'
-                                : 'hover:bg-white/[0.05] text-slate-400 hover:text-rose-400'
-                            }`}
-                            title={deleteConfirm === file.name ? 'Click to confirm' : 'Delete'}
+                            className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-rose-400 transition-all duration-200 disabled:opacity-50"
+                            title="Delete"
                           >
                             <Trash2 className="h-4 w-4" strokeWidth={2} />
                           </button>
