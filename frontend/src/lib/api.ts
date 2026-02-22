@@ -169,7 +169,7 @@ export const uploadAuthFile = (file: File) => {
   });
 };
 export const deleteAuthFile = (filename: string) => 
-  api.delete('/auth-files', { params: { filename } });
+  api.delete('/auth-files', { params: { name: filename } });
 export const downloadAuthFile = async (filename: string) => {
   const response = await api.get('/auth-files/download', {
     params: { name: filename },

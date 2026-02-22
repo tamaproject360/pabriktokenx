@@ -816,7 +816,7 @@ func FetchAntigravityModels(ctx context.Context, auth *cliproxyauth.Auth, cfg *c
 		return nil, nil
 	}
 	log.Infof("antigravity executor: FetchAntigravityModels called for auth: id=%s, provider=%s", auth.ID, auth.Provider)
-	
+
 	exec := &AntigravityExecutor{cfg: cfg}
 	token, updatedAuth, errToken := exec.ensureAccessToken(ctx, auth)
 	if errToken != nil {
@@ -1352,6 +1352,8 @@ func modelName2Alias(modelName string) string {
 		return "gemini-3-pro-preview"
 	case "gemini-3-flash":
 		return "gemini-3-flash-preview"
+	case "gemini-3.1-pro-preview", "gemini-3.1-pro":
+		return "gemini-3.1-pro-preview"
 	case "claude-sonnet-4-5":
 		return "gemini-claude-sonnet-4-5"
 	case "claude-sonnet-4-5-thinking":
@@ -1375,6 +1377,8 @@ func alias2ModelName(modelName string) string {
 		return "gemini-3-pro-high"
 	case "gemini-3-flash-preview":
 		return "gemini-3-flash"
+	case "gemini-3.1-pro-preview":
+		return "gemini-3.1-pro-preview"
 	case "gemini-claude-sonnet-4-5":
 		return "claude-sonnet-4-5"
 	case "gemini-claude-sonnet-4-5-thinking":

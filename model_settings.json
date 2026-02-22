@@ -110,6 +110,10 @@
       "gemini-3-pro-preview": {
         "display_name": "Gemini 3 Pro Preview",
         "enabled": true
+      },
+      "gemini-3.1-pro-preview": {
+        "display_name": "Gemini 3.1 Pro Preview",
+        "enabled": true
       }
     }
   },
