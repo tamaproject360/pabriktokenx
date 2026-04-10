@@ -57,8 +57,5 @@ assets/
 *.md
 !README.md
 
-# Example configs
-config.example.yaml
-
 # License
 LICENSE

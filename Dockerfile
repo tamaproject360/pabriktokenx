@@ -32,10 +32,9 @@ COPY --from=builder /app/bin/server /app/server
 # Copy necessary files
 COPY --from=builder /app/config.example.yaml /app/config.example.yaml
 COPY --from=builder /app/model_settings.json /app/model_settings.json
-COPY --from=builder /app/static /app/static
 
 # Create directories
-RUN mkdir -p /app/logs /app/auths /app/assets
+RUN mkdir -p /app/logs /app/auths /app/assets /app/static
 
 # Expose port
 EXPOSE 9999
