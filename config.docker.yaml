@@ -1,0 +1,38 @@
+# Docker-focused configuration for server deployment.
+# Keep this file Linux/container friendly and avoid host-specific paths.
+
+host: ""
+port: 9999
+
+tls:
+  enable: false
+  cert: ""
+  key: ""
+
+remote-management:
+  # Required when management UI is accessed via reverse proxy/container network.
+  allow-remote: true
+  # Change this before public deployment.
+  secret-key: "admin123"
+  disable-control-panel: false
+
+auth-dir: "/app/auths"
+
+debug: false
+logging-to-file: true
+logs-max-total-size-mb: 1000
+usage-statistics-enabled: true
+
+proxy-url: ""
+force-model-prefix: false
+request-retry: 3
+max-retry-interval: 30
+
+quota-exceeded:
+  switch-project: true
+  switch-preview-model: true
+
+routing:
+  strategy: "round-robin"
+
+ws-auth: false

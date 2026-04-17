@@ -150,7 +150,7 @@ Before starting, ensure you have:
 
 4. **Access the dashboard:**
    - **Backend API**: http://localhost:9999
-   - **Frontend Dashboard**: http://localhost:3000
+   - **Frontend Dashboard**: http://localhost:8686
 
 ---
 
@@ -323,8 +323,7 @@ git clone https://github.com/tamaproject360/pabriktokenx.git
 cd pabriktokenx
 
 # Setup configuration
-cp config.example.yaml config.yaml
-# Edit config.yaml as needed
+# Edit config.docker.yaml as needed for your server
 
 # Build and start all services
 docker-compose up -d
@@ -337,7 +336,7 @@ docker-compose logs -f
 ```
 
 **Access the application:**
-- 🌐 Frontend Dashboard: http://localhost:3000
+- 🌐 Frontend Dashboard: http://localhost:8686
 - 🔌 Backend API: http://localhost:9999
 - 📊 Management API: http://localhost:9999/v0/management
 

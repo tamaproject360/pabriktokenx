@@ -10,8 +10,8 @@ services:
     ports:
       - "9999:9999"
     volumes:
-      # Mount config file
-      - ./config.yaml:/app/config.yaml:ro
+      # Mount docker-specific config file
+      - ./config.docker.yaml:/app/config.yaml:ro
       # Mount auth directory (persistent)
       - ./auths:/app/auths
       # Mount logs directory (persistent)
@@ -38,7 +38,7 @@ services:
     container_name: pabriktokenx-frontend
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "8686:80"
     depends_on:
       - backend
     environment:

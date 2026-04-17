@@ -3,6 +3,12 @@
 ## [Unreleased]
 
 ### Fixed
+- **Docker Port Consistency**: Frontend and backend container ports are now consistent for server deployment
+  - Production compose now publishes frontend on `8686` (was `3000`) and backend on `9999`
+  - Development compose now publishes Vite frontend on `8686` and backend on `9999`
+  - Development frontend build context aligned with `Dockerfile.frontend` to avoid image/build mismatch
+  - Added `config.docker.yaml` and wired compose to use it, preventing host-specific config issues during Linux server deploy
+
 - **Model Live Test Button**: Added per-model live connectivity check from Model Settings
   - New **Test Model** action validates model request path against the selected auth file/account
   - Added endpoint `POST /v0/management/model-settings/test` for runtime model health checks

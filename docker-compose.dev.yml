@@ -19,17 +19,17 @@ services:
       - DEBUG=true
     networks:
       - pabriktokenx-network
-    command: sh -c "go run ./cmd/server"
+    command: sh -c "go run ./cmd/server -config /app/config.docker.yaml"
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: ../Dockerfile.frontend
+      context: .
+      dockerfile: Dockerfile.frontend
       target: builder
     container_name: pabriktokenx-frontend-dev
     restart: unless-stopped
     ports:
-      - "5173:5173"
+      - "8686:8686"
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -38,7 +38,7 @@ services:
       - VITE_API_URL=http://localhost:9999
     networks:
       - pabriktokenx-network
-    command: npm run dev -- --host 0.0.0.0
+    command: sh -c "npm ci; npm run dev -- --host 0.0.0.0 --port 8686"
 
 networks:
   pabriktokenx-network:
