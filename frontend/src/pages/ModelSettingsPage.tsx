@@ -4,6 +4,9 @@ import {
   Cpu, 
   Settings, 
   RefreshCw, 
+  Plus,
+  Trash2,
+  X,
 } from 'lucide-react';
 import {
   MagnifyingGlass,
@@ -19,6 +22,8 @@ import {
   getModelSettings, 
   updateModelSetting,
   bulkUpdateModelSettings,
+  addModelSetting,
+  removeModelSetting,
   type ModelSetting,
 } from '../lib/api';
 import gsap from 'gsap';
@@ -132,7 +137,15 @@ export default function ModelSettingsPage() {
   const [filterEnabled, setFilterEnabled] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [modelSettings, setModelSettings] = useState<Map<string, boolean>>(new Map());
   const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
+  const [removingModels, setRemovingModels] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('card');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newModel, setNewModel] = useState({
+    modelId: '',
+    displayName: '',
+    provider: '',
+    authFile: '',
+  });
 
   // Fetch auth files
   const { data: authFilesData } = useQuery({
@@ -235,6 +248,30 @@ export default function ModelSettingsPage() {
     },
   });
 
+  const addMutation = useMutation({
+    mutationFn: addModelSetting,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['modelSettings'] }),
+        queryClient.invalidateQueries({ queryKey: ['availableModels'] }),
+      ]);
+      await refetchModels();
+      setShowAddModal(false);
+      setNewModel({ modelId: '', displayName: '', provider: '', authFile: '' });
+    },
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: removeModelSetting,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['modelSettings'] }),
+        queryClient.invalidateQueries({ queryKey: ['availableModels'] }),
+      ]);
+      await refetchModels();
+    },
+  });
+
   // Handle toggle change
   const handleToggle = useCallback((authFile: string, modelId: string, displayName: string, provider: string, enabled: boolean) => {
     const key = `${authFile}:${modelId}`;
@@ -328,6 +365,64 @@ export default function ModelSettingsPage() {
 
   // Get unique provider types for filter
   const providerTypes = Array.from(new Set(groupedByProvider.map(p => p.type)));
+
+  const authFileOptions = useMemo(() => {
+    if (!authFilesData?.files) return [] as Array<{ name: string; provider: string }>;
+    return authFilesData.files.map((file: { name: string; provider?: string; type?: string }) => ({
+      name: file.name,
+      provider: file.provider || file.type || 'unknown',
+    }));
+  }, [authFilesData]);
+
+  const handleOpenAddModal = useCallback(() => {
+    const firstAuth = authFileOptions[0];
+    setNewModel({
+      modelId: '',
+      displayName: '',
+      provider: firstAuth?.provider || providerTypes[0] || '',
+      authFile: firstAuth?.name || '',
+    });
+    setShowAddModal(true);
+  }, [authFileOptions, providerTypes]);
+
+  const handleAddModel = useCallback(() => {
+    const modelId = newModel.modelId.trim();
+    const authFile = newModel.authFile.trim();
+    if (!modelId || !authFile) {
+      return;
+    }
+    addMutation.mutate({
+      model_id: modelId,
+      display_name: newModel.displayName.trim() || modelId,
+      provider: newModel.provider.trim() || 'unknown',
+      auth_file: authFile,
+      enabled: true,
+    });
+  }, [addMutation, newModel]);
+
+  const handleRemoveModel = useCallback((authFile: string, modelId: string, provider: string) => {
+    const key = `${authFile}:${modelId}`;
+    if (!window.confirm(`Hapus model ${modelId} dari daftar?`)) {
+      return;
+    }
+    setRemovingModels(prev => new Set(prev).add(key));
+    removeMutation.mutate(
+      {
+        auth_file: authFile,
+        model_id: modelId,
+        provider,
+      },
+      {
+        onSettled: () => {
+          setRemovingModels(prev => {
+            const next = new Set(prev);
+            next.delete(key);
+            return next;
+          });
+        },
+      },
+    );
+  }, [removeMutation]);
 
   // Stats
   const totalModels = groupedByProvider.reduce((acc, p) => acc + p.models.length, 0);
@@ -468,6 +563,13 @@ export default function ModelSettingsPage() {
           <div className="flex items-center gap-2 ml-auto">
             <ViewToggle viewMode={viewMode} onChange={setViewMode} />
             <button
+              onClick={handleOpenAddModal}
+              className="px-4 py-2.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 font-medium transition-all duration-200 flex items-center gap-2 border border-blue-500/30"
+            >
+              <Plus className="w-4 h-4" />
+              Add Model
+            </button>
+            <button
               onClick={() => handleBulkToggle(true)}
               className="px-4 py-2.5 rounded-xl bg-green-500/20 hover:bg-green-500/30 text-green-400 font-medium transition-all duration-200 flex items-center gap-2 border border-green-500/30"
             >
@@ -485,6 +587,95 @@ export default function ModelSettingsPage() {
         </div>
 
         {/* Models Grid */}
+        {showAddModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-slate-900/95 backdrop-blur-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-white">Add Model</h3>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-white/70 mb-2">Model ID</label>
+                  <input
+                    value={newModel.modelId}
+                    onChange={(e) => setNewModel(prev => ({ ...prev, modelId: e.target.value }))}
+                    placeholder="Contoh: gpt-5.4-mini"
+                    className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-white/70 mb-2">Display Name</label>
+                  <input
+                    value={newModel.displayName}
+                    onChange={(e) => setNewModel(prev => ({ ...prev, displayName: e.target.value }))}
+                    placeholder="Contoh: GPT 5.4 Mini"
+                    className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-white/70 mb-2">Provider</label>
+                    <input
+                      value={newModel.provider}
+                      onChange={(e) => setNewModel(prev => ({ ...prev, provider: e.target.value }))}
+                      placeholder="Contoh: codex"
+                      className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-white/70 mb-2">Auth File</label>
+                    <select
+                      value={newModel.authFile}
+                      onChange={(e) => {
+                        const authFile = e.target.value;
+                        const option = authFileOptions.find(item => item.name === authFile);
+                        setNewModel(prev => ({
+                          ...prev,
+                          authFile,
+                          provider: option?.provider || prev.provider,
+                        }));
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500/50"
+                    >
+                      <option value="" className="bg-slate-800">Pilih auth file</option>
+                      {authFileOptions.map(item => (
+                        <option key={item.name} value={item.name} className="bg-slate-800">
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddModel}
+                  disabled={addMutation.isPending || !newModel.modelId.trim() || !newModel.authFile.trim()}
+                  className="px-4 py-2.5 rounded-xl bg-blue-500/30 hover:bg-blue-500/40 text-blue-100 border border-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {addMutation.isPending ? 'Adding...' : 'Add Model'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
@@ -535,6 +726,7 @@ export default function ModelSettingsPage() {
                       {provider.models.map(({ model, authFile }) => {
                         const enabled = isModelEnabled(authFile, model.id);
                         const isPending = pendingChanges.has(`${authFile}:${model.id}`);
+                        const isRemoving = removingModels.has(`${authFile}:${model.id}`);
                         const displayLabel = getModelLabelWithProvider(model.display_name || model.id, provider.type);
                         
                         return (
@@ -570,15 +762,24 @@ export default function ModelSettingsPage() {
                                   </p>
                                 </div>
                               </div>
-                              <div className="flex-shrink-0">\n                                <ToggleSwitch
-                                enabled={enabled}
-                                onChange={(newEnabled) => handleToggle(
-                                  authFile,
-                                  model.id,
-                                  model.display_name || model.id,
-                                  provider.type,
-                                  newEnabled
-                                )}
+                              <div className="flex-shrink-0 flex items-center gap-2">
+                                <button
+                                  onClick={() => handleRemoveModel(authFile, model.id, provider.type)}
+                                  disabled={isRemoving}
+                                  className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 disabled:opacity-50"
+                                  title="Remove model"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                                <ToggleSwitch
+                                  enabled={enabled}
+                                  onChange={(newEnabled) => handleToggle(
+                                    authFile,
+                                    model.id,
+                                    model.display_name || model.id,
+                                    provider.type,
+                                    newEnabled
+                                  )}
                                   loading={isPending}
                                 />
                               </div>
@@ -615,13 +816,14 @@ export default function ModelSettingsPage() {
                             <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider w-2/5">Model</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider w-1/3">Model ID</th>
                             <th className="px-4 py-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider w-24">Status</th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider w-20">Toggle</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider w-32">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                           {provider.models.map(({ model, authFile }) => {
                             const enabled = isModelEnabled(authFile, model.id);
                             const isPending = pendingChanges.has(`${authFile}:${model.id}`);
+                            const isRemoving = removingModels.has(`${authFile}:${model.id}`);
                             const displayLabel = getModelLabelWithProvider(model.display_name || model.id, provider.type);
                             
                             return (
@@ -676,7 +878,15 @@ export default function ModelSettingsPage() {
                                   </span>
                                 </td>
                                 <td className="px-4 py-3">
-                                  <div className="flex justify-end">
+                                  <div className="flex justify-end items-center gap-2">
+                                    <button
+                                      onClick={() => handleRemoveModel(authFile, model.id, provider.type)}
+                                      disabled={isRemoving}
+                                      className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 disabled:opacity-50"
+                                      title="Remove model"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
                                     <ToggleSwitch
                                       enabled={enabled}
                                       onChange={(newEnabled) => handleToggle(

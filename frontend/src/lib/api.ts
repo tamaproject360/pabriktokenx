@@ -306,6 +306,7 @@ export interface ModelSetting {
   provider: string;
   auth_file: string;
   enabled: boolean;
+  removed?: boolean;
 }
 
 export interface ModelSettingsResponse {
@@ -320,6 +321,20 @@ export const updateModelSetting = (setting: ModelSetting) =>
 
 export const bulkUpdateModelSettings = (models: ModelSetting[]) => 
   api.post<{ message: string; count: number }>('/model-settings/bulk', { models });
+
+export const addModelSetting = (payload: {
+  model_id: string;
+  display_name?: string;
+  provider: string;
+  auth_file: string;
+  enabled?: boolean;
+}) => api.post<{ message: string; model: ModelSetting }>('/model-settings/add', payload);
+
+export const removeModelSetting = (payload: {
+  model_id: string;
+  provider?: string;
+  auth_file: string;
+}) => api.post<{ message: string; model: ModelSetting }>('/model-settings/remove', payload);
 
 // Latest version check
 export const getLatestVersion = () => api.get('/latest-version');

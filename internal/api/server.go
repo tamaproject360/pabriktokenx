@@ -606,6 +606,8 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.GET("/model-settings", s.mgmt.GetModelSettings)
 		mgmt.PUT("/model-settings", s.mgmt.UpdateModelSettings)
 		mgmt.POST("/model-settings/bulk", s.mgmt.BulkUpdateModelSettings)
+		mgmt.POST("/model-settings/add", s.mgmt.AddModelSetting)
+		mgmt.POST("/model-settings/remove", s.mgmt.RemoveModelSetting)
 
 		mgmt.GET("/anthropic-auth-url", s.mgmt.RequestAnthropicToken)
 		mgmt.GET("/codex-auth-url", s.mgmt.RequestCodexToken)

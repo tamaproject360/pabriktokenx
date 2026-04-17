@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	management "github.com/router-for-me/CLIProxyAPI/v6/internal/api/handlers/management"
 	. "github.com/router-for-me/CLIProxyAPI/v6/internal/constant"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/interfaces"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/registry"
@@ -52,6 +53,19 @@ func (h *GeminiAPIHandler) GeminiModels(c *gin.Context) {
 	normalizedModels := make([]map[string]any, 0, len(rawModels))
 	defaultMethods := []string{"generateContent"}
 	for _, model := range rawModels {
+		modelID := ""
+		if name, ok := model["name"].(string); ok && name != "" {
+			modelID = strings.TrimPrefix(strings.TrimSpace(name), "models/")
+		}
+		if modelID == "" {
+			if id, ok := model["id"].(string); ok {
+				modelID = id
+			}
+		}
+		if management.IsModelGloballyRemoved(modelID) {
+			continue
+		}
+
 		normalizedModel := make(map[string]any, len(model))
 		for k, v := range model {
 			normalizedModel[k] = v

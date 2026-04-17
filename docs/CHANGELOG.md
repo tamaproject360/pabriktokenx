@@ -3,6 +3,15 @@
 ## [Unreleased]
 
 ### Fixed
+- **Model Settings UI Cleanup**: Removed stray literal `\n` text shown near model toggles on model cards
+
+- **Model Lifecycle Controls**: Added add/remove model controls in Model Settings
+  - New **Add Model** modal allows adding model ID/display name per auth file
+  - New **Remove** action hides model from Model Settings and Playground list for selected auth file
+  - Management API now exposes `/model-settings/add` and `/model-settings/remove`
+  - Auth model listing now merges manually added models from settings and excludes removed models
+  - `/v1/models` and Gemini model-list endpoints now hide models marked as removed
+
 - **OAuth Callback Reliability**: Callback success page no longer appears when callback persistence fails
   - OAuth callback endpoints now validate state and callback-file persistence before returning success HTML
   - OAuth callback writer now creates the auth directory before writing temporary callback files

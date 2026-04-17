@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,7 @@ type ModelSetting struct {
 	Provider    string `json:"provider"`
 	AuthFile    string `json:"auth_file"`
 	Enabled     bool   `json:"enabled"`
+	Removed     bool   `json:"removed,omitempty"`
 }
 
 // ModelSettingsConfig represents the full model settings configuration (old format - for backward compatibility)
@@ -29,6 +31,7 @@ type ModelSettingsConfig struct {
 type ProviderModelConfig struct {
 	DisplayName string `json:"display_name"`
 	Enabled     bool   `json:"enabled"`
+	Removed     bool   `json:"removed,omitempty"`
 }
 
 // ProviderConfig represents a provider with its auth files and models
@@ -121,6 +124,7 @@ func loadModelSettings() (*ModelSettingsConfig, error) {
 							Provider:    providerName,
 							AuthFile:    authFile,
 							Enabled:     modelConfig.Enabled,
+							Removed:     modelConfig.Removed,
 						}
 					}
 				}
@@ -188,6 +192,7 @@ func saveModelSettings(config *ModelSettingsConfig) error {
 		providerConfig.Models[setting.ModelID] = ProviderModelConfig{
 			DisplayName: setting.DisplayName,
 			Enabled:     setting.Enabled,
+			Removed:     setting.Removed,
 		}
 
 		newConfig[provider] = providerConfig
@@ -231,6 +236,7 @@ func (h *Handler) UpdateModelSettings(c *gin.Context) {
 		Provider    string `json:"provider"`
 		AuthFile    string `json:"auth_file"`
 		Enabled     bool   `json:"enabled"`
+		Removed     bool   `json:"removed,omitempty"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -264,6 +270,7 @@ func (h *Handler) UpdateModelSettings(c *gin.Context) {
 		Provider:    req.Provider,
 		AuthFile:    req.AuthFile,
 		Enabled:     req.Enabled,
+		Removed:     req.Removed,
 	}
 
 	if err := saveModelSettings(config); err != nil {
@@ -331,6 +338,9 @@ func IsModelEnabled(authFile, modelID string) bool {
 
 	key := authFile + ":" + modelID
 	if setting, exists := config.Models[key]; exists {
+		if setting.Removed {
+			return false
+		}
 		return setting.Enabled
 	}
 
@@ -346,8 +356,208 @@ func GetEnabledModels() map[string]bool {
 
 	enabled := make(map[string]bool)
 	for key, setting := range config.Models {
+		if setting.Removed {
+			enabled[key] = false
+			continue
+		}
 		enabled[key] = setting.Enabled
 	}
 
 	return enabled
+}
+
+func authFileCandidateKeys(authFile, modelID string) []string {
+	authFile = strings.TrimSpace(authFile)
+	modelID = strings.TrimSpace(modelID)
+	if authFile == "" || modelID == "" {
+		return nil
+	}
+
+	candidates := []string{authFile + ":" + modelID}
+	base := filepath.Base(authFile)
+	if base != "" && base != authFile {
+		candidates = append(candidates, base+":"+modelID)
+	}
+	return candidates
+}
+
+// IsModelRemoved checks if a model has been hidden from Model Settings for a specific auth file.
+func IsModelRemoved(authFile, modelID string) bool {
+	config, err := loadModelSettings()
+	if err != nil {
+		return false
+	}
+
+	for _, key := range authFileCandidateKeys(authFile, modelID) {
+		if setting, exists := config.Models[key]; exists {
+			return setting.Removed
+		}
+	}
+	return false
+}
+
+func normalizeModelID(modelID string) string {
+	normalized := strings.ToLower(strings.TrimSpace(modelID))
+	normalized = strings.TrimPrefix(normalized, "models/")
+	return normalized
+}
+
+// IsModelGloballyRemoved checks whether a model has been removed in any auth file configuration.
+func IsModelGloballyRemoved(modelID string) bool {
+	config, err := loadModelSettings()
+	if err != nil {
+		return false
+	}
+
+	needle := normalizeModelID(modelID)
+	if needle == "" {
+		return false
+	}
+
+	for _, setting := range config.Models {
+		if !setting.Removed {
+			continue
+		}
+		if normalizeModelID(setting.ModelID) == needle {
+			return true
+		}
+	}
+
+	return false
+}
+
+// GetConfiguredModelsForAuthFiles returns manually configured models for one or more auth files.
+func GetConfiguredModelsForAuthFiles(authFiles ...string) []ModelSetting {
+	config, err := loadModelSettings()
+	if err != nil {
+		return nil
+	}
+
+	authSet := make(map[string]struct{}, len(authFiles)*2)
+	for _, authFile := range authFiles {
+		trimmed := strings.TrimSpace(authFile)
+		if trimmed == "" {
+			continue
+		}
+		authSet[trimmed] = struct{}{}
+		base := filepath.Base(trimmed)
+		if base != "" {
+			authSet[base] = struct{}{}
+		}
+	}
+
+	result := make([]ModelSetting, 0)
+	for _, model := range config.Models {
+		if model.Removed {
+			continue
+		}
+		if _, ok := authSet[model.AuthFile]; !ok {
+			continue
+		}
+		result = append(result, model)
+	}
+
+	return result
+}
+
+// AddModelSetting adds a model entry so it can be managed from Model Settings.
+func (h *Handler) AddModelSetting(c *gin.Context) {
+	var req struct {
+		ModelID     string `json:"model_id"`
+		DisplayName string `json:"display_name,omitempty"`
+		Provider    string `json:"provider"`
+		AuthFile    string `json:"auth_file"`
+		Enabled     *bool  `json:"enabled,omitempty"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
+		return
+	}
+
+	req.ModelID = strings.TrimSpace(req.ModelID)
+	req.AuthFile = strings.TrimSpace(req.AuthFile)
+	req.Provider = strings.TrimSpace(req.Provider)
+	req.DisplayName = strings.TrimSpace(req.DisplayName)
+	if req.ModelID == "" || req.AuthFile == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "model_id and auth_file are required"})
+		return
+	}
+
+	enabled := true
+	if req.Enabled != nil {
+		enabled = *req.Enabled
+	}
+
+	config, err := loadModelSettings()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load model settings: " + err.Error()})
+		return
+	}
+
+	key := req.AuthFile + ":" + req.ModelID
+	config.Models[key] = ModelSetting{
+		ModelID:     req.ModelID,
+		DisplayName: req.DisplayName,
+		Provider:    req.Provider,
+		AuthFile:    req.AuthFile,
+		Enabled:     enabled,
+		Removed:     false,
+	}
+
+	if err := saveModelSettings(config); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save model settings: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "model added", "model": config.Models[key]})
+}
+
+// RemoveModelSetting hides a model from Model Settings and Playground selection for the specified auth file.
+func (h *Handler) RemoveModelSetting(c *gin.Context) {
+	var req struct {
+		ModelID  string `json:"model_id"`
+		Provider string `json:"provider,omitempty"`
+		AuthFile string `json:"auth_file"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
+		return
+	}
+
+	req.ModelID = strings.TrimSpace(req.ModelID)
+	req.AuthFile = strings.TrimSpace(req.AuthFile)
+	req.Provider = strings.TrimSpace(req.Provider)
+	if req.ModelID == "" || req.AuthFile == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "model_id and auth_file are required"})
+		return
+	}
+
+	config, err := loadModelSettings()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load model settings: " + err.Error()})
+		return
+	}
+
+	key := req.AuthFile + ":" + req.ModelID
+	current := config.Models[key]
+	current.ModelID = req.ModelID
+	current.AuthFile = req.AuthFile
+	if current.Provider == "" {
+		current.Provider = req.Provider
+	}
+	if current.DisplayName == "" {
+		current.DisplayName = req.ModelID
+	}
+	current.Enabled = false
+	current.Removed = true
+	config.Models[key] = current
+
+	if err := saveModelSettings(config); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save model settings: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "model removed", "model": current})
 }

@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
+	management "github.com/router-for-me/CLIProxyAPI/v6/internal/api/handlers/management"
 	. "github.com/router-for-me/CLIProxyAPI/v6/internal/constant"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/interfaces"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/registry"
@@ -64,7 +65,12 @@ func (h *OpenAIAPIHandler) OpenAIModels(c *gin.Context) {
 
 	// Filter to only include the 4 required fields: id, object, created, owned_by
 	filteredModels := make([]map[string]any, len(allModels))
-	for i, model := range allModels {
+	filteredModels = filteredModels[:0]
+	for _, model := range allModels {
+		modelID, _ := model["id"].(string)
+		if management.IsModelGloballyRemoved(modelID) {
+			continue
+		}
 		filteredModel := map[string]any{
 			"id":     model["id"],
 			"object": model["object"],
@@ -80,7 +86,7 @@ func (h *OpenAIAPIHandler) OpenAIModels(c *gin.Context) {
 			filteredModel["owned_by"] = ownedBy
 		}
 
-		filteredModels[i] = filteredModel
+		filteredModels = append(filteredModels, filteredModel)
 	}
 
 	c.JSON(http.StatusOK, gin.H{

@@ -374,11 +374,16 @@ func (h *Handler) GetAuthFileModels(c *gin.Context) {
 	models := reg.GetModelsForClient(authID)
 
 	result := make([]gin.H, 0, len(models))
+	seen := make(map[string]struct{}, len(models))
 	for _, m := range models {
+		if IsModelRemoved(name, m.ID) || IsModelRemoved(authID, m.ID) {
+			continue
+		}
 		// Filter out deprecated/old models
 		if isDeprecatedModel(m.ID) {
 			continue
 		}
+		seen[m.ID] = struct{}{}
 		
 		entry := gin.H{
 			"id": m.ID,
@@ -393,6 +398,29 @@ func (h *Handler) GetAuthFileModels(c *gin.Context) {
 			entry["owned_by"] = m.OwnedBy
 		}
 		result = append(result, entry)
+	}
+
+	// Include manually added models from model settings even when not present in registry.
+	configuredModels := GetConfiguredModelsForAuthFiles(name, authID)
+	for _, setting := range configuredModels {
+		if setting.ModelID == "" {
+			continue
+		}
+		if _, exists := seen[setting.ModelID]; exists {
+			continue
+		}
+		if isDeprecatedModel(setting.ModelID) {
+			continue
+		}
+		entry := gin.H{"id": setting.ModelID}
+		if setting.DisplayName != "" {
+			entry["display_name"] = setting.DisplayName
+		}
+		if setting.Provider != "" {
+			entry["type"] = setting.Provider
+		}
+		result = append(result, entry)
+		seen[setting.ModelID] = struct{}{}
 	}
 
 	c.JSON(200, gin.H{"models": result})
