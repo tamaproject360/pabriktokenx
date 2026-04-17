@@ -267,7 +267,10 @@ export const submitOAuthCallback = (provider: string, redirectURL: string, state
     redirect_url: redirectURL,
     state,
   });
-export const getAuthStatus = () => api.get('/get-auth-status');
+export const getAuthStatus = (state?: string) =>
+  api.get('/get-auth-status', {
+    params: state ? { state } : undefined,
+  });
 
 // Amp Code
 export const getAmpCode = () => api.get('/ampcode');

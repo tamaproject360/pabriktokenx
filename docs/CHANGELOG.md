@@ -15,6 +15,11 @@
   - Added management API integration to submit callback URL via `/v0/management/oauth-callback`
   - Docker compose now forwards optional `GEMINI_OAUTH_CLIENT_ID` and `GEMINI_OAUTH_CLIENT_SECRET` into backend container
 
+- **OAuth Feedback Clarity**: OAuth page now shows explicit success/failure confirmation after callback submission
+  - Added polling to `/v0/management/get-auth-status?state=...` after submitting callback URL
+  - Shows clear in-card success state (`Connected`) when account is actually persisted
+  - Added toast notifications for successful and failed account additions
+
 - **Docker Port Consistency**: Frontend and backend container ports are now consistent for server deployment
   - Production compose now publishes frontend on `8686` (was `3000`) and backend on `9999`
   - Development compose now publishes Vite frontend on `8686` and backend on `9999`

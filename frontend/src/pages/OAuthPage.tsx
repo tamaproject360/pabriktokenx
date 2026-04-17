@@ -17,6 +17,7 @@ import {
   requestGitHubCopilotAuth,
   requestGeminiWebCookieAuth,
   submitOAuthCallback,
+  getAuthStatus,
 } from '../lib/api';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import gsap from 'gsap';
@@ -51,9 +52,10 @@ interface OAuthProviderCardProps {
   onLogin: () => Promise<{ url?: string; error?: string; state?: string; user_code?: string; device_flow?: boolean; verification_uri?: string }>;
   isDeviceFlow?: boolean;
   manualCallbackProvider?: string;
+  onNotify?: (type: 'success' | 'error' | 'info', message: string) => void;
 }
 
-function OAuthProviderCard({ title, description, color, icon, onLogin, manualCallbackProvider }: OAuthProviderCardProps) {
+function OAuthProviderCard({ title, description, color, icon, onLogin, manualCallbackProvider, onNotify }: OAuthProviderCardProps) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [userCode, setUserCode] = useState<string | null>(null);
@@ -61,7 +63,31 @@ function OAuthProviderCard({ title, description, color, icon, onLogin, manualCal
   const [callbackURL, setCallbackURL] = useState('');
   const [callbackSubmitting, setCallbackSubmitting] = useState(false);
   const [callbackMessage, setCallbackMessage] = useState<string | null>(null);
+  const [authCompleted, setAuthCompleted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const waitForAuthCompletion = async (state: string) => {
+    const maxAttempts = 60;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const response = await getAuthStatus(state);
+      const currentStatus = response?.data?.status;
+
+      if (currentStatus === 'ok') {
+        return;
+      }
+
+      if (currentStatus === 'error') {
+        const statusError = response?.data?.error || 'Authentication failed';
+        throw new Error(statusError);
+      }
+
+      await sleep(2000);
+    }
+
+    throw new Error('Timeout waiting for authentication confirmation');
+  };
 
   const handleLogin = async () => {
     setStatus('loading');
@@ -70,6 +96,7 @@ function OAuthProviderCard({ title, description, color, icon, onLogin, manualCal
     setOAuthState(null);
     setCallbackURL('');
     setCallbackMessage(null);
+    setAuthCompleted(false);
     try {
       const result = await onLogin();
       if (result.url) {
@@ -100,14 +127,23 @@ function OAuthProviderCard({ title, description, color, icon, onLogin, manualCal
     }
 
     setCallbackSubmitting(true);
-    setCallbackMessage(null);
+    setCallbackMessage('Submitting callback URL...');
     try {
       await submitOAuthCallback(manualCallbackProvider, trimmedCallbackURL, oauthState || undefined);
-      setCallbackMessage('Callback URL submitted. Please wait while authentication finalizes.');
+      setCallbackMessage('Callback URL submitted. Verifying authentication...');
       setCallbackURL('');
+
+      if (oauthState) {
+        await waitForAuthCompletion(oauthState);
+      }
+
+      setAuthCompleted(true);
+      setCallbackMessage('Authentication successful. Account has been added.');
+      onNotify?.('success', `${title} berhasil ditambahkan.`);
     } catch (err: any) {
       const apiError = err?.response?.data?.error || err?.message || 'Failed to submit callback URL';
       setCallbackMessage(apiError);
+      onNotify?.('error', `${title} gagal ditambahkan: ${apiError}`);
     } finally {
       setCallbackSubmitting(false);
     }
@@ -127,10 +163,16 @@ function OAuthProviderCard({ title, description, color, icon, onLogin, manualCal
               <span>{icon}</span>
             )}
           </div>
-          <div className="flex items-center gap-2">{status === 'success' && (
-              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-medium">
+          <div className="flex items-center gap-2">{status === 'success' && !authCompleted && (
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-medium">
                 <CheckCircle className="h-3 w-3" />
                 Ready
+              </span>
+            )}
+            {authCompleted && (
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-medium">
+                <CheckCircle className="h-3 w-3" />
+                Connected
               </span>
             )}
             {status === 'error' && (
@@ -192,7 +234,7 @@ function OAuthProviderCard({ title, description, color, icon, onLogin, manualCal
               {callbackSubmitting ? 'Submitting...' : 'Submit Callback URL'}
             </button>
             {callbackMessage && (
-              <p className="text-xs text-slate-300">{callbackMessage}</p>
+              <p className={`text-xs ${authCompleted ? 'text-emerald-300' : 'text-slate-300'}`}>{callbackMessage}</p>
             )}
           </div>
         )}
@@ -425,6 +467,19 @@ function CookieAuthCard({ title, description, color, icon, onSubmit }: CookieAut
 
 export default function OAuthPage() {
   const cardsRef = useRef<HTMLDivElement>(null);
+  const [notice, setNotice] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+  const noticeTimerRef = useRef<number | null>(null);
+
+  const pushNotice = useCallback((type: 'success' | 'error' | 'info', message: string) => {
+    setNotice({ type, message });
+    if (noticeTimerRef.current) {
+      window.clearTimeout(noticeTimerRef.current);
+    }
+    noticeTimerRef.current = window.setTimeout(() => {
+      setNotice(null);
+      noticeTimerRef.current = null;
+    }, 5000);
+  }, []);
 
   // Smooth card animation like AuthFilesPage
   const animateCards = useCallback(() => {
@@ -456,9 +511,25 @@ export default function OAuthPage() {
     });
   }, [animateCards]);
 
+  useEffect(() => {
+    return () => {
+      if (noticeTimerRef.current) {
+        window.clearTimeout(noticeTimerRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="relative min-h-screen">
       <AmbientBackground />
+
+      {notice && (
+        <div className="fixed top-6 right-6 z-50 max-w-sm animate-slide-in">
+          <div className={`rounded-xl border px-4 py-3 shadow-2xl backdrop-blur-md ${notice.type === 'success' ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-200' : notice.type === 'error' ? 'bg-rose-500/15 border-rose-400/40 text-rose-200' : 'bg-cyan-500/15 border-cyan-400/40 text-cyan-200'}`}>
+            <p className="text-sm font-medium">{notice.message}</p>
+          </div>
+        </div>
+      )}
       
       <div className="relative z-10 space-y-8">
         {/* Header */}
@@ -497,6 +568,7 @@ export default function OAuthPage() {
             description="Login with your Claude subscription to access Claude Code models"
             color="#F97316"
             icon="/src/assets/claude.png"
+            onNotify={pushNotice}
             onLogin={async () => {
               const response = await requestAnthropicAuth();
               return response.data;
@@ -508,6 +580,7 @@ export default function OAuthPage() {
             description="Login with your ChatGPT subscription to access GPT models"
             color="#10B981"
             icon="/src/assets/codex.png"
+            onNotify={pushNotice}
             onLogin={async () => {
               const response = await requestCodexAuth();
               return response.data;
@@ -520,6 +593,7 @@ export default function OAuthPage() {
             color="#22D3EE"
             icon="/src/assets/gemini-cli.png"
             manualCallbackProvider="gemini"
+            onNotify={pushNotice}
             onLogin={async () => {
               const response = await requestGeminiCLIAuth();
               return response.data;
@@ -531,6 +605,7 @@ export default function OAuthPage() {
             description="Login with Antigravity for alternative AI access"
             color="#8B5CF6"
             icon="/src/assets/antigravity.png"
+            onNotify={pushNotice}
             onLogin={async () => {
               const response = await requestAntigravityAuth();
               return response.data;
@@ -542,6 +617,7 @@ export default function OAuthPage() {
             description="Login with Alibaba Cloud to access Qwen models"
             color="#06B6D4"
             icon="/src/assets/qwen.png"
+            onNotify={pushNotice}
             onLogin={async () => {
               const response = await requestQwenAuth();
               return response.data;
@@ -553,6 +629,7 @@ export default function OAuthPage() {
             description="Login with iFlow for AI coding assistance"
             color="#EC4899"
             icon="/src/assets/iflow.png"
+            onNotify={pushNotice}
             onLogin={async () => {
               const response = await requestIFlowAuth();
               return response.data;
@@ -565,6 +642,7 @@ export default function OAuthPage() {
             color="#6366F1"
             icon="/src/assets/github.png"
             isDeviceFlow={true}
+            onNotify={pushNotice}
             onLogin={async () => {
               const response = await requestGitHubCopilotAuth();
               return response.data;
