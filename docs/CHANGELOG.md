@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Fixed
+- **Management Secret Exposure in Docker Config**: Docker deployment no longer ships a default management password in `config.docker.yaml`
+  - Cleared the hardcoded `remote-management.secret-key` from the Docker config
+  - Docker compose now forwards optional `MANAGEMENT_PASSWORD` from the server `.env` into the backend container
+  - `.env.example` now documents the server-side secret as the supported login source for the management UI
+
 - **Remote OAuth Callback for Gemini CLI**: Web UI OAuth now works behind public domains/tunnels (e.g., Cloudflare Zero Trust)
   - Gemini OAuth Web UI flow now uses a public callback URL for non-loopback hosts instead of `localhost:8085`
   - Added optional `OAUTH_PUBLIC_BASE_URL` env var override for explicit callback base URL

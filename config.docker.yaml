@@ -12,8 +12,8 @@ tls:
 remote-management:
   # Required when management UI is accessed via reverse proxy/container network.
   allow-remote: true
-  # Change this before public deployment.
-  secret-key: "admin123"
+  # Leave empty and provide MANAGEMENT_PASSWORD from the server environment instead.
+  secret-key: ""
   disable-control-panel: false
 
 auth-dir: "/app/auths"

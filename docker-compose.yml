@@ -22,6 +22,7 @@ services:
       - ./model_settings.json:/app/model_settings.json:ro
     environment:
       - TZ=Asia/Jakarta
+      - MANAGEMENT_PASSWORD=${MANAGEMENT_PASSWORD:-}
       - OAUTH_PUBLIC_BASE_URL=${OAUTH_PUBLIC_BASE_URL:-}
       - GEMINI_OAUTH_CLIENT_ID=${GEMINI_OAUTH_CLIENT_ID:-}
       - GEMINI_OAUTH_CLIENT_SECRET=${GEMINI_OAUTH_CLIENT_SECRET:-}
