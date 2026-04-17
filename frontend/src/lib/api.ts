@@ -93,7 +93,7 @@ export interface AuthFile {
   status_message?: string;
   disabled?: boolean;
   unavailable?: boolean;
-  auth_index?: number;
+  auth_index?: string | number;
   id?: string;
   label?: string;
   account_type?: string;
@@ -326,7 +326,7 @@ export const addModelSetting = (payload: {
   model_id: string;
   display_name?: string;
   provider: string;
-  auth_file: string;
+  auth_file?: string;
   enabled?: boolean;
 }) => api.post<{ message: string; model: ModelSetting }>('/model-settings/add', payload);
 
@@ -346,13 +346,34 @@ export const restoreModelSetting = (payload: {
 
 export const editModelSetting = (payload: {
   old_model_id: string;
-  old_auth_file: string;
+  old_auth_file?: string;
   model_id: string;
   display_name?: string;
   provider?: string;
   auth_file?: string;
   enabled?: boolean;
 }) => api.post<{ message: string; model: ModelSetting }>('/model-settings/edit', payload);
+
+export interface ModelTestRequest {
+  model_id: string;
+  provider?: string;
+  auth_file: string;
+}
+
+export interface ModelTestResponse {
+  success: boolean;
+  provider: string;
+  model_id: string;
+  auth_file: string;
+  auth_index?: string;
+  status_code?: number;
+  message: string;
+  response_preview?: string;
+  duration_ms?: number;
+}
+
+export const testModelSetting = (payload: ModelTestRequest) =>
+  api.post<ModelTestResponse>('/model-settings/test', payload);
 
 // Latest version check
 export const getLatestVersion = () => api.get('/latest-version');

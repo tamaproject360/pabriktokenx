@@ -97,6 +97,7 @@ interface ConversationHistory {
   title: string;
   messages: Message[];
   model: string;
+  providerType?: string;
   createdAt: Date;
 }
 
@@ -650,25 +651,42 @@ export default function PlaygroundPage() {
     return categories;
   }, [providers]);
 
-  // Set initial selection when categories change
+  const findProviderTypeForModel = useCallback((modelId: string): string => {
+    const matched = providerCategories.find(category =>
+      category.models.some(model => model.id === modelId)
+    );
+    return matched?.type || '';
+  }, [providerCategories]);
+
+  // Keep selected model and selected provider consistent.
   useEffect(() => {
     if (providerCategories.length === 0) return;
-    // If no model selected yet, pick the first one
+
     if (!selectedModel) {
       const first = providerCategories[0];
       setSelectedProviderType(first.type);
       if (first.models.length > 0) {
         setSelectedModel(first.models[0].id);
       }
+      return;
     }
-    // If current model no longer exists in any category, reset
-    const modelExists = providerCategories.some(c => c.models.some(m => m.id === selectedModel));
-    if (selectedModel && !modelExists && providerCategories.length > 0) {
-      const first = providerCategories[0];
-      setSelectedProviderType(first.type);
-      setSelectedModel(first.models[0]?.id || '');
+
+    const selectedCategory = providerCategories.find(c => c.type === selectedProviderType);
+    const hasModelInSelectedCategory = !!selectedCategory?.models.some(m => m.id === selectedModel);
+    if (hasModelInSelectedCategory) {
+      return;
     }
-  }, [providerCategories, selectedModel]);
+
+    const categoryForModel = providerCategories.find(c => c.models.some(m => m.id === selectedModel));
+    if (categoryForModel) {
+      setSelectedProviderType(categoryForModel.type);
+      return;
+    }
+
+    const first = providerCategories[0];
+    setSelectedProviderType(first.type);
+    setSelectedModel(first.models[0]?.id || '');
+  }, [providerCategories, selectedModel, selectedProviderType]);
 
   // Animations
   useEffect(() => {
@@ -787,6 +805,7 @@ export default function PlaygroundPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(selectedProviderType ? { 'X-Provider-Hint': selectedProviderType } : {}),
           ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}),
         },
         body: JSON.stringify(requestBody),
@@ -952,7 +971,7 @@ export default function PlaygroundPage() {
         setConversations(prev =>
           prev.map(c =>
             c.id === currentConversationId
-              ? { ...c, messages: [...messages, userMessage, finalMessage] }
+              ? { ...c, messages: [...messages, userMessage, finalMessage], model: selectedModel, providerType: selectedProviderType }
               : c
           )
         );
@@ -962,6 +981,7 @@ export default function PlaygroundPage() {
           title,
           messages: [userMessage, finalMessage],
           model: selectedModel,
+          providerType: selectedProviderType,
           createdAt: new Date(),
         };
         setConversations(prev => [newConv, ...prev]);
@@ -1016,6 +1036,10 @@ export default function PlaygroundPage() {
   const loadConversation = (conv: ConversationHistory) => {
     setMessages(conv.messages);
     setSelectedModel(conv.model);
+    const providerType = conv.providerType || findProviderTypeForModel(conv.model);
+    if (providerType) {
+      setSelectedProviderType(providerType);
+    }
     setCurrentConversationId(conv.id);
   };
 

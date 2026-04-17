@@ -1,15 +1,28 @@
 package management
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/router-for-me/CLIProxyAPI/v6/internal/config"
+	runtimeexecutor "github.com/router-for-me/CLIProxyAPI/v6/internal/runtime/executor"
+	coreauth "github.com/router-for-me/CLIProxyAPI/v6/sdk/cliproxy/auth"
+	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v6/sdk/cliproxy/executor"
+	sdktranslator "github.com/router-for-me/CLIProxyAPI/v6/sdk/translator"
 	log "github.com/sirupsen/logrus"
+)
+
+const (
+	defaultModelTestTimeout   = 25 * time.Second
+	maxModelTestPreviewLength = 900
 )
 
 // ModelSetting represents the configuration for a single model
@@ -414,16 +427,19 @@ func IsModelGloballyRemoved(modelID string) bool {
 		return false
 	}
 
+	hasRemoved := false
 	for _, setting := range config.Models {
-		if !setting.Removed {
+		if normalizeModelID(setting.ModelID) != needle {
 			continue
 		}
-		if normalizeModelID(setting.ModelID) == needle {
-			return true
+		if !setting.Removed {
+			// At least one active entry means this model should still be available globally.
+			return false
 		}
+		hasRemoved = true
 	}
 
-	return false
+	return hasRemoved
 }
 
 // GetConfiguredModelsForAuthFiles returns manually configured models for one or more auth files.
@@ -460,13 +476,97 @@ func GetConfiguredModelsForAuthFiles(authFiles ...string) []ModelSetting {
 	return result
 }
 
+func normalizeProvider(provider string) string {
+	return strings.ToLower(strings.TrimSpace(provider))
+}
+
+func firstNonEmptyValue(values ...string) string {
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
+func (h *Handler) resolveProviderForScope(config *ModelSettingsConfig, provider string, authFile string, modelID string) string {
+	resolved := normalizeProvider(provider)
+	if resolved != "" {
+		return resolved
+	}
+
+	authFile = strings.TrimSpace(authFile)
+	if authFile != "" {
+		if auth := h.findAuthByFile(authFile); auth != nil {
+			if inferred := normalizeProvider(auth.Provider); inferred != "" {
+				return inferred
+			}
+		}
+	}
+
+	if config != nil {
+		for _, key := range authFileCandidateKeys(authFile, modelID) {
+			if setting, exists := config.Models[key]; exists {
+				if inferred := normalizeProvider(setting.Provider); inferred != "" {
+					return inferred
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+func (h *Handler) collectScopedAuthFiles(config *ModelSettingsConfig, provider string, preferredAuthFile string) []string {
+	provider = normalizeProvider(provider)
+	seen := make(map[string]struct{})
+	authFiles := make([]string, 0)
+
+	push := func(name string) {
+		trimmed := strings.TrimSpace(name)
+		if trimmed == "" {
+			return
+		}
+		if _, exists := seen[trimmed]; exists {
+			return
+		}
+		seen[trimmed] = struct{}{}
+		authFiles = append(authFiles, trimmed)
+	}
+
+	if h != nil && h.authManager != nil {
+		for _, auth := range h.authManager.List() {
+			if auth == nil {
+				continue
+			}
+			if provider != "" && normalizeProvider(auth.Provider) != provider {
+				continue
+			}
+			push(firstNonEmptyValue(auth.FileName, auth.ID))
+		}
+	}
+
+	if config != nil {
+		for _, setting := range config.Models {
+			if provider != "" && normalizeProvider(setting.Provider) != provider {
+				continue
+			}
+			push(setting.AuthFile)
+		}
+	}
+
+	push(preferredAuthFile)
+	return authFiles
+}
+
 // AddModelSetting adds a model entry so it can be managed from Model Settings.
 func (h *Handler) AddModelSetting(c *gin.Context) {
 	var req struct {
 		ModelID     string `json:"model_id"`
 		DisplayName string `json:"display_name,omitempty"`
-		Provider    string `json:"provider"`
-		AuthFile    string `json:"auth_file"`
+		Provider    string `json:"provider,omitempty"`
+		AuthFile    string `json:"auth_file,omitempty"`
 		Enabled     *bool  `json:"enabled,omitempty"`
 	}
 
@@ -477,10 +577,10 @@ func (h *Handler) AddModelSetting(c *gin.Context) {
 
 	req.ModelID = strings.TrimSpace(req.ModelID)
 	req.AuthFile = strings.TrimSpace(req.AuthFile)
-	req.Provider = strings.TrimSpace(req.Provider)
+	req.Provider = normalizeProvider(req.Provider)
 	req.DisplayName = strings.TrimSpace(req.DisplayName)
-	if req.ModelID == "" || req.AuthFile == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "model_id and auth_file are required"})
+	if req.ModelID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "model_id is required"})
 		return
 	}
 
@@ -495,14 +595,41 @@ func (h *Handler) AddModelSetting(c *gin.Context) {
 		return
 	}
 
-	key := req.AuthFile + ":" + req.ModelID
-	config.Models[key] = ModelSetting{
-		ModelID:     req.ModelID,
-		DisplayName: req.DisplayName,
-		Provider:    req.Provider,
-		AuthFile:    req.AuthFile,
-		Enabled:     enabled,
-		Removed:     false,
+	if req.Provider == "" {
+		req.Provider = h.resolveProviderForScope(config, req.Provider, req.AuthFile, req.ModelID)
+	}
+	if req.Provider == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "provider is required when auth_file cannot infer provider"})
+		return
+	}
+
+	targetAuthFiles := h.collectScopedAuthFiles(config, req.Provider, req.AuthFile)
+	if len(targetAuthFiles) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no auth files found for provider scope"})
+		return
+	}
+
+	displayName := req.DisplayName
+	if displayName == "" {
+		displayName = req.ModelID
+	}
+
+	var firstKey string
+	affected := 0
+	for _, authFile := range targetAuthFiles {
+		key := authFile + ":" + req.ModelID
+		config.Models[key] = ModelSetting{
+			ModelID:     req.ModelID,
+			DisplayName: displayName,
+			Provider:    req.Provider,
+			AuthFile:    authFile,
+			Enabled:     enabled,
+			Removed:     false,
+		}
+		if firstKey == "" {
+			firstKey = key
+		}
+		affected++
 	}
 
 	if err := saveModelSettings(config); err != nil {
@@ -510,7 +637,11 @@ func (h *Handler) AddModelSetting(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "model added", "model": config.Models[key]})
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "model added for provider scope",
+		"model":    config.Models[firstKey],
+		"affected": affected,
+	})
 }
 
 // RemoveModelSetting hides a model from Model Settings and Playground selection for the specified auth file.
@@ -540,26 +671,79 @@ func (h *Handler) RemoveModelSetting(c *gin.Context) {
 		return
 	}
 
-	key := req.AuthFile + ":" + req.ModelID
-	current := config.Models[key]
-	current.ModelID = req.ModelID
-	current.AuthFile = req.AuthFile
-	if current.Provider == "" {
-		current.Provider = req.Provider
+	normalizedModel := normalizeModelID(req.ModelID)
+	normalizedProvider := strings.ToLower(strings.TrimSpace(req.Provider))
+
+	applyRemoved := func(key string, setting ModelSetting) {
+		setting.ModelID = strings.TrimSpace(setting.ModelID)
+		if setting.ModelID == "" {
+			setting.ModelID = req.ModelID
+		}
+		setting.AuthFile = strings.TrimSpace(setting.AuthFile)
+		if setting.AuthFile == "" {
+			setting.AuthFile = req.AuthFile
+		}
+		if strings.TrimSpace(setting.Provider) == "" {
+			setting.Provider = req.Provider
+		}
+		if strings.TrimSpace(setting.DisplayName) == "" {
+			setting.DisplayName = setting.ModelID
+		}
+		setting.Enabled = false
+		setting.Removed = true
+		config.Models[key] = setting
 	}
-	if current.DisplayName == "" {
-		current.DisplayName = req.ModelID
+
+	applied := 0
+	for key, setting := range config.Models {
+		if normalizeModelID(setting.ModelID) != normalizedModel {
+			continue
+		}
+		if normalizedProvider != "" {
+			settingProvider := strings.ToLower(strings.TrimSpace(setting.Provider))
+			if settingProvider != "" && settingProvider != normalizedProvider {
+				continue
+			}
+		}
+		applyRemoved(key, setting)
+		applied++
 	}
-	current.Enabled = false
-	current.Removed = true
-	config.Models[key] = current
+
+	if h != nil && h.authManager != nil {
+		for _, auth := range h.authManager.List() {
+			if auth == nil {
+				continue
+			}
+			authProvider := strings.ToLower(strings.TrimSpace(auth.Provider))
+			if normalizedProvider != "" && authProvider != normalizedProvider {
+				continue
+			}
+			authName := strings.TrimSpace(auth.FileName)
+			if authName == "" {
+				authName = strings.TrimSpace(auth.ID)
+			}
+			if authName == "" {
+				continue
+			}
+			key := authName + ":" + req.ModelID
+			applyRemoved(key, config.Models[key])
+			applied++
+		}
+	}
+
+	if applied == 0 {
+		key := req.AuthFile + ":" + req.ModelID
+		applyRemoved(key, config.Models[key])
+	}
 
 	if err := saveModelSettings(config); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save model settings: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "model removed", "model": current})
+	key := req.AuthFile + ":" + req.ModelID
+	current := config.Models[key]
+	c.JSON(http.StatusOK, gin.H{"message": "model removed", "model": current, "affected": applied})
 }
 
 // RestoreModelSetting restores a previously removed model for the specified auth file.
@@ -652,18 +836,15 @@ func (h *Handler) EditModelSetting(c *gin.Context) {
 	req.OldAuthFile = strings.TrimSpace(req.OldAuthFile)
 	req.ModelID = strings.TrimSpace(req.ModelID)
 	req.DisplayName = strings.TrimSpace(req.DisplayName)
-	req.Provider = strings.TrimSpace(req.Provider)
+	req.Provider = normalizeProvider(req.Provider)
 	req.AuthFile = strings.TrimSpace(req.AuthFile)
 
-	if req.OldModelID == "" || req.OldAuthFile == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "old_model_id and old_auth_file are required"})
+	if req.OldModelID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "old_model_id is required"})
 		return
 	}
 	if req.ModelID == "" {
 		req.ModelID = req.OldModelID
-	}
-	if req.AuthFile == "" {
-		req.AuthFile = req.OldAuthFile
 	}
 
 	config, err := loadModelSettings()
@@ -672,52 +853,72 @@ func (h *Handler) EditModelSetting(c *gin.Context) {
 		return
 	}
 
-	oldKey := req.OldAuthFile + ":" + req.OldModelID
-	current, exists := config.Models[oldKey]
-	if !exists {
-		current = ModelSetting{
-			ModelID:  req.OldModelID,
-			AuthFile: req.OldAuthFile,
-			Enabled:  true,
+	if req.Provider == "" {
+		oldKey := req.OldAuthFile + ":" + req.OldModelID
+		if current, exists := config.Models[oldKey]; exists {
+			req.Provider = normalizeProvider(current.Provider)
 		}
 	}
+	if req.Provider == "" {
+		req.Provider = h.resolveProviderForScope(config, req.Provider, req.OldAuthFile, req.OldModelID)
+	}
+	if req.Provider == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "provider is required when old scope cannot infer provider"})
+		return
+	}
 
-	updated := current
-	updated.ModelID = req.ModelID
-	updated.AuthFile = req.AuthFile
-	if req.DisplayName != "" {
-		updated.DisplayName = req.DisplayName
+	preferredAuth := firstNonEmptyValue(req.AuthFile, req.OldAuthFile)
+	targetAuthFiles := h.collectScopedAuthFiles(config, req.Provider, preferredAuth)
+	if len(targetAuthFiles) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no auth files found for provider scope"})
+		return
 	}
-	if updated.DisplayName == "" {
-		updated.DisplayName = req.ModelID
-	}
-	if req.Provider != "" {
+
+	affected := 0
+	var sample ModelSetting
+	for _, authFile := range targetAuthFiles {
+		oldKey := authFile + ":" + req.OldModelID
+		current, exists := config.Models[oldKey]
+		if !exists {
+			current = ModelSetting{
+				ModelID:  req.OldModelID,
+				AuthFile: authFile,
+				Enabled:  true,
+			}
+		}
+
+		updated := current
+		updated.ModelID = req.ModelID
+		updated.AuthFile = authFile
+		if req.DisplayName != "" {
+			updated.DisplayName = req.DisplayName
+		}
+		if updated.DisplayName == "" {
+			updated.DisplayName = req.ModelID
+		}
 		updated.Provider = req.Provider
-	}
-	if updated.Provider == "" {
-		updated.Provider = "unknown"
-	}
-	if req.Enabled != nil {
-		updated.Enabled = *req.Enabled
-	}
-	updated.Removed = false
-
-	newKey := updated.AuthFile + ":" + updated.ModelID
-	config.Models[newKey] = updated
-
-	if oldKey != newKey {
-		tombstone := current
-		tombstone.ModelID = req.OldModelID
-		tombstone.AuthFile = req.OldAuthFile
-		if tombstone.DisplayName == "" {
-			tombstone.DisplayName = req.OldModelID
+		if req.Enabled != nil {
+			updated.Enabled = *req.Enabled
 		}
-		if req.Provider != "" && tombstone.Provider == "" {
+		updated.Removed = false
+
+		newKey := updated.AuthFile + ":" + updated.ModelID
+		config.Models[newKey] = updated
+		sample = updated
+		affected++
+
+		if oldKey != newKey {
+			tombstone := current
+			tombstone.ModelID = req.OldModelID
+			tombstone.AuthFile = authFile
+			if tombstone.DisplayName == "" {
+				tombstone.DisplayName = req.OldModelID
+			}
 			tombstone.Provider = req.Provider
+			tombstone.Enabled = false
+			tombstone.Removed = true
+			config.Models[oldKey] = tombstone
 		}
-		tombstone.Enabled = false
-		tombstone.Removed = true
-		config.Models[oldKey] = tombstone
 	}
 
 	if err := saveModelSettings(config); err != nil {
@@ -726,7 +927,262 @@ func (h *Handler) EditModelSetting(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "model edited",
-		"model":   updated,
+		"message":  "model edited for provider scope",
+		"model":    sample,
+		"affected": affected,
 	})
+}
+
+type modelTestResult struct {
+	Success         bool   `json:"success"`
+	Provider        string `json:"provider"`
+	ModelID         string `json:"model_id"`
+	AuthFile        string `json:"auth_file"`
+	AuthIndex       string `json:"auth_index,omitempty"`
+	StatusCode      int    `json:"status_code,omitempty"`
+	Message         string `json:"message"`
+	ResponsePreview string `json:"response_preview,omitempty"`
+	DurationMS      int64  `json:"duration_ms"`
+}
+
+// TestModelSetting runs a minimal live check so operators can verify a model responds.
+func (h *Handler) TestModelSetting(c *gin.Context) {
+	var req struct {
+		ModelID  string `json:"model_id"`
+		Provider string `json:"provider,omitempty"`
+		AuthFile string `json:"auth_file"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
+		return
+	}
+
+	req.ModelID = strings.TrimSpace(req.ModelID)
+	req.Provider = strings.TrimSpace(req.Provider)
+	req.AuthFile = strings.TrimSpace(req.AuthFile)
+	if req.ModelID == "" || req.AuthFile == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "model_id and auth_file are required"})
+		return
+	}
+
+	auth := h.findAuthByFile(req.AuthFile)
+	if auth == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "auth file not found in active credentials"})
+		return
+	}
+	auth.EnsureIndex()
+
+	provider := resolveModelTestProvider(req.Provider, auth.Provider, req.ModelID)
+	if provider == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "provider not supported for live testing",
+			"hint":  "currently supported: gemini, codex, openai",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), defaultModelTestTimeout)
+	defer cancel()
+
+	result := h.runModelLiveTest(ctx, auth, provider, req.ModelID)
+	result.AuthFile = req.AuthFile
+	result.AuthIndex = auth.Index
+
+	c.JSON(http.StatusOK, result)
+}
+
+func (h *Handler) runModelLiveTest(ctx context.Context, auth *coreauth.Auth, provider string, modelID string) modelTestResult {
+	result := modelTestResult{
+		Success:  false,
+		Provider: provider,
+		ModelID:  modelID,
+		Message:  "test not executed",
+	}
+
+	start := time.Now()
+	defer func() {
+		result.DurationMS = time.Since(start).Milliseconds()
+	}()
+
+	exec := newModelTestExecutor(provider, h.cfg)
+	if exec == nil {
+		result.Message = "unsupported provider"
+		return result
+	}
+
+	payload := buildModelTestPayload(modelID)
+	req := cliproxyexecutor.Request{
+		Model:   strings.TrimSpace(modelID),
+		Payload: payload,
+		Format:  sdktranslator.FromString("openai"),
+	}
+	opts := cliproxyexecutor.Options{
+		Stream:         false,
+		SourceFormat:   sdktranslator.FromString("openai"),
+		OriginalRequest: bytes.Clone(payload),
+	}
+
+	resp, err := exec.Execute(ctx, auth, req, opts)
+	if err != nil {
+		result.Success = false
+		result.Message = err.Error()
+		result.ResponsePreview = trimModelTestPreview(err.Error(), maxModelTestPreviewLength)
+		if statusErr, ok := err.(cliproxyexecutor.StatusError); ok {
+			result.StatusCode = statusErr.StatusCode()
+		}
+		if parsed := extractModelTestErrorMessage(result.ResponsePreview); parsed != "" {
+			result.Message = parsed
+		}
+		return result
+	}
+
+	result.Success = true
+	result.Message = "model responded successfully"
+	result.ResponsePreview = trimModelTestPreview(string(resp.Payload), maxModelTestPreviewLength)
+	result.StatusCode = http.StatusOK
+	return result
+}
+
+type modelTestExecutor interface {
+	Execute(context.Context, *coreauth.Auth, cliproxyexecutor.Request, cliproxyexecutor.Options) (cliproxyexecutor.Response, error)
+}
+
+func newModelTestExecutor(provider string, cfg *config.Config) modelTestExecutor {
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case "gemini":
+		return runtimeexecutor.NewGeminiExecutor(cfg)
+	case "codex":
+		return runtimeexecutor.NewCodexExecutor(cfg)
+	case "openai":
+		return runtimeexecutor.NewOpenAICompatExecutor("openai", cfg)
+	}
+	return nil
+}
+
+func buildModelTestPayload(modelID string) []byte {
+	payload := map[string]any{
+		"model": strings.TrimSpace(modelID),
+		"messages": []map[string]string{
+			{
+				"role":    "user",
+				"content": "Reply with exactly: OK",
+			},
+		},
+		"max_tokens":  8,
+		"temperature": 0,
+		"stream":      false,
+	}
+
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return []byte(`{"model":"` + strings.TrimSpace(modelID) + `","messages":[{"role":"user","content":"Reply with exactly: OK"}],"max_tokens":8,"temperature":0,"stream":false}`)
+	}
+	return encoded
+}
+
+func (h *Handler) findAuthByFile(authFile string) *coreauth.Auth {
+	authFile = strings.TrimSpace(authFile)
+	if authFile == "" || h == nil || h.authManager == nil {
+		return nil
+	}
+
+	auths := h.authManager.List()
+	baseName := filepath.Base(authFile)
+	for _, auth := range auths {
+		if auth == nil {
+			continue
+		}
+		if auth.FileName == authFile || auth.ID == authFile {
+			return auth
+		}
+		if baseName != "" && (auth.FileName == baseName || auth.ID == baseName) {
+			return auth
+		}
+	}
+
+	return nil
+}
+
+func resolveModelTestProvider(requestedProvider string, authProvider string, modelID string) string {
+	providers := []string{
+		strings.ToLower(strings.TrimSpace(requestedProvider)),
+		strings.ToLower(strings.TrimSpace(authProvider)),
+	}
+	for _, provider := range providers {
+		switch {
+		case strings.Contains(provider, "gemini"):
+			return "gemini"
+		case strings.Contains(provider, "codex"):
+			return "codex"
+		case strings.Contains(provider, "openai"):
+			return "openai"
+		}
+	}
+
+	modelID = strings.ToLower(strings.TrimSpace(modelID))
+	switch {
+	case strings.HasPrefix(modelID, "gemini"):
+		return "gemini"
+	case strings.HasPrefix(modelID, "gpt"), strings.HasPrefix(modelID, "o1"), strings.HasPrefix(modelID, "o3"), strings.HasPrefix(modelID, "o4"):
+		if strings.Contains(strings.ToLower(strings.TrimSpace(authProvider)), "codex") {
+			return "codex"
+		}
+		return "openai"
+	}
+
+	return ""
+}
+
+func trimModelTestPreview(raw string, maxLen int) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+	if maxLen <= 0 || len(trimmed) <= maxLen {
+		return trimmed
+	}
+	return trimmed[:maxLen] + "..."
+}
+
+func extractModelTestErrorMessage(preview string) string {
+	if strings.TrimSpace(preview) == "" {
+		return ""
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(preview), &payload); err != nil {
+		return ""
+	}
+
+	if msg := extractNestedString(payload, "error", "message"); msg != "" {
+		return msg
+	}
+	if msg := extractNestedString(payload, "error_description"); msg != "" {
+		return msg
+	}
+	if msg := extractNestedString(payload, "message"); msg != "" {
+		return msg
+	}
+	return ""
+}
+
+func extractNestedString(payload map[string]any, keys ...string) string {
+	if len(keys) == 0 || payload == nil {
+		return ""
+	}
+
+	var current any = payload
+	for _, key := range keys {
+		obj, ok := current.(map[string]any)
+		if !ok {
+			return ""
+		}
+		current = obj[key]
+	}
+
+	if value, ok := current.(string); ok {
+		return strings.TrimSpace(value)
+	}
+	return ""
 }

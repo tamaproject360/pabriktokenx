@@ -32,12 +32,17 @@
   },
   "codex": {
     "auth_files": [
-      "codex-mhpratama90@gmail.com.json",
       "codex-ppkasn.kemensetneg@gmail.com.json",
+      "codex-mhpratama90@gmail.com.json",
       "codex-tamaproject360@gmail.com.json",
       "codex-tamadevops@gmail.com.json"
     ],
     "models": {
+      "gpt 5.3-codex": {
+        "display_name": "gpt-5.3-codex",
+        "enabled": false,
+        "removed": true
+      },
       "gpt-5": {
         "display_name": "GPT 5",
         "enabled": true
@@ -74,17 +79,25 @@
         "display_name": "GPT 5.2 Codex",
         "enabled": true
       },
+      "gpt-5.3-codex": {
+        "display_name": "GPT 5.3-codex",
+        "enabled": true
+      },
       "gpt-5.4": {
         "display_name": "GPT 5.4",
+        "enabled": true
+      },
+      "gpt-5.4-mini": {
+        "display_name": "gpt-5.4-mini",
         "enabled": true
       }
     }
   },
   "gemini-cli": {
     "auth_files": [
+      "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json",
       "gemini-tamawith.ai@gmail.com-gen-lang-client-0709488443.json",
-      "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json",
-      "gemini-tamaproject360@gmail.com-hidden-phalanx-483401-b0.json"
+      "gemini-tamalearnings@gmail.com-theta-cider-483511-a4.json"
     ],
     "models": {
       "gemini-2.5-flash": {
@@ -123,8 +136,8 @@
   },
   "github-copilot": {
     "auth_files": [
-      "github-copilot-faysdevops.json",
       "github-copilot-ginzoproject.json",
+      "github-copilot-faysdevops.json",
       "github-copilot-tamaproject360.json"
     ],
     "models": {

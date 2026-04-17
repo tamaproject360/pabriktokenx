@@ -376,7 +376,7 @@ func (h *Handler) GetAuthFileModels(c *gin.Context) {
 	result := make([]gin.H, 0, len(models))
 	seen := make(map[string]struct{}, len(models))
 	for _, m := range models {
-		if IsModelRemoved(name, m.ID) || IsModelRemoved(authID, m.ID) {
+		if IsModelRemoved(name, m.ID) || IsModelRemoved(authID, m.ID) || IsModelGloballyRemoved(m.ID) {
 			continue
 		}
 		// Filter out deprecated/old models
@@ -404,6 +404,9 @@ func (h *Handler) GetAuthFileModels(c *gin.Context) {
 	configuredModels := GetConfiguredModelsForAuthFiles(name, authID)
 	for _, setting := range configuredModels {
 		if setting.ModelID == "" {
+			continue
+		}
+		if IsModelGloballyRemoved(setting.ModelID) {
 			continue
 		}
 		if _, exists := seen[setting.ModelID]; exists {

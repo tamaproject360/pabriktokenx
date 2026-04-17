@@ -318,7 +318,7 @@ func appendAPIResponse(c *gin.Context, data []byte) {
 // ExecuteWithAuthManager executes a non-streaming request via the core auth manager.
 // This path is the only supported execution route.
 func (h *BaseAPIHandler) ExecuteWithAuthManager(ctx context.Context, handlerType, modelName string, rawJSON []byte, alt string) ([]byte, *interfaces.ErrorMessage) {
-	providers, normalizedModel, metadata, errMsg := h.getRequestDetails(modelName)
+	providers, normalizedModel, metadata, errMsg := h.getRequestDetails(ctx, modelName)
 	if errMsg != nil {
 		return nil, errMsg
 	}
@@ -359,7 +359,7 @@ func (h *BaseAPIHandler) ExecuteWithAuthManager(ctx context.Context, handlerType
 // ExecuteCountWithAuthManager executes a non-streaming request via the core auth manager.
 // This path is the only supported execution route.
 func (h *BaseAPIHandler) ExecuteCountWithAuthManager(ctx context.Context, handlerType, modelName string, rawJSON []byte, alt string) ([]byte, *interfaces.ErrorMessage) {
-	providers, normalizedModel, metadata, errMsg := h.getRequestDetails(modelName)
+	providers, normalizedModel, metadata, errMsg := h.getRequestDetails(ctx, modelName)
 	if errMsg != nil {
 		return nil, errMsg
 	}
@@ -400,7 +400,7 @@ func (h *BaseAPIHandler) ExecuteCountWithAuthManager(ctx context.Context, handle
 // ExecuteStreamWithAuthManager executes a streaming request via the core auth manager.
 // This path is the only supported execution route.
 func (h *BaseAPIHandler) ExecuteStreamWithAuthManager(ctx context.Context, handlerType, modelName string, rawJSON []byte, alt string) (<-chan []byte, <-chan *interfaces.ErrorMessage) {
-	providers, normalizedModel, metadata, errMsg := h.getRequestDetails(modelName)
+	providers, normalizedModel, metadata, errMsg := h.getRequestDetails(ctx, modelName)
 	if errMsg != nil {
 		errChan := make(chan *interfaces.ErrorMessage, 1)
 		errChan <- errMsg
@@ -534,7 +534,9 @@ func statusFromError(err error) int {
 	return 0
 }
 
-func (h *BaseAPIHandler) getRequestDetails(modelName string) (providers []string, normalizedModel string, metadata map[string]any, err *interfaces.ErrorMessage) {
+func (h *BaseAPIHandler) getRequestDetails(ctx context.Context, modelName string) (providers []string, normalizedModel string, metadata map[string]any, err *interfaces.ErrorMessage) {
+	providerHint := resolveProviderHint(ctx)
+
 	// Resolve "auto" model to an actual available model first
 	resolvedModelName := util.ResolveAutoModel(modelName)
 
@@ -558,7 +560,30 @@ func (h *BaseAPIHandler) getRequestDetails(modelName string) (providers []string
 	}
 
 	if len(providers) == 0 {
+		if providerHint != "" && h.hasProviderAuth(providerHint) {
+			return []string{providerHint}, normalizedModel, metadata, nil
+		}
 		return nil, "", nil, &interfaces.ErrorMessage{StatusCode: http.StatusBadRequest, Error: fmt.Errorf("unknown provider for model %s", modelName)}
+	}
+
+	if providerHint != "" {
+		filtered := make([]string, 0, len(providers))
+		for _, provider := range providers {
+			if strings.EqualFold(strings.TrimSpace(provider), providerHint) {
+				filtered = append(filtered, provider)
+			}
+		}
+		if len(filtered) == 0 {
+			if h.hasProviderAuth(providerHint) {
+				// Allow hinted-provider routing when model registry metadata lags behind
+				// manual/provider-scoped model settings.
+				providers = []string{providerHint}
+			} else {
+				return nil, "", nil, &interfaces.ErrorMessage{StatusCode: http.StatusBadRequest, Error: fmt.Errorf("model %s is not available in selected provider %s", modelName, providerHint)}
+			}
+		} else {
+			providers = filtered
+		}
 	}
 
 	// If it's a dynamic model, the normalizedModel was already set to extractedModelName.
@@ -566,6 +591,39 @@ func (h *BaseAPIHandler) getRequestDetails(modelName string) (providers []string
 	// So, normalizedModel is already correctly set at this point.
 
 	return providers, normalizedModel, metadata, nil
+}
+
+func (h *BaseAPIHandler) hasProviderAuth(provider string) bool {
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	if provider == "" || h == nil || h.AuthManager == nil {
+		return false
+	}
+
+	for _, auth := range h.AuthManager.List() {
+		if auth == nil || auth.Disabled {
+			continue
+		}
+		if strings.EqualFold(strings.TrimSpace(auth.Provider), provider) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func resolveProviderHint(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	ginCtx, ok := ctx.Value("gin").(*gin.Context)
+	if !ok || ginCtx == nil {
+		return ""
+	}
+	hint := strings.TrimSpace(ginCtx.GetHeader("X-Provider-Hint"))
+	if hint == "" {
+		hint = strings.TrimSpace(ginCtx.GetHeader("X-Provider-Type"))
+	}
+	return strings.ToLower(hint)
 }
 
 func cloneBytes(src []byte) []byte {

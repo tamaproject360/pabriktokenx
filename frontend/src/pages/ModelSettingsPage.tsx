@@ -5,6 +5,7 @@ import {
   Settings, 
   RefreshCw, 
   Plus,
+  FlaskConical,
   Pencil,
   Trash2,
   X,
@@ -27,7 +28,9 @@ import {
   editModelSetting,
   removeModelSetting,
   restoreModelSetting,
+  testModelSetting,
   type ModelSetting,
+  type ModelTestResponse,
 } from '../lib/api';
 import gsap from 'gsap';
 import { ViewToggle, type ViewMode } from '../components/ViewToggle';
@@ -66,6 +69,14 @@ interface ProviderModels {
   authFile: string;
   type: string;
   models: ModelInfo[];
+}
+
+interface ModelTestState {
+  success: boolean;
+  message: string;
+  statusCode?: number;
+  durationMs?: number;
+  testedAt: number;
 }
 
 const fetchModelsForAuthFile = async (fileName: string): Promise<ModelInfo[]> => {
@@ -142,6 +153,9 @@ export default function ModelSettingsPage() {
   const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
   const [removingModels, setRemovingModels] = useState<Set<string>>(new Set());
   const [restoringModels, setRestoringModels] = useState<Set<string>>(new Set());
+  const [testingModels, setTestingModels] = useState<Set<string>>(new Set());
+  const [testResults, setTestResults] = useState<Map<string, ModelTestState>>(new Map());
+  const [locallyHiddenModelIds, setLocallyHiddenModelIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('card');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -382,6 +396,11 @@ export default function ModelSettingsPage() {
   // Filter providers and models
   const filteredProviders = groupedByProvider.map(provider => {
     const filteredModels = provider.models.filter(({ model, authFile }) => {
+      const normalizedModelId = model.id.trim().toLowerCase();
+      if (locallyHiddenModelIds.has(normalizedModelId)) {
+        return false;
+      }
+
       const matchesSearch = searchQuery === '' || 
         model.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (model.display_name?.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -429,24 +448,28 @@ export default function ModelSettingsPage() {
 
   const handleAddModel = useCallback(() => {
     const modelId = newModel.modelId.trim();
+    const provider = newModel.provider.trim();
     const authFile = newModel.authFile.trim();
-    if (!modelId || !authFile) {
+    if (!modelId || !provider) {
       return;
     }
     addMutation.mutate({
       model_id: modelId,
       display_name: newModel.displayName.trim() || modelId,
-      provider: newModel.provider.trim() || 'unknown',
-      auth_file: authFile,
+      provider,
+      auth_file: authFile || undefined,
       enabled: true,
     });
   }, [addMutation, newModel]);
 
   const handleRemoveModel = useCallback((authFile: string, modelId: string, provider: string) => {
     const key = `${authFile}:${modelId}`;
-    if (!window.confirm(`Hapus model ${modelId} dari daftar?`)) {
+    const normalizedModelId = modelId.trim().toLowerCase();
+    if (!window.confirm(`Hapus model ${modelId} dari daftar provider ${provider} (semua auth file)?`)) {
       return;
     }
+
+    setLocallyHiddenModelIds(prev => new Set(prev).add(normalizedModelId));
     setRemovingModels(prev => new Set(prev).add(key));
     removeMutation.mutate(
       {
@@ -455,6 +478,13 @@ export default function ModelSettingsPage() {
         provider,
       },
       {
+        onError: () => {
+          setLocallyHiddenModelIds(prev => {
+            const next = new Set(prev);
+            next.delete(normalizedModelId);
+            return next;
+          });
+        },
         onSettled: () => {
           setRemovingModels(prev => {
             const next = new Set(prev);
@@ -468,6 +498,7 @@ export default function ModelSettingsPage() {
 
   const handleRestoreModel = useCallback((setting: ModelSetting) => {
     const key = `${setting.auth_file}:${setting.model_id}`;
+    const normalizedModelId = setting.model_id.trim().toLowerCase();
     setRestoringModels(prev => new Set(prev).add(key));
     restoreMutation.mutate(
       {
@@ -478,6 +509,13 @@ export default function ModelSettingsPage() {
         enabled: setting.enabled,
       },
       {
+        onSuccess: () => {
+          setLocallyHiddenModelIds(prev => {
+            const next = new Set(prev);
+            next.delete(normalizedModelId);
+            return next;
+          });
+        },
         onSettled: () => {
           setRestoringModels(prev => {
             const next = new Set(prev);
@@ -511,20 +549,68 @@ export default function ModelSettingsPage() {
   const handleSubmitEditModel = useCallback(() => {
     const modelId = editModel.modelId.trim();
     const authFile = editModel.authFile.trim();
-    if (!modelId || !authFile) {
+    const provider = editModel.provider.trim();
+    if (!modelId || !provider) {
       return;
     }
 
     editMutation.mutate({
       old_model_id: editModel.oldModelId,
-      old_auth_file: editModel.oldAuthFile,
+      old_auth_file: editModel.oldAuthFile.trim() || undefined,
       model_id: modelId,
       display_name: editModel.displayName.trim() || modelId,
-      provider: editModel.provider.trim(),
-      auth_file: authFile,
+      provider,
+      auth_file: authFile || undefined,
       enabled: editModel.enabled,
     });
   }, [editModel, editMutation]);
+
+  const handleTestModel = useCallback(async (authFile: string, modelId: string, provider: string) => {
+    const key = `${authFile}:${modelId}`;
+    setTestingModels(prev => new Set(prev).add(key));
+
+    try {
+      const response = await testModelSetting({
+        auth_file: authFile,
+        model_id: modelId,
+        provider,
+      });
+      const payload = response.data as ModelTestResponse;
+
+      setTestResults(prev => {
+        const next = new Map(prev);
+        next.set(key, {
+          success: !!payload.success,
+          message: payload.message || (payload.success ? 'Model merespons' : 'Model gagal merespons'),
+          statusCode: payload.status_code,
+          durationMs: payload.duration_ms,
+          testedAt: Date.now(),
+        });
+        return next;
+      });
+    } catch (error) {
+      const fallbackMessage = error instanceof Error ? error.message : 'Request gagal dijalankan';
+      const apiErrorMessage = typeof error === 'object' && error !== null
+        ? ((error as { response?: { data?: { error?: string } } }).response?.data?.error || fallbackMessage)
+        : fallbackMessage;
+
+      setTestResults(prev => {
+        const next = new Map(prev);
+        next.set(key, {
+          success: false,
+          message: apiErrorMessage,
+          testedAt: Date.now(),
+        });
+        return next;
+      });
+    } finally {
+      setTestingModels(prev => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  }, []);
 
   // Stats
   const totalModels = groupedByProvider.reduce((acc, p) => acc + p.models.length, 0);
@@ -580,7 +666,7 @@ export default function ModelSettingsPage() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-white">Model Settings</h1>
-                <p className="text-white/60 text-sm mt-1">Enable or disable models for Playground and API requests</p>
+                <p className="text-white/60 text-sm mt-1">Add/Edit/Remove berlaku lintas auth file dalam provider yang sama, plus test live untuk cek model benar-benar bisa dipakai</p>
               </div>
             </div>
             <button
@@ -732,9 +818,10 @@ export default function ModelSettingsPage() {
                       placeholder="Contoh: codex"
                       className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
                     />
+                    <p className="mt-1 text-xs text-blue-200/80">Model akan ditambahkan ke semua auth file dalam provider ini.</p>
                   </div>
                   <div>
-                    <label className="block text-sm text-white/70 mb-2">Auth File</label>
+                    <label className="block text-sm text-white/70 mb-2">Auth File (opsional)</label>
                     <select
                       value={newModel.authFile}
                       onChange={(e) => {
@@ -748,7 +835,7 @@ export default function ModelSettingsPage() {
                       }}
                       className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500/50"
                     >
-                      <option value="" className="bg-slate-800">Pilih auth file</option>
+                      <option value="" className="bg-slate-800">Auto (semua auth file provider)</option>
                       {authFileOptions.map(item => (
                         <option key={item.name} value={item.name} className="bg-slate-800">
                           {item.name}
@@ -768,7 +855,7 @@ export default function ModelSettingsPage() {
                 </button>
                 <button
                   onClick={handleAddModel}
-                  disabled={addMutation.isPending || !newModel.modelId.trim() || !newModel.authFile.trim()}
+                  disabled={addMutation.isPending || !newModel.modelId.trim() || !newModel.provider.trim()}
                   className="px-4 py-2.5 rounded-xl bg-blue-500/30 hover:bg-blue-500/40 text-blue-100 border border-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {addMutation.isPending ? 'Adding...' : 'Add Model'}
@@ -818,15 +905,16 @@ export default function ModelSettingsPage() {
                       onChange={(e) => setEditModel(prev => ({ ...prev, provider: e.target.value }))}
                       className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
                     />
+                    <p className="mt-1 text-xs text-amber-200/80">Perubahan akan diterapkan ke semua auth file provider ini.</p>
                   </div>
                   <div>
-                    <label className="block text-sm text-white/70 mb-2">Auth File</label>
+                    <label className="block text-sm text-white/70 mb-2">Auth File (opsional)</label>
                     <select
                       value={editModel.authFile}
                       onChange={(e) => setEditModel(prev => ({ ...prev, authFile: e.target.value }))}
                       className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500/50"
                     >
-                      <option value="" className="bg-slate-800">Pilih auth file</option>
+                      <option value="" className="bg-slate-800">Auto (semua auth file provider)</option>
                       {authFileOptions.map(item => (
                         <option key={item.name} value={item.name} className="bg-slate-800">
                           {item.name}
@@ -856,7 +944,7 @@ export default function ModelSettingsPage() {
                 </button>
                 <button
                   onClick={handleSubmitEditModel}
-                  disabled={editMutation.isPending || !editModel.modelId.trim() || !editModel.authFile.trim()}
+                  disabled={editMutation.isPending || !editModel.modelId.trim() || !editModel.provider.trim()}
                   className="px-4 py-2.5 rounded-xl bg-amber-500/30 hover:bg-amber-500/40 text-amber-100 border border-amber-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {editMutation.isPending ? 'Saving...' : 'Save Changes'}
@@ -959,8 +1047,11 @@ export default function ModelSettingsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {provider.models.map(({ model, authFile }) => {
                         const enabled = isModelEnabled(authFile, model.id);
-                        const isPending = pendingChanges.has(`${authFile}:${model.id}`);
-                        const isRemoving = removingModels.has(`${authFile}:${model.id}`);
+                        const modelKey = `${authFile}:${model.id}`;
+                        const isPending = pendingChanges.has(modelKey);
+                        const isRemoving = removingModels.has(modelKey);
+                        const isTesting = testingModels.has(modelKey);
+                        const testResult = testResults.get(modelKey);
                         const displayLabel = getModelLabelWithProvider(model.display_name || model.id, provider.type);
                         
                         return (
@@ -1018,6 +1109,14 @@ export default function ModelSettingsPage() {
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
+                                <button
+                                  onClick={() => handleTestModel(authFile, model.id, provider.type)}
+                                  disabled={isTesting}
+                                  className="p-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 disabled:opacity-50"
+                                  title={isTesting ? 'Testing...' : 'Test model'}
+                                >
+                                  <FlaskConical className={`w-3.5 h-3.5 ${isTesting ? 'animate-pulse' : ''}`} />
+                                </button>
                                 <ToggleSwitch
                                   enabled={enabled}
                                   onChange={(newEnabled) => handleToggle(
@@ -1049,6 +1148,19 @@ export default function ModelSettingsPage() {
                                   </>
                                 )}
                               </span>
+                              <span className={`truncate max-w-[52%] text-right ${
+                                !testResult
+                                  ? 'text-white/30'
+                                  : testResult.success
+                                    ? 'text-emerald-300'
+                                    : 'text-rose-300'
+                              }`} title={testResult?.message || 'Belum pernah dites'}>
+                                {isTesting
+                                  ? 'Testing...'
+                                  : testResult
+                                    ? `${testResult.success ? 'Test OK' : 'Test Gagal'}${testResult.statusCode ? ` (${testResult.statusCode})` : ''}`
+                                    : 'Belum dites'}
+                              </span>
                             </div>
                           </div>
                         );
@@ -1069,8 +1181,11 @@ export default function ModelSettingsPage() {
                         <tbody className="divide-y divide-white/5">
                           {provider.models.map(({ model, authFile }) => {
                             const enabled = isModelEnabled(authFile, model.id);
-                            const isPending = pendingChanges.has(`${authFile}:${model.id}`);
-                            const isRemoving = removingModels.has(`${authFile}:${model.id}`);
+                            const modelKey = `${authFile}:${model.id}`;
+                            const isPending = pendingChanges.has(modelKey);
+                            const isRemoving = removingModels.has(modelKey);
+                            const isTesting = testingModels.has(modelKey);
+                            const testResult = testResults.get(modelKey);
                             const displayLabel = getModelLabelWithProvider(model.display_name || model.id, provider.type);
                             
                             return (
@@ -1123,6 +1238,22 @@ export default function ModelSettingsPage() {
                                       </>
                                     )}
                                   </span>
+                                  <div
+                                    className={`mt-1 text-[11px] ${
+                                      !testResult
+                                        ? 'text-white/30'
+                                        : testResult.success
+                                          ? 'text-emerald-300'
+                                          : 'text-rose-300'
+                                    }`}
+                                    title={testResult?.message || 'Belum pernah dites'}
+                                  >
+                                    {isTesting
+                                      ? 'Testing...'
+                                      : testResult
+                                        ? `${testResult.success ? 'OK' : 'Gagal'}${testResult.statusCode ? ` (${testResult.statusCode})` : ''}`
+                                        : 'Belum dites'}
+                                  </div>
                                 </td>
                                 <td className="px-4 py-3">
                                   <div className="flex justify-end items-center gap-2">
@@ -1146,6 +1277,14 @@ export default function ModelSettingsPage() {
                                       title="Remove model"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleTestModel(authFile, model.id, provider.type)}
+                                      disabled={isTesting}
+                                      className="p-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 disabled:opacity-50"
+                                      title={isTesting ? 'Testing...' : 'Test model'}
+                                    >
+                                      <FlaskConical className={`w-3.5 h-3.5 ${isTesting ? 'animate-pulse' : ''}`} />
                                     </button>
                                     <ToggleSwitch
                                       enabled={enabled}

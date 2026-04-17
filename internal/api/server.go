@@ -610,6 +610,7 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.POST("/model-settings/remove", s.mgmt.RemoveModelSetting)
 		mgmt.POST("/model-settings/restore", s.mgmt.RestoreModelSetting)
 		mgmt.POST("/model-settings/edit", s.mgmt.EditModelSetting)
+		mgmt.POST("/model-settings/test", s.mgmt.TestModelSetting)
 
 		mgmt.GET("/anthropic-auth-url", s.mgmt.RequestAnthropicToken)
 		mgmt.GET("/codex-auth-url", s.mgmt.RequestCodexToken)

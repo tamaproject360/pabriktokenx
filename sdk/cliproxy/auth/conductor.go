@@ -1187,6 +1187,7 @@ func (m *Manager) pickNext(ctx context.Context, provider, model string, opts cli
 		return nil, nil, &Error{Code: "executor_not_found", Message: "executor not registered"}
 	}
 	candidates := make([]*Auth, 0, len(m.auths))
+	fallbackCandidates := make([]*Auth, 0, len(m.auths))
 	modelKey := strings.TrimSpace(model)
 	registryRef := registry.GetGlobalRegistry()
 	for _, candidate := range m.auths {
@@ -1196,10 +1197,16 @@ func (m *Manager) pickNext(ctx context.Context, provider, model string, opts cli
 		if _, used := tried[candidate.ID]; used {
 			continue
 		}
+		fallbackCandidates = append(fallbackCandidates, candidate)
 		if modelKey != "" && registryRef != nil && !registryRef.ClientSupportsModel(candidate.ID, modelKey) {
 			continue
 		}
 		candidates = append(candidates, candidate)
+	}
+	if len(candidates) == 0 {
+		// Registry metadata can lag behind manual model overrides. Fallback to
+		// provider-level candidates so upstream can make the final compatibility decision.
+		candidates = fallbackCandidates
 	}
 	if len(candidates) == 0 {
 		m.mu.RUnlock()

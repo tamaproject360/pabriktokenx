@@ -3,6 +3,47 @@
 ## [Unreleased]
 
 ### Fixed
+- **Model Live Test Button**: Added per-model live connectivity check from Model Settings
+  - New **Test Model** action validates model request path against the selected auth file/account
+  - Added endpoint `POST /v0/management/model-settings/test` for runtime model health checks
+  - Supports live tests for Gemini, Codex, and OpenAI-compatible models with status/error preview
+
+- **Model Test Parity**: Model Settings test now uses the same runtime executor path as Playground
+  - Prevents false failures where alias-mapped models (e.g. GPT 5.x variants) worked in Playground but failed in Test button
+  - Test now respects provider model mapping and request translation used by normal inference flow
+
+- **Model Remove Consistency**: Removing a model now hides it immediately and consistently without backend restart
+  - Remove action now marks matching model entries across same provider auth files to prevent duplicate reappearance
+  - Global removed-state now treats a model as removed only when no active entry remains
+  - Model listing endpoint now respects global removed-state for immediate UI consistency
+  - Frontend applies optimistic hide so removed model disappears instantly while backend updates
+
+- **Provider Scope Model Settings**: Add/Edit model now works across all auth files under the same provider
+  - Add Model no longer tied to a single auth file; provider scope is applied automatically
+  - Edit Model propagates changes (model id/display/provider/enabled) across provider auth files
+  - Auth file field in Add/Edit is now optional and treated as scope hint, not hard binding
+
+- **Playground Provider Routing**: Model requests now honor selected provider category
+  - Playground sends `X-Provider-Hint` header based on selected provider in model dropdown
+  - Backend narrows routing candidates to the hinted provider when the model exists in multiple providers
+  - Prevents false failures where a Codex model was accidentally routed via non-Codex chat endpoint
+
+- **Playground Provider Hint Enforcement**: Provider hint mismatches now fail fast with explicit errors
+  - Backend no longer silently falls back to unrelated providers when `X-Provider-Hint` does not match model provider mapping
+  - Returns clearer `400` error when model is not available in selected provider
+
+- **Auth Selection Fallback for Manual Models**: Runtime now falls back to provider-level auth candidates when registry model support is stale
+  - Prevents false `auth_not_found` for provider-scoped/manual model entries that are not yet reflected in registry support metadata
+  - Upstream provider remains final source of truth for actual model compatibility
+
+- **Playground Hint Routing for Manual Models**: Request routing now uses selected provider hint when registry mapping is stale/missing
+  - If model-to-provider registry metadata is missing but hinted provider has active auth, backend routes to hinted provider instead of failing early
+  - Keeps strict mismatch error only when hinted provider has no available auth
+
+- **Playground Conversation Provider Sync**: Restored conversations now preserve provider type with model
+  - Prevents stale provider hints after loading previous chats or switching models across provider categories
+  - Conversation updates now persist both selected model and selected provider type
+
 - **Model Settings UI Cleanup**: Removed stray literal `\n` text shown near model toggles on model cards
 
 - **Model Lifecycle Controls**: Added add/remove/restore/edit model controls in Model Settings
