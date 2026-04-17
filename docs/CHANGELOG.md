@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Fixed
+- **Production Model Fetch Compatibility**: Reverse proxy now forwards root `/models` requests to the OpenAI-compatible backend models endpoint
+  - Added nginx compatibility routing from `/models` to `/v1/models`
+  - Prevents API clients from accidentally receiving the frontend SPA HTML when fetching model lists behind the production domain
+
 - **Management Secret Exposure in Docker Config**: Docker deployment no longer ships a default management password in `config.docker.yaml`
   - Cleared the hardcoded `remote-management.secret-key` from the Docker config
   - Docker compose now forwards optional `MANAGEMENT_PASSWORD` from the server `.env` into the backend container
