@@ -53,6 +53,15 @@
   - Prevents false negatives where Gemini CLI auth was tested with generic Gemini executor
   - Live test provider resolver now preserves `gemini-cli` instead of collapsing it to `gemini`
 
+- **Cherry Studio Model Fetch Compatibility**: `/v1/models` now exposes configured and fallback Codex models
+  - OpenAI models endpoint now merges active models from `model_settings.json` into the API model list
+  - Added hardcoded fallback entries for `gpt-5.4` and `gpt-5.4-mini` when not yet present in runtime registry
+  - Prevents missing model list entries in external clients (e.g. Cherry Studio) while Playground can already run them
+
+- **Cherry Studio Chat Routing for Manual Models**: Chat requests now resolve provider from model settings when registry mapping is missing
+  - Request resolver falls back to provider data in `model_settings.json` for enabled, non-removed models
+  - Fixes `unknown provider for model gpt-5.4-mini` for clients that do not send `X-Provider-Hint`
+
 - **Model Settings UI Cleanup**: Removed stray literal `\n` text shown near model toggles on model cards
 
 - **Model Lifecycle Controls**: Added add/remove/restore/edit model controls in Model Settings

@@ -3,10 +3,12 @@ package handlers
 import (
 	"context"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	management "github.com/router-for-me/CLIProxyAPI/v6/internal/api/handlers/management"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/registry"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v6/sdk/cliproxy/auth"
 )
@@ -127,6 +129,56 @@ func TestGetRequestDetails_UsesHintWhenRegistryMismatchButAuthExists(t *testing.
 	providers, _, _, errMsg := h.getRequestDetails(ctx, "gpt-5.4-mini")
 	if errMsg != nil {
 		t.Fatalf("expected no error, got %v", errMsg)
+	}
+	if len(providers) != 1 || providers[0] != "codex" {
+		t.Fatalf("expected providers [codex], got %v", providers)
+	}
+}
+
+func TestGetRequestDetails_UsesConfiguredProviderWithoutHint(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	settingsPath := t.TempDir() + "/model_settings_test.json"
+	settingsJSON := `{
+		"models": {
+			"codex-a.json:gpt-5.4-mini": {
+				"model_id": "gpt-5.4-mini",
+				"display_name": "gpt-5.4-mini",
+				"provider": "codex",
+				"auth_file": "codex-a.json",
+				"enabled": true
+			}
+		}
+	}`
+	if err := os.WriteFile(settingsPath, []byte(settingsJSON), 0o644); err != nil {
+		t.Fatalf("write model settings: %v", err)
+	}
+	management.SetModelSettingsPath(settingsPath)
+	t.Cleanup(func() {
+		management.SetModelSettingsPath("")
+	})
+
+	manager := coreauth.NewManager(nil, nil, nil)
+	if _, err := manager.Register(context.Background(), &coreauth.Auth{
+		ID:       "test-auth-configured-codex",
+		Provider: "codex",
+		Status:   coreauth.StatusActive,
+		Metadata: map[string]any{"email": "test@example.com"},
+	}); err != nil {
+		t.Fatalf("register auth: %v", err)
+	}
+
+	ginCtx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	ginCtx.Request = httptest.NewRequest("POST", "/v1/chat/completions", nil)
+	ctx := context.WithValue(context.Background(), "gin", ginCtx)
+
+	h := &BaseAPIHandler{AuthManager: manager}
+	providers, model, _, errMsg := h.getRequestDetails(ctx, "gpt-5.4-mini")
+	if errMsg != nil {
+		t.Fatalf("expected no error, got %v", errMsg)
+	}
+	if model != "gpt-5.4-mini" {
+		t.Fatalf("expected model gpt-5.4-mini, got %q", model)
 	}
 	if len(providers) != 1 || providers[0] != "codex" {
 		t.Fatalf("expected providers [codex], got %v", providers)

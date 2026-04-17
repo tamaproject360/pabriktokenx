@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -28,6 +29,11 @@ import (
 // It holds a pool of clients to interact with the backend service.
 type OpenAIAPIHandler struct {
 	*handlers.BaseAPIHandler
+}
+
+var openAIHardcodedModelDefaults = []string{
+	"gpt-5.4",
+	"gpt-5.4-mini",
 }
 
 // NewOpenAIAPIHandler creates a new OpenAI API handlers instance.
@@ -62,17 +68,23 @@ func (h *OpenAIAPIHandler) Models() []map[string]any {
 func (h *OpenAIAPIHandler) OpenAIModels(c *gin.Context) {
 	// Get all available models
 	allModels := h.Models()
+	configuredModels := management.GetAllConfiguredModels()
 
 	// Filter to only include the 4 required fields: id, object, created, owned_by
 	filteredModels := make([]map[string]any, len(allModels))
 	filteredModels = filteredModels[:0]
+	seenIDs := make(map[string]struct{}, len(allModels))
 	for _, model := range allModels {
 		modelID, _ := model["id"].(string)
+		modelID = strings.TrimSpace(modelID)
+		if modelID == "" {
+			continue
+		}
 		if management.IsModelGloballyRemoved(modelID) {
 			continue
 		}
 		filteredModel := map[string]any{
-			"id":     model["id"],
+			"id":     modelID,
 			"object": model["object"],
 		}
 
@@ -87,6 +99,47 @@ func (h *OpenAIAPIHandler) OpenAIModels(c *gin.Context) {
 		}
 
 		filteredModels = append(filteredModels, filteredModel)
+		seenIDs[modelID] = struct{}{}
+	}
+
+	for _, setting := range configuredModels {
+		modelID := strings.TrimSpace(setting.ModelID)
+		if modelID == "" {
+			continue
+		}
+		if management.IsModelGloballyRemoved(modelID) {
+			continue
+		}
+		if _, exists := seenIDs[modelID]; exists {
+			continue
+		}
+		filteredModels = append(filteredModels, map[string]any{
+			"id":       modelID,
+			"object":   "model",
+			"created":  int64(0),
+			"owned_by": "configured",
+		})
+		seenIDs[modelID] = struct{}{}
+	}
+
+	for _, modelID := range openAIHardcodedModelDefaults {
+		trimmedModelID := strings.TrimSpace(modelID)
+		if trimmedModelID == "" {
+			continue
+		}
+		if management.IsModelGloballyRemoved(trimmedModelID) {
+			continue
+		}
+		if _, exists := seenIDs[trimmedModelID]; exists {
+			continue
+		}
+		filteredModels = append(filteredModels, map[string]any{
+			"id":       trimmedModelID,
+			"object":   "model",
+			"created":  int64(0),
+			"owned_by": "hardcoded",
+		})
+		seenIDs[trimmedModelID] = struct{}{}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

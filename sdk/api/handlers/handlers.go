@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	management "github.com/router-for-me/CLIProxyAPI/v6/internal/api/handlers/management"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/interfaces"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/logging"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/util"
@@ -545,12 +546,19 @@ func (h *BaseAPIHandler) getRequestDetails(ctx context.Context, modelName string
 
 	// Use the normalizedModel to get the provider name.
 	providers = util.GetProviderName(normalizedModel)
+	if len(providers) == 0 {
+		providers = management.GetConfiguredProvidersForModel(normalizedModel)
+	}
 	if len(providers) == 0 && metadata != nil {
 		if originalRaw, ok := metadata[util.ThinkingOriginalModelMetadataKey]; ok {
 			if originalModel, okStr := originalRaw.(string); okStr {
 				originalModel = strings.TrimSpace(originalModel)
 				if originalModel != "" && !strings.EqualFold(originalModel, normalizedModel) {
-					if altProviders := util.GetProviderName(originalModel); len(altProviders) > 0 {
+					altProviders := util.GetProviderName(originalModel)
+					if len(altProviders) == 0 {
+						altProviders = management.GetConfiguredProvidersForModel(originalModel)
+					}
+					if len(altProviders) > 0 {
 						providers = altProviders
 						normalizedModel = originalModel
 					}

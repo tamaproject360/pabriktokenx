@@ -476,6 +476,59 @@ func GetConfiguredModelsForAuthFiles(authFiles ...string) []ModelSetting {
 	return result
 }
 
+// GetAllConfiguredModels returns all non-removed models configured in model settings.
+func GetAllConfiguredModels() []ModelSetting {
+	config, err := loadModelSettings()
+	if err != nil {
+		return nil
+	}
+
+	result := make([]ModelSetting, 0, len(config.Models))
+	for _, model := range config.Models {
+		if model.Removed {
+			continue
+		}
+		result = append(result, model)
+	}
+
+	return result
+}
+
+// GetConfiguredProvidersForModel returns distinct active providers configured for a model.
+func GetConfiguredProvidersForModel(modelID string) []string {
+	config, err := loadModelSettings()
+	if err != nil {
+		return nil
+	}
+
+	needle := normalizeModelID(modelID)
+	if needle == "" {
+		return nil
+	}
+
+	seen := make(map[string]struct{})
+	providers := make([]string, 0)
+	for _, model := range config.Models {
+		if model.Removed || !model.Enabled {
+			continue
+		}
+		if normalizeModelID(model.ModelID) != needle {
+			continue
+		}
+		provider := normalizeProvider(model.Provider)
+		if provider == "" {
+			continue
+		}
+		if _, exists := seen[provider]; exists {
+			continue
+		}
+		seen[provider] = struct{}{}
+		providers = append(providers, provider)
+	}
+
+	return providers
+}
+
 func normalizeProvider(provider string) string {
 	return strings.ToLower(strings.TrimSpace(provider))
 }

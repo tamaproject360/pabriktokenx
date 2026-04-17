@@ -1,6 +1,9 @@
 package management
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
 func TestIsModelGloballyRemoved_RespectsActiveEntry(t *testing.T) {
 	oldPath := getModelSettingsPath()
@@ -195,5 +198,88 @@ func TestResolveProviderForScope_FromConfig(t *testing.T) {
 	got := h.resolveProviderForScope(cfg, "", "codex-a.json", "gpt-5.4")
 	if got != "codex" {
 		t.Fatalf("resolveProviderForScope should infer provider from config, got %q", got)
+	}
+}
+
+func TestGetAllConfiguredModels_ExcludesRemoved(t *testing.T) {
+	oldPath := getModelSettingsPath()
+	tmpPath := t.TempDir() + "/model_settings_all_test.json"
+	SetModelSettingsPath(tmpPath)
+	t.Cleanup(func() {
+		SetModelSettingsPath(oldPath)
+	})
+
+	cfg := &ModelSettingsConfig{Models: map[string]ModelSetting{
+		"codex-a.json:gpt-5.4": {
+			ModelID:  "gpt-5.4",
+			Provider: "codex",
+			AuthFile: "codex-a.json",
+			Enabled:  true,
+			Removed:  false,
+		},
+		"codex-a.json:gpt-5.4-mini": {
+			ModelID:  "gpt-5.4-mini",
+			Provider: "codex",
+			AuthFile: "codex-a.json",
+			Enabled:  false,
+			Removed:  true,
+		},
+	}}
+	if err := saveModelSettings(cfg); err != nil {
+		t.Fatalf("saveModelSettings error: %v", err)
+	}
+
+	all := GetAllConfiguredModels()
+	if len(all) != 1 {
+		t.Fatalf("expected 1 active configured model, got %d", len(all))
+	}
+	if all[0].ModelID != "gpt-5.4" {
+		t.Fatalf("expected model gpt-5.4, got %q", all[0].ModelID)
+	}
+}
+
+func TestGetConfiguredProvidersForModel_ExcludesDisabledAndRemoved(t *testing.T) {
+	oldPath := getModelSettingsPath()
+	tmpPath := t.TempDir() + "/model_settings_provider_test.json"
+	SetModelSettingsPath(tmpPath)
+	t.Cleanup(func() {
+		SetModelSettingsPath(oldPath)
+	})
+
+	settingsJSON := `{
+		"models": {
+			"codex-a.json:gpt-5.4-mini": {
+				"model_id": "gpt-5.4-mini",
+				"provider": "codex",
+				"auth_file": "codex-a.json",
+				"enabled": true,
+				"removed": false
+			},
+			"openai-a.json:gpt-5.4-mini": {
+				"model_id": "gpt-5.4-mini",
+				"provider": "openai",
+				"auth_file": "openai-a.json",
+				"enabled": false,
+				"removed": false
+			},
+			"codex-b.json:gpt-5.4-mini": {
+				"model_id": "gpt-5.4-mini",
+				"provider": "codex",
+				"auth_file": "codex-b.json",
+				"enabled": false,
+				"removed": true
+			}
+		}
+	}`
+	if err := os.WriteFile(tmpPath, []byte(settingsJSON), 0o644); err != nil {
+		t.Fatalf("write settings error: %v", err)
+	}
+
+	providers := GetConfiguredProvidersForModel("gpt-5.4-mini")
+	if len(providers) != 1 {
+		t.Fatalf("expected 1 provider, got %d (%v)", len(providers), providers)
+	}
+	if providers[0] != "codex" {
+		t.Fatalf("expected provider codex, got %q", providers[0])
 	}
 }
