@@ -20,6 +20,15 @@
   - Shows clear in-card success state (`Connected`) when account is actually persisted
   - Added toast notifications for successful and failed account additions
 
+- **Gemini Onboarding Error Transparency**: Backend now exposes detailed onboarding/check error messages
+  - Gemini OAuth log text now distinguishes token exchange success from onboarding completion
+  - OAuth session error now includes detailed onboarding/Cloud API verification failure reason
+
+- **Gemini Auth Persistence Resilience**: Gemini OAuth now saves credentials even when onboarding checks are partially failing
+  - Onboarding and Cloud API verification failures are downgraded to warnings when credential data can still be persisted
+  - Saved Gemini auth entries now include `status_message` warning details for troubleshooting in Auth Files UI
+  - Added fallback project resolution path to reduce false-negative OAuth failures
+
 - **Docker Port Consistency**: Frontend and backend container ports are now consistent for server deployment
   - Production compose now publishes frontend on `8686` (was `3000`) and backend on `9999`
   - Development compose now publishes Vite frontend on `8686` and backend on `9999`

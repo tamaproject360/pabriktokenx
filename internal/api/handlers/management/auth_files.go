@@ -1522,47 +1522,82 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 			SetOAuthSessionError(state, "Failed to get authenticated client")
 			return
 		}
-		fmt.Println("Authentication successful.")
+		fmt.Println("OAuth token exchange successful. Starting Gemini CLI onboarding...")
+
+		onboardingWarning := ""
+		appendOnboardingWarning := func(msg string) {
+			trimmed := strings.TrimSpace(msg)
+			if trimmed == "" {
+				return
+			}
+			if onboardingWarning == "" {
+				onboardingWarning = trimmed
+				return
+			}
+			onboardingWarning = onboardingWarning + "; " + trimmed
+		}
 
 		if strings.EqualFold(requestedProjectID, "ALL") {
 			ts.Auto = false
 			projects, errAll := onboardAllGeminiProjects(ctx, gemClient, &ts)
 			if errAll != nil {
-				log.Errorf("Failed to complete Gemini CLI onboarding: %v", errAll)
-				SetOAuthSessionError(state, "Failed to complete Gemini CLI onboarding")
-				return
+				log.Warnf("Gemini onboarding warning: %v", errAll)
+				appendOnboardingWarning(fmt.Sprintf("Gemini CLI onboarding warning: %v", errAll))
 			}
-			if errVerify := ensureGeminiProjectsEnabled(ctx, gemClient, projects); errVerify != nil {
-				log.Errorf("Failed to verify Cloud AI API status: %v", errVerify)
-				SetOAuthSessionError(state, "Failed to verify Cloud AI API status")
-				return
-			}
-			ts.ProjectID = strings.Join(projects, ",")
-			ts.Checked = true
-		} else {
-			if errEnsure := ensureGeminiProjectAndOnboard(ctx, gemClient, &ts, requestedProjectID); errEnsure != nil {
-				log.Errorf("Failed to complete Gemini CLI onboarding: %v", errEnsure)
-				SetOAuthSessionError(state, "Failed to complete Gemini CLI onboarding")
-				return
+			if len(projects) > 0 {
+				ts.ProjectID = strings.Join(projects, ",")
+				if errVerify := ensureGeminiProjectsEnabled(ctx, gemClient, projects); errVerify != nil {
+					log.Warnf("Gemini Cloud AI API verification warning: %v", errVerify)
+					appendOnboardingWarning(fmt.Sprintf("Cloud AI API verification warning: %v", errVerify))
+					ts.Checked = false
+				} else {
+					ts.Checked = true
+				}
 			}
 
 			if strings.TrimSpace(ts.ProjectID) == "" {
-				log.Error("Onboarding did not return a project ID")
-				SetOAuthSessionError(state, "Failed to resolve project ID")
-				return
+				fallbackProjectID, errFallback := resolveFallbackGeminiProjectID(ctx, gemClient, requestedProjectID)
+				if errFallback != nil {
+					log.Warnf("Gemini project resolution warning: %v", errFallback)
+					appendOnboardingWarning(fmt.Sprintf("Failed to resolve project ID automatically: %v", errFallback))
+					ts.ProjectID = "pending-project"
+					ts.Checked = false
+				} else {
+					ts.ProjectID = fallbackProjectID
+					ts.Checked = false
+					appendOnboardingWarning("Gemini onboarding incomplete; saved credential with fallback project ID")
+				}
+			}
+		} else {
+			if errEnsure := ensureGeminiProjectAndOnboard(ctx, gemClient, &ts, requestedProjectID); errEnsure != nil {
+				log.Warnf("Gemini onboarding warning: %v", errEnsure)
+				appendOnboardingWarning(fmt.Sprintf("Gemini CLI onboarding warning: %v", errEnsure))
+			}
+
+			if strings.TrimSpace(ts.ProjectID) == "" {
+				fallbackProjectID, errFallback := resolveFallbackGeminiProjectID(ctx, gemClient, requestedProjectID)
+				if errFallback != nil {
+					log.Warnf("Gemini project resolution warning: %v", errFallback)
+					appendOnboardingWarning(fmt.Sprintf("Failed to resolve project ID automatically: %v", errFallback))
+					ts.ProjectID = "pending-project"
+					ts.Auto = strings.TrimSpace(requestedProjectID) == ""
+				} else {
+					ts.ProjectID = fallbackProjectID
+					ts.Auto = strings.TrimSpace(requestedProjectID) == ""
+					appendOnboardingWarning("Gemini onboarding incomplete; saved credential with fallback project ID")
+				}
 			}
 
 			isChecked, errCheck := checkCloudAPIIsEnabled(ctx, gemClient, ts.ProjectID)
 			if errCheck != nil {
-				log.Errorf("Failed to verify Cloud AI API status: %v", errCheck)
-				SetOAuthSessionError(state, "Failed to verify Cloud AI API status")
-				return
-			}
-			ts.Checked = isChecked
-			if !isChecked {
-				log.Error("Cloud AI API is not enabled for the selected project")
-				SetOAuthSessionError(state, "Cloud AI API not enabled")
-				return
+				log.Warnf("Gemini Cloud AI API verification warning: %v", errCheck)
+				appendOnboardingWarning(fmt.Sprintf("Cloud AI API verification warning: %v", errCheck))
+				ts.Checked = false
+			} else {
+				ts.Checked = isChecked
+				if !isChecked {
+					appendOnboardingWarning("Cloud AI API is not enabled for the selected project")
+				}
 			}
 		}
 
@@ -1571,6 +1606,9 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 			"project_id": ts.ProjectID,
 			"auto":       ts.Auto,
 			"checked":    ts.Checked,
+		}
+		if onboardingWarning != "" {
+			recordMetadata["onboarding_warning"] = onboardingWarning
 		}
 
 		fileName := geminiAuth.CredentialFileName(ts.Email, ts.ProjectID, true)
@@ -1581,6 +1619,9 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 			Storage:  &ts,
 			Metadata: recordMetadata,
 		}
+		if onboardingWarning != "" {
+			record.StatusMessage = onboardingWarning
+		}
 		savedPath, errSave := h.saveTokenRecord(ctx, record)
 		if errSave != nil {
 			log.Errorf("Failed to save token to file: %v", errSave)
@@ -1590,6 +1631,9 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 
 		CompleteOAuthSession(state)
 		CompleteOAuthSessionsByProvider("gemini")
+		if onboardingWarning != "" {
+			fmt.Printf("Gemini credential saved with warning: %s\n", onboardingWarning)
+		}
 		fmt.Printf("You can now use Gemini CLI services through this CLI; token saved to %s\n", savedPath)
 	}()
 
@@ -2422,6 +2466,25 @@ func ensureGeminiProjectAndOnboard(ctx context.Context, httpClient *http.Client,
 	return nil
 }
 
+func resolveFallbackGeminiProjectID(ctx context.Context, httpClient *http.Client, requestedProject string) (string, error) {
+	trimmedRequest := strings.TrimSpace(requestedProject)
+	if trimmedRequest != "" && !strings.EqualFold(trimmedRequest, "ALL") {
+		return trimmedRequest, nil
+	}
+
+	projects, errProjects := fetchGCPProjects(ctx, httpClient)
+	if errProjects != nil {
+		return "", fmt.Errorf("fetch project list: %w", errProjects)
+	}
+	for _, project := range projects {
+		candidate := strings.TrimSpace(project.ProjectID)
+		if candidate != "" {
+			return candidate, nil
+		}
+	}
+	return "", fmt.Errorf("no Google Cloud projects available for this account")
+}
+
 func onboardAllGeminiProjects(ctx context.Context, httpClient *http.Client, storage *geminiAuth.GeminiTokenStorage) ([]string, error) {
 	projects, errProjects := fetchGCPProjects(ctx, httpClient)
 	if errProjects != nil {
@@ -2432,6 +2495,7 @@ func onboardAllGeminiProjects(ctx context.Context, httpClient *http.Client, stor
 	}
 	activated := make([]string, 0, len(projects))
 	seen := make(map[string]struct{}, len(projects))
+	var firstErr error
 	for _, project := range projects {
 		candidate := strings.TrimSpace(project.ProjectID)
 		if candidate == "" {
@@ -2441,7 +2505,11 @@ func onboardAllGeminiProjects(ctx context.Context, httpClient *http.Client, stor
 			continue
 		}
 		if err := performGeminiCLISetup(ctx, httpClient, storage, candidate); err != nil {
-			return nil, fmt.Errorf("onboard project %s: %w", candidate, err)
+			log.Warnf("Gemini onboarding skipped project %s: %v", candidate, err)
+			if firstErr == nil {
+				firstErr = fmt.Errorf("onboard project %s: %w", candidate, err)
+			}
+			continue
 		}
 		finalID := strings.TrimSpace(storage.ProjectID)
 		if finalID == "" {
@@ -2451,7 +2519,13 @@ func onboardAllGeminiProjects(ctx context.Context, httpClient *http.Client, stor
 		seen[candidate] = struct{}{}
 	}
 	if len(activated) == 0 {
+		if firstErr != nil {
+			return nil, firstErr
+		}
 		return nil, fmt.Errorf("no Google Cloud projects available for this account")
+	}
+	if firstErr != nil {
+		log.Warnf("Gemini onboarding completed with partial success: %v", firstErr)
 	}
 	return activated, nil
 }
