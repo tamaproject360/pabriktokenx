@@ -17,6 +17,7 @@ services:
     environment:
       - TZ=Asia/Jakarta
       - DEBUG=true
+      - OAUTH_PUBLIC_BASE_URL=${OAUTH_PUBLIC_BASE_URL:-}
     networks:
       - pabriktokenx-network
     command: sh -c "go run ./cmd/server -config /app/config.docker.yaml"

@@ -340,6 +340,27 @@ docker-compose logs -f
 - 🔌 Backend API: http://localhost:9999
 - 📊 Management API: http://localhost:9999/v0/management
 
+### OAuth on Domain / Tunnel (Cloudflare Zero Trust)
+
+If you run the dashboard behind a public domain (for example via Cloudflare Tunnel), set a public OAuth base URL so callback redirects do not use loopback `localhost`.
+
+```bash
+# .env (same directory as docker-compose.yml)
+OAUTH_PUBLIC_BASE_URL=https://token.tamadev.web.id
+```
+
+Then redeploy:
+
+```bash
+docker-compose up -d --build
+```
+
+Notes:
+- Ensure your tunnel forwards the same domain to frontend port `8686`.
+- OAuth callback paths like `/google/callback` are now proxied to backend automatically.
+- For Gemini OAuth in public-domain mode, use your own Google OAuth credentials and add this Authorized Redirect URI in Google Cloud Console:
+   - `https://token.tamadev.web.id/google/callback`
+
 ### Docker Compose Features
 
 ✅ **Production-ready** - Multi-stage builds for optimized images  

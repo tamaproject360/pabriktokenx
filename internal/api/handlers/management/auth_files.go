@@ -256,6 +256,88 @@ func (h *Handler) managementCallbackURL(path string) (string, error) {
 	return fmt.Sprintf("%s://127.0.0.1:%d%s", scheme, h.cfg.Port, path), nil
 }
 
+func normalizeForwardedHost(raw string) string {
+	host := strings.TrimSpace(raw)
+	if host == "" {
+		return ""
+	}
+	if strings.Contains(host, ",") {
+		host = strings.TrimSpace(strings.Split(host, ",")[0])
+	}
+	return host
+}
+
+func isLoopbackHost(hostport string) bool {
+	host := strings.TrimSpace(hostport)
+	if host == "" {
+		return false
+	}
+	if parsedHost, _, err := net.SplitHostPort(host); err == nil {
+		host = parsedHost
+	}
+	host = strings.Trim(host, "[]")
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
+func callbackURLFromBase(baseURL, path string) (string, error) {
+	parsed, err := url.Parse(strings.TrimSpace(baseURL))
+	if err != nil {
+		return "", fmt.Errorf("invalid oauth base url: %w", err)
+	}
+	if parsed.Scheme == "" || parsed.Host == "" {
+		return "", fmt.Errorf("invalid oauth base url: missing scheme or host")
+	}
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	parsed.Path = strings.TrimRight(parsed.Path, "/") + path
+	parsed.RawQuery = ""
+	parsed.Fragment = ""
+	return parsed.String(), nil
+}
+
+func (h *Handler) webUICallbackURL(c *gin.Context, path string) (string, bool, error) {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	if envBase := strings.TrimSpace(os.Getenv("OAUTH_PUBLIC_BASE_URL")); envBase != "" {
+		callbackURL, err := callbackURLFromBase(envBase, path)
+		if err != nil {
+			return "", false, err
+		}
+		return callbackURL, true, nil
+	}
+
+	host := normalizeForwardedHost(c.GetHeader("X-Forwarded-Host"))
+	if host == "" {
+		host = normalizeForwardedHost(c.Request.Host)
+	}
+	if host == "" {
+		return "", false, fmt.Errorf("request host unavailable")
+	}
+	if isLoopbackHost(host) {
+		return "", false, nil
+	}
+
+	scheme := strings.TrimSpace(c.GetHeader("X-Forwarded-Proto"))
+	if strings.Contains(scheme, ",") {
+		scheme = strings.TrimSpace(strings.Split(scheme, ",")[0])
+	}
+	if scheme == "" {
+		scheme = "http"
+		if c.Request.TLS != nil {
+			scheme = "https"
+		}
+	}
+
+	return fmt.Sprintf("%s://%s%s", scheme, host, path), true, nil
+}
+
 func (h *Handler) ListAuthFiles(c *gin.Context) {
 	if h == nil {
 		c.JSON(500, gin.H{"error": "handler not initialized"})
@@ -1248,6 +1330,19 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 
 	// Optional project ID from query
 	projectID := c.Query("project_id")
+	isWebUI := isWebUIRequest(c)
+	redirectURL := "http://localhost:8085/oauth2callback"
+	useLocalForwarder := isWebUI
+
+	if isWebUI {
+		if callbackURL, usePublic, err := h.webUICallbackURL(c, "/google/callback"); err != nil {
+			log.WithError(err).Warn("failed to determine public gemini callback URL, falling back to local callback forwarder")
+		} else if usePublic {
+			redirectURL = callbackURL
+			useLocalForwarder = false
+			log.Infof("using public gemini oauth callback URL: %s", redirectURL)
+		}
+	}
 
 	fmt.Println("Initializing Google authentication...")
 
@@ -1255,7 +1350,7 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 	conf := &oauth2.Config{
 		ClientID:     getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", geminiAuth.DefaultClientID),
 		ClientSecret: getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", geminiAuth.DefaultClientSecret),
-		RedirectURL:  "http://localhost:8085/oauth2callback",
+		RedirectURL:  redirectURL,
 		Scopes: []string{
 			"https://www.googleapis.com/auth/cloud-platform",
 			"https://www.googleapis.com/auth/userinfo.email",
@@ -1270,9 +1365,8 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 
 	RegisterOAuthSession(state, "gemini")
 
-	isWebUI := isWebUIRequest(c)
 	var forwarder *callbackForwarder
-	if isWebUI {
+	if useLocalForwarder {
 		targetURL, errTarget := h.managementCallbackURL("/google/callback")
 		if errTarget != nil {
 			log.WithError(errTarget).Error("failed to compute gemini callback target")
@@ -1288,7 +1382,7 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 	}
 
 	go func() {
-		if isWebUI {
+		if useLocalForwarder {
 			defer stopCallbackForwarderInstance(geminiCallbackPort, forwarder)
 		}
 

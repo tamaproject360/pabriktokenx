@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Fixed
+- **Remote OAuth Callback for Gemini CLI**: Web UI OAuth now works behind public domains/tunnels (e.g., Cloudflare Zero Trust)
+  - Gemini OAuth Web UI flow now uses a public callback URL for non-loopback hosts instead of `localhost:8085`
+  - Added optional `OAUTH_PUBLIC_BASE_URL` env var override for explicit callback base URL
+  - Frontend nginx now proxies OAuth callback routes (`/google/callback`, etc.) to backend
+
 - **Docker Port Consistency**: Frontend and backend container ports are now consistent for server deployment
   - Production compose now publishes frontend on `8686` (was `3000`) and backend on `9999`
   - Development compose now publishes Vite frontend on `8686` and backend on `9999`
