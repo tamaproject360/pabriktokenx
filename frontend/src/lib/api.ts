@@ -336,6 +336,24 @@ export const removeModelSetting = (payload: {
   auth_file: string;
 }) => api.post<{ message: string; model: ModelSetting }>('/model-settings/remove', payload);
 
+export const restoreModelSetting = (payload: {
+  model_id: string;
+  display_name?: string;
+  provider?: string;
+  auth_file: string;
+  enabled?: boolean;
+}) => api.post<{ message: string; model: ModelSetting }>('/model-settings/restore', payload);
+
+export const editModelSetting = (payload: {
+  old_model_id: string;
+  old_auth_file: string;
+  model_id: string;
+  display_name?: string;
+  provider?: string;
+  auth_file?: string;
+  enabled?: boolean;
+}) => api.post<{ message: string; model: ModelSetting }>('/model-settings/edit', payload);
+
 // Latest version check
 export const getLatestVersion = () => api.get('/latest-version');
 

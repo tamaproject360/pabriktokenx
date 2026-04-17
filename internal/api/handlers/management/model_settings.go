@@ -561,3 +561,172 @@ func (h *Handler) RemoveModelSetting(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "model removed", "model": current})
 }
+
+// RestoreModelSetting restores a previously removed model for the specified auth file.
+func (h *Handler) RestoreModelSetting(c *gin.Context) {
+	var req struct {
+		ModelID     string `json:"model_id"`
+		DisplayName string `json:"display_name,omitempty"`
+		Provider    string `json:"provider,omitempty"`
+		AuthFile    string `json:"auth_file"`
+		Enabled     *bool  `json:"enabled,omitempty"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
+		return
+	}
+
+	req.ModelID = strings.TrimSpace(req.ModelID)
+	req.DisplayName = strings.TrimSpace(req.DisplayName)
+	req.Provider = strings.TrimSpace(req.Provider)
+	req.AuthFile = strings.TrimSpace(req.AuthFile)
+	if req.ModelID == "" || req.AuthFile == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "model_id and auth_file are required"})
+		return
+	}
+
+	config, err := loadModelSettings()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load model settings: " + err.Error()})
+		return
+	}
+
+	key := req.AuthFile + ":" + req.ModelID
+	current, exists := config.Models[key]
+	if !exists {
+		current = ModelSetting{
+			ModelID:  req.ModelID,
+			AuthFile: req.AuthFile,
+			Enabled:  true,
+		}
+	}
+
+	current.ModelID = req.ModelID
+	current.AuthFile = req.AuthFile
+	if req.DisplayName != "" {
+		current.DisplayName = req.DisplayName
+	}
+	if current.DisplayName == "" {
+		current.DisplayName = req.ModelID
+	}
+	if req.Provider != "" {
+		current.Provider = req.Provider
+	}
+	if current.Provider == "" {
+		current.Provider = "unknown"
+	}
+	if req.Enabled != nil {
+		current.Enabled = *req.Enabled
+	}
+	current.Removed = false
+
+	config.Models[key] = current
+
+	if err := saveModelSettings(config); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save model settings: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "model restored", "model": current})
+}
+
+// EditModelSetting edits model metadata (including model ID/auth file) and keeps list state consistent.
+func (h *Handler) EditModelSetting(c *gin.Context) {
+	var req struct {
+		OldModelID  string `json:"old_model_id"`
+		OldAuthFile string `json:"old_auth_file"`
+		ModelID     string `json:"model_id"`
+		DisplayName string `json:"display_name,omitempty"`
+		Provider    string `json:"provider,omitempty"`
+		AuthFile    string `json:"auth_file,omitempty"`
+		Enabled     *bool  `json:"enabled,omitempty"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
+		return
+	}
+
+	req.OldModelID = strings.TrimSpace(req.OldModelID)
+	req.OldAuthFile = strings.TrimSpace(req.OldAuthFile)
+	req.ModelID = strings.TrimSpace(req.ModelID)
+	req.DisplayName = strings.TrimSpace(req.DisplayName)
+	req.Provider = strings.TrimSpace(req.Provider)
+	req.AuthFile = strings.TrimSpace(req.AuthFile)
+
+	if req.OldModelID == "" || req.OldAuthFile == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "old_model_id and old_auth_file are required"})
+		return
+	}
+	if req.ModelID == "" {
+		req.ModelID = req.OldModelID
+	}
+	if req.AuthFile == "" {
+		req.AuthFile = req.OldAuthFile
+	}
+
+	config, err := loadModelSettings()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load model settings: " + err.Error()})
+		return
+	}
+
+	oldKey := req.OldAuthFile + ":" + req.OldModelID
+	current, exists := config.Models[oldKey]
+	if !exists {
+		current = ModelSetting{
+			ModelID:  req.OldModelID,
+			AuthFile: req.OldAuthFile,
+			Enabled:  true,
+		}
+	}
+
+	updated := current
+	updated.ModelID = req.ModelID
+	updated.AuthFile = req.AuthFile
+	if req.DisplayName != "" {
+		updated.DisplayName = req.DisplayName
+	}
+	if updated.DisplayName == "" {
+		updated.DisplayName = req.ModelID
+	}
+	if req.Provider != "" {
+		updated.Provider = req.Provider
+	}
+	if updated.Provider == "" {
+		updated.Provider = "unknown"
+	}
+	if req.Enabled != nil {
+		updated.Enabled = *req.Enabled
+	}
+	updated.Removed = false
+
+	newKey := updated.AuthFile + ":" + updated.ModelID
+	config.Models[newKey] = updated
+
+	if oldKey != newKey {
+		tombstone := current
+		tombstone.ModelID = req.OldModelID
+		tombstone.AuthFile = req.OldAuthFile
+		if tombstone.DisplayName == "" {
+			tombstone.DisplayName = req.OldModelID
+		}
+		if req.Provider != "" && tombstone.Provider == "" {
+			tombstone.Provider = req.Provider
+		}
+		tombstone.Enabled = false
+		tombstone.Removed = true
+		config.Models[oldKey] = tombstone
+	}
+
+	if err := saveModelSettings(config); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save model settings: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "model edited",
+		"model":   updated,
+	})
+}

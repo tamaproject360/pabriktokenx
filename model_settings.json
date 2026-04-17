@@ -32,10 +32,10 @@
   },
   "codex": {
     "auth_files": [
+      "codex-mhpratama90@gmail.com.json",
       "codex-ppkasn.kemensetneg@gmail.com.json",
-      "codex-tamadevops@gmail.com.json",
       "codex-tamaproject360@gmail.com.json",
-      "codex-mhpratama90@gmail.com.json"
+      "codex-tamadevops@gmail.com.json"
     ],
     "models": {
       "gpt-5": {
@@ -123,9 +123,9 @@
   },
   "github-copilot": {
     "auth_files": [
-      "github-copilot-tamaproject360.json",
       "github-copilot-faysdevops.json",
-      "github-copilot-ginzoproject.json"
+      "github-copilot-ginzoproject.json",
+      "github-copilot-tamaproject360.json"
     ],
     "models": {
       "claude-haiku-4.5": {

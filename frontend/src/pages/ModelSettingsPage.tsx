@@ -5,6 +5,7 @@ import {
   Settings, 
   RefreshCw, 
   Plus,
+  Pencil,
   Trash2,
   X,
 } from 'lucide-react';
@@ -23,7 +24,9 @@ import {
   updateModelSetting,
   bulkUpdateModelSettings,
   addModelSetting,
+  editModelSetting,
   removeModelSetting,
+  restoreModelSetting,
   type ModelSetting,
 } from '../lib/api';
 import gsap from 'gsap';
@@ -138,13 +141,24 @@ export default function ModelSettingsPage() {
   const [modelSettings, setModelSettings] = useState<Map<string, boolean>>(new Map());
   const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
   const [removingModels, setRemovingModels] = useState<Set<string>>(new Set());
+  const [restoringModels, setRestoringModels] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('card');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [newModel, setNewModel] = useState({
     modelId: '',
     displayName: '',
     provider: '',
     authFile: '',
+  });
+  const [editModel, setEditModel] = useState({
+    oldModelId: '',
+    oldAuthFile: '',
+    modelId: '',
+    displayName: '',
+    provider: '',
+    authFile: '',
+    enabled: true,
   });
 
   // Fetch auth files
@@ -272,6 +286,29 @@ export default function ModelSettingsPage() {
     },
   });
 
+  const restoreMutation = useMutation({
+    mutationFn: restoreModelSetting,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['modelSettings'] }),
+        queryClient.invalidateQueries({ queryKey: ['availableModels'] }),
+      ]);
+      await refetchModels();
+    },
+  });
+
+  const editMutation = useMutation({
+    mutationFn: editModelSetting,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['modelSettings'] }),
+        queryClient.invalidateQueries({ queryKey: ['availableModels'] }),
+      ]);
+      await refetchModels();
+      setShowEditModal(false);
+    },
+  });
+
   // Handle toggle change
   const handleToggle = useCallback((authFile: string, modelId: string, displayName: string, provider: string, enabled: boolean) => {
     const key = `${authFile}:${modelId}`;
@@ -366,6 +403,11 @@ export default function ModelSettingsPage() {
   // Get unique provider types for filter
   const providerTypes = Array.from(new Set(groupedByProvider.map(p => p.type)));
 
+  const removedModels = useMemo(() => {
+    if (!savedSettings?.models) return [] as ModelSetting[];
+    return savedSettings.models.filter((setting) => setting.removed);
+  }, [savedSettings]);
+
   const authFileOptions = useMemo(() => {
     if (!authFilesData?.files) return [] as Array<{ name: string; provider: string }>;
     return authFilesData.files.map((file: { name: string; provider?: string; type?: string }) => ({
@@ -423,6 +465,66 @@ export default function ModelSettingsPage() {
       },
     );
   }, [removeMutation]);
+
+  const handleRestoreModel = useCallback((setting: ModelSetting) => {
+    const key = `${setting.auth_file}:${setting.model_id}`;
+    setRestoringModels(prev => new Set(prev).add(key));
+    restoreMutation.mutate(
+      {
+        auth_file: setting.auth_file,
+        model_id: setting.model_id,
+        provider: setting.provider,
+        display_name: setting.display_name,
+        enabled: setting.enabled,
+      },
+      {
+        onSettled: () => {
+          setRestoringModels(prev => {
+            const next = new Set(prev);
+            next.delete(key);
+            return next;
+          });
+        },
+      },
+    );
+  }, [restoreMutation]);
+
+  const handleOpenEditModal = useCallback((payload: {
+    authFile: string;
+    modelId: string;
+    displayName?: string;
+    provider: string;
+    enabled: boolean;
+  }) => {
+    setEditModel({
+      oldModelId: payload.modelId,
+      oldAuthFile: payload.authFile,
+      modelId: payload.modelId,
+      displayName: payload.displayName || payload.modelId,
+      provider: payload.provider,
+      authFile: payload.authFile,
+      enabled: payload.enabled,
+    });
+    setShowEditModal(true);
+  }, []);
+
+  const handleSubmitEditModel = useCallback(() => {
+    const modelId = editModel.modelId.trim();
+    const authFile = editModel.authFile.trim();
+    if (!modelId || !authFile) {
+      return;
+    }
+
+    editMutation.mutate({
+      old_model_id: editModel.oldModelId,
+      old_auth_file: editModel.oldAuthFile,
+      model_id: modelId,
+      display_name: editModel.displayName.trim() || modelId,
+      provider: editModel.provider.trim(),
+      auth_file: authFile,
+      enabled: editModel.enabled,
+    });
+  }, [editModel, editMutation]);
 
   // Stats
   const totalModels = groupedByProvider.reduce((acc, p) => acc + p.models.length, 0);
@@ -676,6 +778,138 @@ export default function ModelSettingsPage() {
           </div>
         )}
 
+        {showEditModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-slate-900/95 backdrop-blur-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-white">Edit Model</h3>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-white/70 mb-2">Model ID</label>
+                  <input
+                    value={editModel.modelId}
+                    onChange={(e) => setEditModel(prev => ({ ...prev, modelId: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-white/70 mb-2">Display Name</label>
+                  <input
+                    value={editModel.displayName}
+                    onChange={(e) => setEditModel(prev => ({ ...prev, displayName: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-white/70 mb-2">Provider</label>
+                    <input
+                      value={editModel.provider}
+                      onChange={(e) => setEditModel(prev => ({ ...prev, provider: e.target.value }))}
+                      className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-white/70 mb-2">Auth File</label>
+                    <select
+                      value={editModel.authFile}
+                      onChange={(e) => setEditModel(prev => ({ ...prev, authFile: e.target.value }))}
+                      className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500/50"
+                    >
+                      <option value="" className="bg-slate-800">Pilih auth file</option>
+                      {authFileOptions.map(item => (
+                        <option key={item.name} value={item.name} className="bg-slate-800">
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <label className="inline-flex items-center gap-2 text-sm text-white/80">
+                  <input
+                    type="checkbox"
+                    checked={editModel.enabled}
+                    onChange={(e) => setEditModel(prev => ({ ...prev, enabled: e.target.checked }))}
+                    className="rounded border-white/20 bg-white/5"
+                  />
+                  Enabled
+                </label>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitEditModel}
+                  disabled={editMutation.isPending || !editModel.modelId.trim() || !editModel.authFile.trim()}
+                  className="px-4 py-2.5 rounded-xl bg-amber-500/30 hover:bg-amber-500/40 text-amber-100 border border-amber-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {editMutation.isPending ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {removedModels.length > 0 && (
+          <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-amber-200">Hidden Models ({removedModels.length})</h3>
+              <p className="text-xs text-amber-200/70">Model yang pernah dihapus bisa di-restore atau di-edit</p>
+            </div>
+            <div className="space-y-2 max-h-56 overflow-auto pr-1">
+              {removedModels.map((setting) => {
+                const key = `${setting.auth_file}:${setting.model_id}`;
+                const isRestoring = restoringModels.has(key);
+                return (
+                  <div key={key} className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white truncate">{setting.display_name || setting.model_id}</p>
+                      <p className="text-xs text-white/50 font-mono truncate">{setting.model_id} • {setting.provider || 'unknown'} • {setting.auth_file}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenEditModal({
+                          authFile: setting.auth_file,
+                          modelId: setting.model_id,
+                          displayName: setting.display_name,
+                          provider: setting.provider,
+                          enabled: setting.enabled,
+                        })}
+                        className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs border border-amber-500/40"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleRestoreModel(setting)}
+                        disabled={isRestoring}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-xs border border-emerald-500/40 disabled:opacity-50"
+                      >
+                        {isRestoring ? 'Restoring...' : 'Restore'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
@@ -763,6 +997,19 @@ export default function ModelSettingsPage() {
                                 </div>
                               </div>
                               <div className="flex-shrink-0 flex items-center gap-2">
+                                <button
+                                  onClick={() => handleOpenEditModal({
+                                    authFile,
+                                    modelId: model.id,
+                                    displayName: model.display_name,
+                                    provider: provider.type,
+                                    enabled,
+                                  })}
+                                  className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                  title="Edit model"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
                                 <button
                                   onClick={() => handleRemoveModel(authFile, model.id, provider.type)}
                                   disabled={isRemoving}
@@ -879,6 +1126,19 @@ export default function ModelSettingsPage() {
                                 </td>
                                 <td className="px-4 py-3">
                                   <div className="flex justify-end items-center gap-2">
+                                    <button
+                                      onClick={() => handleOpenEditModal({
+                                        authFile,
+                                        modelId: model.id,
+                                        displayName: model.display_name,
+                                        provider: provider.type,
+                                        enabled,
+                                      })}
+                                      className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                      title="Edit model"
+                                    >
+                                      <Pencil className="w-3.5 h-3.5" />
+                                    </button>
                                     <button
                                       onClick={() => handleRemoveModel(authFile, model.id, provider.type)}
                                       disabled={isRemoving}
