@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Fixed
+- **OAuth Callback Reliability**: Callback success page no longer appears when callback persistence fails
+  - OAuth callback endpoints now validate state and callback-file persistence before returning success HTML
+  - OAuth callback writer now creates the auth directory before writing temporary callback files
+  - Prevents false-success Gemini OAuth flows where no auth file is saved
+
 - **Status Detection**: Improved auth account status classification across Playground and QuotaPage
   - Rate-limited accounts (429/RESOURCE_EXHAUSTED) no longer incorrectly counted as "active"
   - GitHub Copilot `unsupported_api` model errors now treated as active (account works, specific test model wasn't compatible)

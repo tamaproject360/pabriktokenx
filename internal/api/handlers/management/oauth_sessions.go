@@ -267,6 +267,9 @@ func WriteOAuthCallbackFile(authDir, provider, state, code, errorMessage string)
 	if err != nil {
 		return "", fmt.Errorf("marshal oauth callback payload: %w", err)
 	}
+	if err := os.MkdirAll(authDir, 0o700); err != nil {
+		return "", fmt.Errorf("create auth dir for oauth callback: %w", err)
+	}
 	if err := os.WriteFile(filePath, data, 0o600); err != nil {
 		return "", fmt.Errorf("write oauth callback file: %w", err)
 	}
