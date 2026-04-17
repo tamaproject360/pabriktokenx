@@ -49,8 +49,8 @@ type ProviderModelConfig struct {
 
 // ProviderConfig represents a provider with its auth files and models
 type ProviderConfig struct {
-	AuthFiles []string                        `json:"auth_files"`
-	Models    map[string]ProviderModelConfig  `json:"models"` // key is modelId
+	AuthFiles []string                       `json:"auth_files"`
+	Models    map[string]ProviderModelConfig `json:"models"` // key is modelId
 }
 
 // NewModelSettingsConfig represents the new provider-based configuration
@@ -84,7 +84,7 @@ func loadModelSettings() (*ModelSettingsConfig, error) {
 
 	path := getModelSettingsPath()
 	log.WithField("path", path).Info("[model_settings] loading settings from path")
-	
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -123,11 +123,11 @@ func loadModelSettings() (*ModelSettingsConfig, error) {
 
 			for providerName, providerConfig := range newConfig {
 				log.WithFields(log.Fields{
-					"provider": providerName,
+					"provider":   providerName,
 					"auth_files": len(providerConfig.AuthFiles),
-					"models": len(providerConfig.Models),
+					"models":     len(providerConfig.Models),
 				}).Debug("[model_settings] processing provider")
-				
+
 				for _, authFile := range providerConfig.AuthFiles {
 					for modelID, modelConfig := range providerConfig.Models {
 						key := authFile + ":" + modelID
@@ -977,7 +977,7 @@ func (h *Handler) TestModelSetting(c *gin.Context) {
 	if provider == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "provider not supported for live testing",
-			"hint":  "currently supported: gemini, codex, openai",
+			"hint":  "currently supported: gemini, gemini-cli, codex, openai",
 		})
 		return
 	}
@@ -1018,8 +1018,8 @@ func (h *Handler) runModelLiveTest(ctx context.Context, auth *coreauth.Auth, pro
 		Format:  sdktranslator.FromString("openai"),
 	}
 	opts := cliproxyexecutor.Options{
-		Stream:         false,
-		SourceFormat:   sdktranslator.FromString("openai"),
+		Stream:          false,
+		SourceFormat:    sdktranslator.FromString("openai"),
 		OriginalRequest: bytes.Clone(payload),
 	}
 
@@ -1052,6 +1052,8 @@ func newModelTestExecutor(provider string, cfg *config.Config) modelTestExecutor
 	switch strings.ToLower(strings.TrimSpace(provider)) {
 	case "gemini":
 		return runtimeexecutor.NewGeminiExecutor(cfg)
+	case "gemini-cli":
+		return runtimeexecutor.NewGeminiCLIExecutor(cfg)
 	case "codex":
 		return runtimeexecutor.NewCodexExecutor(cfg)
 	case "openai":
@@ -1111,6 +1113,8 @@ func resolveModelTestProvider(requestedProvider string, authProvider string, mod
 	}
 	for _, provider := range providers {
 		switch {
+		case strings.Contains(provider, "gemini-cli"):
+			return "gemini-cli"
 		case strings.Contains(provider, "gemini"):
 			return "gemini"
 		case strings.Contains(provider, "codex"):

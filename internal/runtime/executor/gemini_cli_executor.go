@@ -36,11 +36,14 @@ const (
 	codeAssistEndpoint = "https://cloudcode-pa.googleapis.com"
 	codeAssistVersion  = "v1internal"
 	geminiAPIEndpoint  = "https://generativelanguage.googleapis.com/v1beta"
+
+	defaultGeminiOAuthClientID     = "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"
+	defaultGeminiOAuthClientSecret = "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"
 )
 
 var (
-	geminiOAuthClientID     = getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", "")
-	geminiOAuthClientSecret = getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", "")
+	geminiOAuthClientID     = getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", defaultGeminiOAuthClientID)
+	geminiOAuthClientSecret = getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", defaultGeminiOAuthClientSecret)
 )
 
 var geminiOAuthScopes = []string{
@@ -606,9 +609,11 @@ func prepareGeminiCLITokenSource(ctx context.Context, cfg *config.Config, auth *
 		}
 	}
 
+	clientID, clientSecret := resolveGeminiOAuthClientCredentials(metadata, base)
+
 	conf := &oauth2.Config{
-		ClientID:     geminiOAuthClientID,
-		ClientSecret: geminiOAuthClientSecret,
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
 		Scopes:       geminiOAuthScopes,
 		Endpoint:     google.Endpoint,
 	}
@@ -737,6 +742,50 @@ func stringValue(m map[string]any, key string) string {
 		}
 	}
 	return ""
+}
+
+func resolveGeminiOAuthClientCredentials(metadata, base map[string]any) (string, string) {
+	clientID := strings.TrimSpace(geminiOAuthClientID)
+	clientSecret := strings.TrimSpace(geminiOAuthClientSecret)
+	if clientID == "" {
+		clientID = defaultGeminiOAuthClientID
+	}
+	if clientSecret == "" {
+		clientSecret = defaultGeminiOAuthClientSecret
+	}
+
+	// Prefer credentials persisted with auth metadata when available.
+	if id := strings.TrimSpace(stringValue(metadata, "client_id")); id != "" {
+		clientID = id
+	}
+	if secret := strings.TrimSpace(stringValue(metadata, "client_secret")); secret != "" {
+		clientSecret = secret
+	}
+	if id := strings.TrimSpace(stringValue(base, "client_id")); id != "" {
+		clientID = id
+	}
+	if secret := strings.TrimSpace(stringValue(base, "client_secret")); secret != "" {
+		clientSecret = secret
+	}
+
+	if tokenRaw, ok := metadata["token"].(map[string]any); ok && tokenRaw != nil {
+		if id := strings.TrimSpace(stringValue(tokenRaw, "client_id")); id != "" {
+			clientID = id
+		}
+		if secret := strings.TrimSpace(stringValue(tokenRaw, "client_secret")); secret != "" {
+			clientSecret = secret
+		}
+	}
+	if tokenRaw, ok := base["token"].(map[string]any); ok && tokenRaw != nil {
+		if id := strings.TrimSpace(stringValue(tokenRaw, "client_id")); id != "" {
+			clientID = id
+		}
+		if secret := strings.TrimSpace(stringValue(tokenRaw, "client_secret")); secret != "" {
+			clientSecret = secret
+		}
+	}
+
+	return clientID, clientSecret
 }
 
 // applyGeminiCLIHeaders sets required headers for the Gemini CLI upstream.

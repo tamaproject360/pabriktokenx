@@ -44,6 +44,15 @@
   - Prevents stale provider hints after loading previous chats or switching models across provider categories
   - Conversation updates now persist both selected model and selected provider type
 
+- **Gemini CLI OAuth Refresh Fix**: Gemini CLI token refresh now sends client credentials correctly
+  - Gemini CLI executor now resolves `client_id` / `client_secret` from stored auth metadata token fields
+  - Falls back to built-in Gemini OAuth client defaults when env values are absent
+  - Fixes runtime error `oauth2: invalid_request Could not determine client ID from request` in Playground/API
+
+- **Gemini CLI Model Test Parity**: Model Settings test now routes `gemini-cli` via Gemini CLI executor
+  - Prevents false negatives where Gemini CLI auth was tested with generic Gemini executor
+  - Live test provider resolver now preserves `gemini-cli` instead of collapsing it to `gemini`
+
 - **Model Settings UI Cleanup**: Removed stray literal `\n` text shown near model toggles on model cards
 
 - **Model Lifecycle Controls**: Added add/remove/restore/edit model controls in Model Settings
