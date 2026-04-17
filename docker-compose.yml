@@ -23,6 +23,8 @@ services:
     environment:
       - TZ=Asia/Jakarta
       - OAUTH_PUBLIC_BASE_URL=${OAUTH_PUBLIC_BASE_URL:-}
+      - GEMINI_OAUTH_CLIENT_ID=${GEMINI_OAUTH_CLIENT_ID:-}
+      - GEMINI_OAUTH_CLIENT_SECRET=${GEMINI_OAUTH_CLIENT_SECRET:-}
     networks:
       - pabriktokenx-network
     healthcheck:

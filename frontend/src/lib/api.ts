@@ -126,6 +126,8 @@ export interface OAuthSession {
   provider: string;
   status: string;
   url?: string;
+  state?: string;
+  error?: string;
 }
 
 // API Functions
@@ -250,7 +252,7 @@ export const setRoutingStrategy = (strategy: string) => api.put('/routing/strate
 // OAuth
 export const requestAnthropicAuth = () => api.get<OAuthSession>('/anthropic-auth-url?is_webui=true');
 export const requestCodexAuth = () => api.get<OAuthSession>('/codex-auth-url?is_webui=true');
-export const requestGeminiCLIAuth = () => api.get<OAuthSession>('/gemini-cli-auth-url?is_webui=true');
+export const requestGeminiCLIAuth = () => api.get<OAuthSession>('/gemini-cli-auth-url?is_webui=true&remote_browser_mode=true');
 export const requestAntigravityAuth = () => api.get<OAuthSession>('/antigravity-auth-url?is_webui=true');
 export const requestQwenAuth = () => api.get<OAuthSession>('/qwen-auth-url?is_webui=true');
 export const requestKiroAuth = (provider: 'google' | 'github' = 'google') => 
@@ -259,6 +261,12 @@ export const requestIFlowAuth = () => api.get<OAuthSession>('/iflow-auth-url?is_
 export const requestGitHubCopilotAuth = () => api.get<OAuthSession & { user_code?: string; device_flow?: boolean; verification_uri?: string }>('/github-copilot-auth-url?is_webui=true');
 export const requestGeminiWebCookieAuth = (cookie: string, email?: string) => 
   api.post('/gemini-web-auth-url', { cookie, email });
+export const submitOAuthCallback = (provider: string, redirectURL: string, state?: string) =>
+  api.post('/oauth-callback', {
+    provider,
+    redirect_url: redirectURL,
+    state,
+  });
 export const getAuthStatus = () => api.get('/get-auth-status');
 
 // Amp Code

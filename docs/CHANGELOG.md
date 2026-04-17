@@ -7,6 +7,13 @@
   - Gemini OAuth Web UI flow now uses a public callback URL for non-loopback hosts instead of `localhost:8085`
   - Added optional `OAUTH_PUBLIC_BASE_URL` env var override for explicit callback base URL
   - Frontend nginx now proxies OAuth callback routes (`/google/callback`, etc.) to backend
+  - Added validation to return clear error when public-domain callback is used with default Gemini OAuth credentials (prevents opaque Google `redirect_uri_mismatch` page)
+
+- **Gemini Remote Browser Manual Callback Mode**: Web UI now supports copy/paste callback URL flow similar to upstream CLIProxyAPI
+  - Added `remote_browser_mode` handling in Gemini auth endpoint to keep localhost callback and accept manual callback submission
+  - OAuth page now provides **Submit Callback URL** input for Gemini after auth URL generation
+  - Added management API integration to submit callback URL via `/v0/management/oauth-callback`
+  - Docker compose now forwards optional `GEMINI_OAUTH_CLIENT_ID` and `GEMINI_OAUTH_CLIENT_SECRET` into backend container
 
 - **Docker Port Consistency**: Frontend and backend container ports are now consistent for server deployment
   - Production compose now publishes frontend on `8686` (was `3000`) and backend on `9999`

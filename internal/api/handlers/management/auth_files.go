@@ -127,6 +127,10 @@ func parseLastRefreshValue(v any) (time.Time, bool) {
 
 func isWebUIRequest(c *gin.Context) bool {
 	raw := strings.TrimSpace(c.Query("is_webui"))
+	return isTruthyFlag(raw)
+}
+
+func isTruthyFlag(raw string) bool {
 	if raw == "" {
 		return false
 	}
@@ -1331,10 +1335,16 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 	// Optional project ID from query
 	projectID := c.Query("project_id")
 	isWebUI := isWebUIRequest(c)
+	remoteBrowserMode := isTruthyFlag(c.Query("remote_browser_mode")) || isTruthyFlag(c.Query("manual_callback"))
 	redirectURL := "http://localhost:8085/oauth2callback"
 	useLocalForwarder := isWebUI
 
-	if isWebUI {
+	if isWebUI && remoteBrowserMode {
+		// In remote browser mode, the user copies localhost callback URL and submits it manually.
+		// No public-domain callback is required.
+		useLocalForwarder = false
+		log.Infof("gemini oauth remote browser mode enabled; waiting for manual callback submission")
+	} else if isWebUI {
 		if callbackURL, usePublic, err := h.webUICallbackURL(c, "/google/callback"); err != nil {
 			log.WithError(err).Warn("failed to determine public gemini callback URL, falling back to local callback forwarder")
 		} else if usePublic {
@@ -1344,12 +1354,21 @@ func (h *Handler) RequestGeminiCLIToken(c *gin.Context) {
 		}
 	}
 
+	clientID := getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", geminiAuth.DefaultClientID)
+	clientSecret := getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", geminiAuth.DefaultClientSecret)
+	if isWebUI && !useLocalForwarder && !strings.EqualFold(redirectURL, "http://localhost:8085/oauth2callback") && clientID == geminiAuth.DefaultClientID {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Public-domain Gemini OAuth requires custom Google OAuth credentials. Set GEMINI_OAUTH_CLIENT_ID and GEMINI_OAUTH_CLIENT_SECRET, then add Authorized Redirect URI: " + redirectURL,
+		})
+		return
+	}
+
 	fmt.Println("Initializing Google authentication...")
 
 	// OAuth2 configuration using default credentials from gemini package
 	conf := &oauth2.Config{
-		ClientID:     getEnvOrDefault("GEMINI_OAUTH_CLIENT_ID", geminiAuth.DefaultClientID),
-		ClientSecret: getEnvOrDefault("GEMINI_OAUTH_CLIENT_SECRET", geminiAuth.DefaultClientSecret),
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
 		RedirectURL:  redirectURL,
 		Scopes: []string{
 			"https://www.googleapis.com/auth/cloud-platform",

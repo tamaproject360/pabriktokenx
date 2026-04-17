@@ -16,6 +16,7 @@ import {
   requestIFlowAuth,
   requestGitHubCopilotAuth,
   requestGeminiWebCookieAuth,
+  submitOAuthCallback,
 } from '../lib/api';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import gsap from 'gsap';
@@ -47,24 +48,33 @@ interface OAuthProviderCardProps {
   description: string;
   color: string;
   icon: string; // Path to image or emoji
-  onLogin: () => Promise<{ url?: string; error?: string; user_code?: string; device_flow?: boolean; verification_uri?: string }>;
+  onLogin: () => Promise<{ url?: string; error?: string; state?: string; user_code?: string; device_flow?: boolean; verification_uri?: string }>;
   isDeviceFlow?: boolean;
+  manualCallbackProvider?: string;
 }
 
-function OAuthProviderCard({ title, description, color, icon, onLogin }: OAuthProviderCardProps) {
+function OAuthProviderCard({ title, description, color, icon, onLogin, manualCallbackProvider }: OAuthProviderCardProps) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [userCode, setUserCode] = useState<string | null>(null);
+  const [oauthState, setOAuthState] = useState<string | null>(null);
+  const [callbackURL, setCallbackURL] = useState('');
+  const [callbackSubmitting, setCallbackSubmitting] = useState(false);
+  const [callbackMessage, setCallbackMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async () => {
     setStatus('loading');
     setError(null);
     setUserCode(null);
+    setOAuthState(null);
+    setCallbackURL('');
+    setCallbackMessage(null);
     try {
       const result = await onLogin();
       if (result.url) {
         setAuthUrl(result.url);
+        setOAuthState(result.state || null);
         setStatus('success');
         
         // For device flow, show the user code
@@ -80,6 +90,26 @@ function OAuthProviderCard({ title, description, color, icon, onLogin }: OAuthPr
     } catch {
       setError('Failed to initiate OAuth flow');
       setStatus('error');
+    }
+  };
+
+  const handleSubmitCallbackURL = async () => {
+    const trimmedCallbackURL = callbackURL.trim();
+    if (!manualCallbackProvider || !trimmedCallbackURL) {
+      return;
+    }
+
+    setCallbackSubmitting(true);
+    setCallbackMessage(null);
+    try {
+      await submitOAuthCallback(manualCallbackProvider, trimmedCallbackURL, oauthState || undefined);
+      setCallbackMessage('Callback URL submitted. Please wait while authentication finalizes.');
+      setCallbackURL('');
+    } catch (err: any) {
+      const apiError = err?.response?.data?.error || err?.message || 'Failed to submit callback URL';
+      setCallbackMessage(apiError);
+    } finally {
+      setCallbackSubmitting(false);
     }
   };
 
@@ -138,6 +168,32 @@ function OAuthProviderCard({ title, description, color, icon, onLogin }: OAuthPr
             >
               Open auth page <ExternalLink className="h-3 w-3" />
             </a>
+          </div>
+        )}
+
+        {status === 'success' && authUrl && manualCallbackProvider && (
+          <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-3">
+            <p className="text-sm text-amber-300">
+              Remote browser mode: after provider redirects to <span className="font-mono">http://localhost...</span>,
+              copy full URL and paste it below.
+            </p>
+            <input
+              type="text"
+              value={callbackURL}
+              onChange={(e) => setCallbackURL(e.target.value)}
+              placeholder="http://localhost:8085/oauth2callback?code=...&state=..."
+              className="w-full px-3 py-2 rounded-lg bg-slate-900/60 border border-slate-700 text-slate-100 text-sm"
+            />
+            <button
+              onClick={handleSubmitCallbackURL}
+              disabled={callbackSubmitting || !callbackURL.trim()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium bg-amber-500/20 border border-amber-500/40 text-amber-300 disabled:opacity-50"
+            >
+              {callbackSubmitting ? 'Submitting...' : 'Submit Callback URL'}
+            </button>
+            {callbackMessage && (
+              <p className="text-xs text-slate-300">{callbackMessage}</p>
+            )}
           </div>
         )}
 
@@ -463,6 +519,7 @@ export default function OAuthPage() {
             description="Login with your Google account to access Gemini models"
             color="#22D3EE"
             icon="/src/assets/gemini-cli.png"
+            manualCallbackProvider="gemini"
             onLogin={async () => {
               const response = await requestGeminiCLIAuth();
               return response.data;

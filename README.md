@@ -347,6 +347,9 @@ If you run the dashboard behind a public domain (for example via Cloudflare Tunn
 ```bash
 # .env (same directory as docker-compose.yml)
 OAUTH_PUBLIC_BASE_URL=https://token.tamadev.web.id
+# Optional: use your own Google OAuth app if default credentials are blocked
+GEMINI_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GEMINI_OAUTH_CLIENT_SECRET=your-client-secret
 ```
 
 Then redeploy:
@@ -360,6 +363,20 @@ Notes:
 - OAuth callback paths like `/google/callback` are now proxied to backend automatically.
 - For Gemini OAuth in public-domain mode, use your own Google OAuth credentials and add this Authorized Redirect URI in Google Cloud Console:
    - `https://token.tamadev.web.id/google/callback`
+- Built-in/default Gemini OAuth credentials are intended for localhost callback flow and will not work for custom public domains.
+
+### Gemini Remote Browser Mode (Copy/Paste Callback URL)
+
+For remote deployment, Gemini login from Web UI now supports manual callback submission:
+
+1. Click **Login with Gemini**
+2. Click **Open auth page** and complete Google login
+3. Browser will redirect to a `http://localhost:8085/oauth2callback?...` URL (may fail to open)
+4. Copy the full URL from browser address bar
+5. Paste it into **Callback URL** field in OAuth card
+6. Click **Submit Callback URL**
+
+This mode avoids `redirect_uri_mismatch` when using built-in Gemini OAuth credentials on public domains.
 
 ### Docker Compose Features
 
