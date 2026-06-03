@@ -19,7 +19,8 @@ steps:
       key:
         from_secret: pabriktokenx_ssh_key
       port: 22
-      target: /opt/pabriktokenx
+      target: /tmp/pabriktokenx-ci
+      rm: true
       source:
         - .
       exclude:
@@ -47,7 +48,7 @@ steps:
         from_secret: pabriktokenx_ssh_key
       port: 22
       script:
-        - cd /opt/pabriktokenx
+        - cd /tmp/pabriktokenx-ci
         - chmod +x deploy.sh
         - ./deploy.sh
     depends_on:

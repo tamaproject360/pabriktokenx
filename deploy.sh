@@ -1,7 +1,29 @@
 #!/bin/sh
 set -eu
 
-cd /opt/pabriktokenx
+SRC=${PABRIKTOKENX_RELEASE_DIR:-/tmp/pabriktokenx-ci}
+DEST=/opt/pabriktokenx
+
+mkdir -p "$DEST"
+cd "$SRC"
+
+echo "[deploy] syncing release to $DEST"
+tar \
+  --exclude='.env' \
+  --exclude='.env.*' \
+  --exclude='.git' \
+  --exclude='config.docker.yaml' \
+  --exclude='*.bak*' \
+  --exclude='*.orig' \
+  --exclude='auths' \
+  --exclude='logs' \
+  --exclude='assets' \
+  --exclude='node_modules' \
+  --exclude='frontend/node_modules' \
+  --exclude='__pycache__' \
+  -cf - . | tar -C "$DEST" -xf -
+
+cd "$DEST"
 
 echo "[deploy] starting pabriktokenx deploy"
 docker compose up -d --build
