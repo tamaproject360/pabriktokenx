@@ -23,6 +23,7 @@ func ConvertOpenAIResponsesRequestToCodex(modelName string, inputRawJSON []byte,
 	rawJSON, _ = sjson.DeleteBytes(rawJSON, "temperature")
 	rawJSON, _ = sjson.DeleteBytes(rawJSON, "top_p")
 	rawJSON, _ = sjson.DeleteBytes(rawJSON, "service_tier")
+	rawJSON, _ = sjson.DeleteBytes(rawJSON, "safety_identifier")
 
 	originalInstructions := ""
 	originalInstructionsText := ""

@@ -1,0 +1,54 @@
+kind: pipeline
+name: deploy-pabriktokenx
+
+type: docker
+
+trigger:
+  branch:
+    - main
+  event:
+    - push
+    - custom
+
+steps:
+  - name: upload
+    image: appleboy/drone-scp
+    settings:
+      host: 192.168.0.14
+      username: root
+      key:
+        from_secret: pabriktokenx_ssh_key
+      port: 22
+      target: /opt/pabriktokenx
+      source:
+        - .
+      exclude:
+        - .env
+        - .env.*
+        - .git
+        - config.docker.yaml
+        - '*.bak*'
+        - '*.orig'
+        - '**/*.bak*'
+        - '**/*.orig'
+        - auths
+        - logs
+        - assets
+        - node_modules
+        - frontend/node_modules
+        - __pycache__
+
+  - name: deploy
+    image: appleboy/drone-ssh
+    settings:
+      host: 192.168.0.14
+      username: root
+      key:
+        from_secret: pabriktokenx_ssh_key
+      port: 22
+      script:
+        - cd /opt/pabriktokenx
+        - chmod +x deploy.sh
+        - ./deploy.sh
+    depends_on:
+      - upload

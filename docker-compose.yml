@@ -11,7 +11,7 @@ services:
       - "9999:9999"
     volumes:
       # Mount docker-specific config file
-      - ./config.docker.yaml:/app/config.yaml:ro
+      - ./config.docker.yaml:/app/config.yaml
       # Mount auth directory (persistent)
       - ./auths:/app/auths
       # Mount logs directory (persistent)
@@ -26,10 +26,15 @@ services:
       - OAUTH_PUBLIC_BASE_URL=${OAUTH_PUBLIC_BASE_URL:-}
       - GEMINI_OAUTH_CLIENT_ID=${GEMINI_OAUTH_CLIENT_ID:-}
       - GEMINI_OAUTH_CLIENT_SECRET=${GEMINI_OAUTH_CLIENT_SECRET:-}
+      - GEMINI_EMBEDDING_API_KEY=${GEMINI_EMBEDDING_API_KEY:-}
+      - GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+      - GEMINI_EMBEDDING_TASK_TYPE=RETRIEVAL_DOCUMENT
+      - OLLAMA_EMBEDDING_URL=http://192.168.0.25:11434/api/embed
+      - OLLAMA_EMBEDDING_MODEL=nomic-embed-text
     networks:
       - pabriktokenx-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/v1/models"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -50,7 +55,7 @@ services:
     networks:
       - pabriktokenx-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80"]
       interval: 30s
       timeout: 10s
       retries: 3

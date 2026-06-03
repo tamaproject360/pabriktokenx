@@ -137,7 +137,7 @@ func (e *CodexExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, re
 		}
 
 		var param any
-		out := sdktranslator.TranslateNonStream(ctx, to, from, req.Model, bytes.Clone(opts.OriginalRequest), body, line, &param)
+		out := sdktranslator.TranslateNonStream(ctx, to, from, req.Model, bytes.Clone(opts.OriginalRequest), body, data, &param)
 		resp = cliproxyexecutor.Response{Payload: []byte(out)}
 		return resp, nil
 	}
@@ -493,10 +493,10 @@ func applyCodexHeaders(r *http.Request, auth *cliproxyauth.Auth, token string) {
 		ginHeaders = ginCtx.Request.Header
 	}
 
-	misc.EnsureHeader(r.Header, ginHeaders, "Version", "0.21.0")
+	misc.EnsureHeader(r.Header, ginHeaders, "Version", "0.128.0")
 	misc.EnsureHeader(r.Header, ginHeaders, "Openai-Beta", "responses=experimental")
 	misc.EnsureHeader(r.Header, ginHeaders, "Session_id", uuid.NewString())
-	misc.EnsureHeader(r.Header, ginHeaders, "User-Agent", "codex_cli_rs/0.50.0 (Mac OS 26.0.1; arm64) Apple_Terminal/464")
+	misc.EnsureHeader(r.Header, ginHeaders, "User-Agent", "codex_cli_rs/0.128.0 (Mac OS 26.0.1; arm64) Apple_Terminal/464")
 
 	r.Header.Set("Accept", "text/event-stream")
 	r.Header.Set("Connection", "Keep-Alive")

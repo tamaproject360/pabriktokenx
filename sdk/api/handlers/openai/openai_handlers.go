@@ -7,12 +7,18 @@
 package openai
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"math"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	management "github.com/router-for-me/CLIProxyAPI/v6/internal/api/handlers/management"
@@ -146,6 +152,174 @@ func (h *OpenAIAPIHandler) OpenAIModels(c *gin.Context) {
 		"object": "list",
 		"data":   filteredModels,
 	})
+}
+
+// Embeddings handles the /v1/embeddings endpoint.
+func (h *OpenAIAPIHandler) Embeddings(c *gin.Context) {
+	var req struct {
+		Input any    `json:"input"`
+		Model string `json:"model"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, handlers.ErrorResponse{
+			Error: handlers.ErrorDetail{Message: fmt.Sprintf("Invalid request: %v", err), Type: "invalid_request_error"},
+		})
+		return
+	}
+
+	inputs := normalizeEmbeddingInputs(req.Input)
+	embeddings, model, err := geminiEmbeddings(inputs)
+	if err != nil {
+		embeddings, model, err = ollamaEmbeddings(inputs)
+	}
+	if err != nil {
+		c.JSON(http.StatusBadGateway, handlers.ErrorResponse{Error: handlers.ErrorDetail{Message: err.Error(), Type: "provider_error"}})
+		return
+	}
+
+	data := make([]gin.H, 0, len(embeddings))
+	for i, embedding := range embeddings {
+		data = append(data, gin.H{"object": "embedding", "index": i, "embedding": resizeEmbedding(embedding, embeddingDimensions())})
+	}
+	tokens := len(strings.Join(inputs, " ")) / 4
+	c.JSON(http.StatusOK, gin.H{"object": "list", "data": data, "model": model, "usage": gin.H{"prompt_tokens": tokens, "total_tokens": tokens}})
+}
+
+func geminiEmbeddings(inputs []string) ([][]float32, string, error) {
+	apiKey := strings.TrimSpace(os.Getenv("GEMINI_EMBEDDING_API_KEY"))
+	if apiKey == "" {
+		return nil, "", errors.New("GEMINI_EMBEDDING_API_KEY is empty")
+	}
+	model := strings.TrimSpace(os.Getenv("GEMINI_EMBEDDING_MODEL"))
+	if model == "" {
+		model = "gemini-embedding-001"
+	}
+	taskType := strings.TrimSpace(os.Getenv("GEMINI_EMBEDDING_TASK_TYPE"))
+	if taskType == "" {
+		taskType = "RETRIEVAL_DOCUMENT"
+	}
+
+	result := make([][]float32, 0, len(inputs))
+	client := &http.Client{Timeout: 60 * time.Second}
+	url := "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":embedContent"
+	for _, input := range inputs {
+		payload, _ := json.Marshal(gin.H{
+			"taskType":              taskType,
+			"output_dimensionality": embeddingDimensions(),
+			"content": gin.H{"parts": []gin.H{
+				{"text": input},
+			}},
+		})
+		req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
+		if err != nil {
+			return nil, model, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("x-goog-api-key", apiKey)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, model, err
+		}
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			return nil, model, fmt.Errorf("gemini embeddings failed: status %d: %s", resp.StatusCode, string(body))
+		}
+
+		var geminiResp struct {
+			Embedding struct {
+				Values []float32 `json:"values"`
+			} `json:"embedding"`
+		}
+		if err := json.Unmarshal(body, &geminiResp); err != nil {
+			return nil, model, err
+		}
+		if len(geminiResp.Embedding.Values) == 0 {
+			return nil, model, errors.New("gemini returned empty embedding")
+		}
+		result = append(result, normalizeVector(geminiResp.Embedding.Values))
+	}
+	return result, model, nil
+}
+
+func ollamaEmbeddings(inputs []string) ([][]float32, string, error) {
+	model := strings.TrimSpace(os.Getenv("OLLAMA_EMBEDDING_MODEL"))
+	if model == "" {
+		model = "qllama/bge-small-en-v1.5"
+	}
+	payload, _ := json.Marshal(gin.H{"model": model, "input": inputs, "truncate": true})
+	url := strings.TrimSpace(os.Getenv("OLLAMA_EMBEDDING_URL"))
+	if url == "" {
+		url = "http://192.168.0.25:11434/api/embed"
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewReader(payload))
+	if err != nil {
+		return nil, model, err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, model, fmt.Errorf("ollama embeddings failed: status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var ollamaResp struct {
+		Embeddings [][]float32 `json:"embeddings"`
+	}
+	if err := json.Unmarshal(body, &ollamaResp); err != nil {
+		return nil, model, err
+	}
+	return ollamaResp.Embeddings, model, nil
+}
+
+func normalizeEmbeddingInputs(input any) []string {
+	switch v := input.(type) {
+	case string:
+		return []string{v}
+	case []any:
+		out := make([]string, 0, len(v))
+		for _, item := range v {
+			switch typed := item.(type) {
+			case string:
+				out = append(out, typed)
+			default:
+				out = append(out, fmt.Sprint(typed))
+			}
+		}
+		if len(out) > 0 {
+			return out
+		}
+	}
+	return []string{""}
+}
+
+func resizeEmbedding(embedding []float32, dimensions int) []float32 {
+	if len(embedding) >= dimensions {
+		return embedding[:dimensions]
+	}
+	resized := make([]float32, dimensions)
+	copy(resized, embedding)
+	return resized
+}
+
+func embeddingDimensions() int {
+	return 1024
+}
+
+func normalizeVector(embedding []float32) []float32 {
+	var sum float64
+	for _, value := range embedding {
+		sum += float64(value * value)
+	}
+	if sum == 0 {
+		return embedding
+	}
+	norm := float32(math.Sqrt(sum))
+	for i := range embedding {
+		embedding[i] /= norm
+	}
+	return embedding
 }
 
 // ChatCompletions handles the /v1/chat/completions endpoint.

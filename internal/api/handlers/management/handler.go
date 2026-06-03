@@ -40,6 +40,7 @@ type Handler struct {
 	allowRemoteOverride bool
 	envSecret           string
 	logDir              string
+	onConfigSaved       func(*config.Config)
 }
 
 // NewHandler creates a new management handler instance.
@@ -69,6 +70,9 @@ func (h *Handler) SetConfig(cfg *config.Config) { h.cfg = cfg }
 
 // SetAuthManager updates the auth manager reference used by management endpoints.
 func (h *Handler) SetAuthManager(manager *coreauth.Manager) { h.authManager = manager }
+
+// SetConfigSavedCallback updates runtime state immediately after management saves config.
+func (h *Handler) SetConfigSavedCallback(fn func(*config.Config)) { h.onConfigSaved = fn }
 
 // SetUsageStatistics allows replacing the usage statistics reference.
 func (h *Handler) SetUsageStatistics(stats *usage.RequestStatistics) { h.usageStats = stats }
@@ -229,11 +233,17 @@ func (h *Handler) Middleware() gin.HandlerFunc {
 // persist saves the current in-memory config to disk.
 func (h *Handler) persist(c *gin.Context) bool {
 	h.mu.Lock()
-	defer h.mu.Unlock()
 	// Preserve comments when writing
 	if err := config.SaveConfigPreserveComments(h.configFilePath, h.cfg); err != nil {
+		h.mu.Unlock()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save config: %v", err)})
 		return false
+	}
+	cfg := h.cfg
+	onConfigSaved := h.onConfigSaved
+	h.mu.Unlock()
+	if onConfigSaved != nil {
+		onConfigSaved(cfg)
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	return true
