@@ -3,6 +3,13 @@ set -eu
 
 SRC=${PABRIKTOKENX_RELEASE_DIR:-/tmp/pabriktokenx-ci}
 DEST=/opt/pabriktokenx
+LOCK=/tmp/pabriktokenx-deploy.lock
+
+while ! mkdir "$LOCK" 2>/dev/null; do
+  echo "[deploy] another deploy is running; waiting"
+  sleep 5
+done
+trap 'rmdir "$LOCK"' EXIT INT TERM
 
 mkdir -p "$DEST"
 cd "$SRC"

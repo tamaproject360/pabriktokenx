@@ -3,6 +3,9 @@ name: deploy-pabriktokenx
 
 type: docker
 
+concurrency:
+  limit: 1
+
 trigger:
   branch:
     - main
